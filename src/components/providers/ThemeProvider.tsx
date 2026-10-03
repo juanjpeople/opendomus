@@ -1,36 +1,34 @@
 "use client";
 
-import { ConfigProvider, theme as antdTheme, App } from 'antd';
-import esES from 'antd/locale/es_ES';
-import { useAppStore } from '@/store/useAppStore';
-import { useEffect, useState } from 'react';
+import { App, ConfigProvider, theme } from "antd";
+import esES from "antd/locale/es_ES";
+import { LucideProvider } from "lucide-react";
+import type { ReactNode } from "react";
+import { useIsDark } from "@/hooks/useIsDark";
+import { usePreferencesStore } from "@/store/usePreferencesStore";
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const { theme, brandColor, borderRadius } = useAppStore();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const isDarkMode = theme === 'dark' || 
-    (theme === 'system' && isClient && window.matchMedia('(prefers-color-scheme: dark)').matches);
+/**
+ * Tema global. Todo color/radio/tamaño sale de acá vía tokens de antd:
+ * en componentes usar `theme.useToken()`, nunca valores hex escritos a mano.
+ */
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const isDark = useIsDark();
+  const brandColor = usePreferencesStore((s) => s.brandColor);
+  const borderRadius = usePreferencesStore((s) => s.borderRadius);
 
   return (
-    <ConfigProvider 
-      locale={esES} 
-      theme={{ 
-        algorithm: isDarkMode ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-        token: { 
-          fontFamily: 'inherit',
-          colorPrimary: brandColor,
-          borderRadius: borderRadius,
-        } 
+    <ConfigProvider
+      locale={esES}
+      theme={{
+        algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: { fontFamily: "inherit", colorPrimary: brandColor, borderRadius },
       }}
     >
-      <App>
-        {children}
-      </App>
+      {/* Íconos: lucide-react. El tamaño sigue al font-size (ver .lucide en globals.css). */}
+      <LucideProvider strokeWidth={2}>
+        {/* <App> habilita message/notification/modal con el tema actual vía App.useApp(). */}
+        <App>{children}</App>
+      </LucideProvider>
     </ConfigProvider>
   );
 }

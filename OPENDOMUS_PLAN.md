@@ -41,17 +41,21 @@ Este documento consolida el plan de trabajo para OpenDomus y el progreso realiza
 
 ---
 
-## 📝 Estado Actual (Lo que hicimos)
+## 📝 Estado Actual
 
-1. **Inicialización del Proyecto:** Se ejecutó `create-next-app` para crear la estructura base con TypeScript y TailwindCSS.
-2. **Dependencias Core instaladas:** 
-   - `dexie` y `dexie-react-hooks` (para la base de datos offline-first de la Fase 1).
-   - `lucide-react` (para los iconos de la interfaz).
-3. **Esquema de Base de Datos:** Se creó el archivo `src/lib/db.ts` con la configuración inicial de Dexie para los ítems del inventario y la lista de compras.
-4. **Layout y Navegación:** Se creó un componente de navegación lateral/inferior (`src/components/Navigation.tsx`) y se integró en el `layout.tsx` principal.
+**Base del proyecto (Fase 1 – Setup Base):** lista. La referencia viva de convenciones es la página **`/design`** (solo Administrador): principios, tokens, componentes, formularios, tablas y permisos, con código de ejemplo.
 
-## 🚀 Próximo Paso
+- **UI:** Ant Design 6 (sin Tailwind) + íconos `lucide-react`. Colores y tamaños siempre desde tokens (`theme.useToken()`); modo claro/oscuro/sistema y color de marca configurables.
+- **Sesión y permisos:** selector de perfiles ("¿Quién está usando?") y política RBAC única en `src/lib/auth/permissions.ts` (`can`, `assertCan`, `usePermission`, `<Can>`, `<RequirePermission>`). Fail-closed: sin sesión válida no se ve la app.
+  - ⚠️ Mientras la app sea 100% cliente, los permisos son de experiencia, no de seguridad. La matriz se debe evaluar en el servidor cuando exista.
+- **Datos:** Dexie (IndexedDB). Patrón por módulo en `src/features/<modulo>/`: `domain.ts` (tipos, reglas, validación) → `service.ts` (único que escribe + chequea permisos) → `hooks.ts` (lecturas reactivas y acciones para la UI) → `components/`.
+- **Inventarios:** Alacena y Taller funcionando (alta con validación, +/- cantidad, baja con confirmación, estado de stock).
+- **Layouts:** escritorio (menú lateral), mobile (Drawer) e infantil (más grande, solo lectura).
 
-Dado que hubo un error con la carpeta del proyecto, el próximo paso recomendado es:
-1. Mover o recrear este proyecto en el directorio correcto.
-2. Continuar con la **Fase 1**: Desarrollar la pantalla de "Alacena" y "Taller" (`src/app/alacena/page.tsx`) que consuma la base de datos local que armamos (`db.ts`) para poder agregar productos y ver la lista.
+## 🚀 Próximos Pasos
+
+1. **Lista de compras** (`/compras`): automática por stock bajo (`getStockStatus`) + manual, siguiendo el patrón de `features/inventory`.
+2. **PWA:** manifest + service worker para instalar y usar offline.
+3. **PIN por perfil** antes de pasar a autenticación real con backend.
+4. **Tests:** unitarios de `domain.ts` y `permissions.ts` (lógica pura, fáciles de cubrir).
+

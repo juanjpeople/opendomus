@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AntdRegistry } from "@ant-design/nextjs-registry";
+import { AppShell } from "@/components/layout/AppShell";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import "./globals.css";
-import { AntdRegistry } from '@ant-design/nextjs-registry';
-import { ThemeProvider } from '@/components/providers/ThemeProvider';
-import { AppSkinManager } from '@/components/skins/AppSkinManager';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,23 +16,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OpenDomus",
+  title: { default: "OpenDomus", template: "%s · OpenDomus" },
   description: "Sistema operativo para tu casa",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         <AntdRegistry>
           <ThemeProvider>
-            <AppSkinManager>
-              {children}
-            </AppSkinManager>
+            <AppShell>{children}</AppShell>
           </ThemeProvider>
         </AntdRegistry>
       </body>

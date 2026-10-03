@@ -1,15 +1,41 @@
-html, body {
+/*
+ * Estilos globales mínimos. El look & feel vive en los tokens de antd (ThemeProvider);
+ * acá solo va lo que no se puede expresar con tokens.
+ */
+
+html,
+body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-/* Fix for Framer Motion inside Antd Layout to avoid overflow scrollbars during animation */
+/* Íconos lucide: escalan con el font-size y se alinean con el texto, igual que los de antd.
+   Para un ícono más grande, subir el font-size del contenedor. */
+.lucide {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
+}
+
+/* Evita barras de scroll horizontales durante las animaciones de framer-motion. */
 .ant-layout-content {
   overflow-x: hidden;
+}
+
+/* <Can fallback="disable">: el wrapper recibe el hover del tooltip, el hijo no recibe clics. */
+.od-can-disabled {
+  display: inline-block;
+  cursor: not-allowed;
+}
+.od-can-disabled > * {
+  pointer-events: none;
 }
