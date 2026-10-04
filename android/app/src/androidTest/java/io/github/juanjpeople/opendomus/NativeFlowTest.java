@@ -78,7 +78,7 @@ public class NativeFlowTest {
     /** A real touch supplies the user activation required by the WebView file picker. */
     private void tap(ActivityScenario<MainActivity> scenario, String element) throws Exception {
         evaluate(scenario, "window.__tapTarget = " + element + "; window.__tapTarget.scrollIntoView({block:'center'})");
-        await(scenario, "(() => { let e=window.__tapTarget; if (!e?.isConnected || e.disabled) return false; for (; e; e=e.parentElement) if (Number(getComputedStyle(e).opacity) < 0.99) return false; return true; })()");
+        await(scenario, "(() => { let e=window.__tapTarget; if (!e?.isConnected || e.disabled) return false; for (; e; e=e.parentElement) if (Number(getComputedStyle(e).opacity) < 0.99 || e.getAnimations().some(a => a.playState === 'running')) return false; return true; })()");
         evaluate(scenario, "(() => {const r=window.__tapTarget.getBoundingClientRect(); window.__tap={x:r.x+r.width/2,y:r.y+r.height/2};})()");
         JSONObject point = new JSONObject(evaluate(scenario, "window.__tap"));
         float[] screen = new float[2];
