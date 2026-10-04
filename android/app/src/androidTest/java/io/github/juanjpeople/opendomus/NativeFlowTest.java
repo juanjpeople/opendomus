@@ -16,6 +16,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.view.MotionEvent;
+import android.view.InputDevice;
 import androidx.core.content.FileProvider;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
@@ -91,6 +92,8 @@ public class NativeFlowTest {
         long time = SystemClock.uptimeMillis();
         MotionEvent down = MotionEvent.obtain(time, time, MotionEvent.ACTION_DOWN, screen[0], screen[1], 0);
         MotionEvent up = MotionEvent.obtain(time, time + 60, MotionEvent.ACTION_UP, screen[0], screen[1], 0);
+        down.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        up.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         try {
             assertTrue(InstrumentationRegistry.getInstrumentation().getUiAutomation().injectInputEvent(down, true));
             SystemClock.sleep(60);
@@ -169,13 +172,17 @@ public class NativeFlowTest {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             ready(scenario);
             scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/empezar"));
+            await(scenario, "location.pathname === '/empezar' && document.title.startsWith('Empezar')");
             await(scenario, "[...document.querySelectorAll('button')].some(b => /Empezar acá|Start here/.test(b.textContent))");
+            await(scenario, "[...document.querySelectorAll('svg path[pathLength=\"1\"]')].every(p => parseFloat(getComputedStyle(p).strokeDasharray) >= 0.99)");
             screenshot("onboarding");
-            evaluate(scenario, "[...document.querySelectorAll('button')].find(b => /Empezar acá|Start here/.test(b.textContent)).click()");
+            tap(scenario, "[...document.querySelectorAll('button')].find(b => /Empezar acá|Start here/.test(b.textContent))");
             await(scenario, "/Who.s home|Quién está en casa/.test(document.body.innerText) && /Administrador|Administrator/.test(document.body.innerText)");
             scenario.recreate();
             ready(scenario);
             await(scenario, "/Administrador|Administrator/.test(document.body.innerText)");
+            await(scenario, "(() => { let e=[...document.querySelectorAll('h5')].find(e => e.textContent === 'Administrador'); if (!e) return false; for (; e; e=e.parentElement) if (Number(getComputedStyle(e).opacity) < 0.99) return false; return true; })()");
+            await(scenario, "[...document.querySelectorAll('svg path[pathLength=\"1\"]')].every(p => parseFloat(getComputedStyle(p).strokeDasharray) >= 0.99)");
             screenshot("persisted-house");
             scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/cuenta?modo=crear"));
             await(scenario, "location.pathname === '/cuenta' && /Esta instalación funciona sin servidor|This installation works without a server/.test(document.body.innerText)");

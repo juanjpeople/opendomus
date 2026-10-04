@@ -19,14 +19,14 @@ export function PublicLayout({ children, width = 1120 }: { children: ReactNode; 
         background: `radial-gradient(ellipse 70% 40% at 50% 0%, ${token.colorPrimaryBg}, transparent 70%), ${token.colorBgLayout}`,
       }}
     >
-      <Flex align="center" justify="space-between" style={{ maxWidth: 1120, margin: "0 auto", padding: "16px 20px" }}>
-        <Link href="/bienvenida" style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+      <Flex wrap gap={12} align="center" justify="space-between" style={{ maxWidth: 1120, margin: "0 auto", padding: "16px 20px" }}>
+        <Link href="/bienvenida" style={{ display: "inline-flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <HouseMark size={24} />
-          <Typography.Text strong style={{ fontSize: token.fontSizeXL, color: token.colorPrimary, letterSpacing: "-0.02em" }}>
+          <Typography.Text strong style={{ fontSize: token.fontSizeXL, color: token.colorPrimary, letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
             {t("common.appName")}
           </Typography.Text>
         </Link>
-        <Flex gap={8} align="center">
+        <Flex gap={8} align="center" style={{ flexShrink: 0, marginInlineStart: "auto" }}>
           <LanguageSwitch />
           <ThemeModeSwitch />
         </Flex>

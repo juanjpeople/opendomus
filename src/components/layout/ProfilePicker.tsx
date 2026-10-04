@@ -26,6 +26,7 @@ export function ProfilePicker() {
 
   return (
     <Flex
+      className="od-profile-picker"
       vertical
       align="center"
       justify="center"
@@ -35,14 +36,14 @@ export function ProfilePicker() {
         background: `radial-gradient(ellipse 60% 45% at 50% 20%, ${token.colorPrimaryBg}, transparent 70%), ${token.colorBgLayout}`,
       }}
     >
-      <Flex align="center" justify="space-between" style={{ position: "absolute", top: 16, left: 20, right: 16 }}>
-        <Flex align="center" gap={8}>
+      <Flex wrap gap={12} align="center" justify="space-between" style={{ position: "absolute", top: 16, left: 20, right: 16 }}>
+        <Flex align="center" gap={8} style={{ flexShrink: 0 }}>
           <HouseMark size={22} />
-          <Typography.Text strong style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }}>
+          <Typography.Text strong style={{ color: token.colorPrimary, fontSize: token.fontSizeLG, whiteSpace: "nowrap" }}>
             {t("common.appName")}
           </Typography.Text>
         </Flex>
-        <Flex gap={8}>
+        <Flex gap={8} style={{ flexShrink: 0, marginInlineStart: "auto" }}>
           <LanguageSwitch />
           <ThemeModeSwitch />
         </Flex>
