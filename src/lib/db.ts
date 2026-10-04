@@ -13,6 +13,7 @@ import type { Container, Space } from "@/features/storage/domain";
 import { buildDefaultStorage } from "@/features/storage/seed";
 import type { SyncRecord } from "@/lib/sync/merge";
 import { syncMiddleware } from "@/lib/sync/middleware";
+import type { PhotoDelete } from "@/lib/sync/photos";
 
 /**
  * Base de datos local (IndexedDB). Solo los servicios (`src/features/<x>/service.ts`)
@@ -42,6 +43,8 @@ export const db = new Dexie("OpenDomusDB") as Dexie & {
   syncRecords: EntityTable<SyncRecord, "k">;
   /** Sincronización: hasta dónde se bajó, lo que está en viaje y las claves conocidas de la casa. */
   syncState: EntityTable<SyncStateEntry, "key">;
+  /** Borrados de bytes cifrados pendientes de confirmar en R2. */
+  photoDeletes: EntityTable<PhotoDelete, "k">;
 };
 
 export interface SyncStateEntry {
@@ -175,6 +178,11 @@ export function declareSchema(target: Dexie, upTo = Infinity) {
     activity: "id, at, [containerId+at], [entityId+at], listId",
     syncRecords: "k, pending",
     syncState: "key",
+  });
+
+  // v11: cola durable para borrar de R2 incluso si el dispositivo está offline al eliminar fotos.
+  if (upTo >= 11) target.version(11).stores({
+    photoDeletes: "k, householdId, requestedAt",
   });
 }
 

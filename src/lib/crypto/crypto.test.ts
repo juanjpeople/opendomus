@@ -14,11 +14,13 @@ import {
   newScopeKey,
   open,
   openEnvelope,
+  openBinary,
   openText,
   recoverIdentity,
   recoveryProof,
   rewrapIdentity,
   seal,
+  sealBinary,
   sealEnvelope,
   sha256,
   sign,
@@ -173,5 +175,20 @@ describe("navegador compatible", () => {
   test("Node tiene todo lo criptográfico que usa la nube (solo le falta IndexedDB)", async () => {
     const missing = await checkCryptoSupport();
     assert.deepEqual(missing.filter((requirement) => requirement !== "indexeddb"), []);
+  });
+});
+
+describe("archivos cifrados (fotos)", () => {
+  test("van y vuelven en binario, atados a su lugar; cualquier cambio se detecta", async () => {
+    const key = await importScopeKey(newScopeKey());
+    const photo = crypto.getRandomValues(new Uint8Array(5000));
+    const sealed = await sealBinary(key, photo, "photo/v1|foto-1|thumb");
+    assert.equal(sealed.length, photo.length + 12 + 16);
+    assert.deepEqual(await openBinary(key, sealed, "photo/v1|foto-1|thumb"), photo);
+    // En otro lugar (otra foto o la otra variante) no abre: no se pueden intercambiar.
+    await assert.rejects(openBinary(key, sealed, "photo/v1|foto-2|thumb"));
+    const tampered = sealed.slice();
+    tampered[40] ^= 1;
+    await assert.rejects(openBinary(key, tampered, "photo/v1|foto-1|thumb"));
   });
 });

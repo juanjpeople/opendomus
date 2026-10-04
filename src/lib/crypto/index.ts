@@ -103,6 +103,25 @@ export async function open(key: CryptoKey, box: string, context = ""): Promise<U
   return new Uint8Array(await subtle.decrypt({ name: "AES-GCM", iv: fromB64u(iv), additionalData: encoder.encode(context) }, key, fromB64u(ciphertext)));
 }
 
+/**
+ * Cifra bytes en binario (`iv ‖ ciphertext`), sin pasar a base64: para archivos (fotos), donde el
+ * tamaño importa. Mismo AES-256-GCM y el mismo `context` (AAD) que `seal`.
+ */
+export async function sealBinary(key: CryptoKey, data: Uint8Array, context = ""): Promise<Uint8Array<ArrayBuffer>> {
+  const iv = randomBytes(12);
+  const ciphertext = new Uint8Array(await subtle.encrypt({ name: "AES-GCM", iv, additionalData: encoder.encode(context) }, key, new Uint8Array(data)));
+  const out = new Uint8Array(iv.length + ciphertext.length);
+  out.set(iv);
+  out.set(ciphertext, iv.length);
+  return out;
+}
+
+/** Descifra lo de `sealBinary`. Lanza si la clave, el contexto o los bytes no coinciden. */
+export async function openBinary(key: CryptoKey, data: Uint8Array, context = ""): Promise<Uint8Array> {
+  if (data.length < 29) throw new Error("bad-box");
+  return new Uint8Array(await subtle.decrypt({ name: "AES-GCM", iv: new Uint8Array(data.subarray(0, 12)), additionalData: encoder.encode(context) }, key, new Uint8Array(data.subarray(12))));
+}
+
 export async function openText(key: CryptoKey, box: string, context = ""): Promise<string> {
   return decoder.decode(await open(key, box, context));
 }

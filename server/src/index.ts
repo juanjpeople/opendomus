@@ -108,7 +108,7 @@ app.use("*", async (c, next) => {
 app.use("*", async (c, next) => {
   const dev = (c.env.DEV_ORIGINS ?? "").split(",").map((origin) => origin.trim()).filter(Boolean);
   if (dev.length === 0) return next();
-  return cors({ origin: dev, credentials: true, allowHeaders: ["Content-Type"], allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"] })(c, next);
+  return cors({ origin: dev, credentials: true, allowHeaders: ["Content-Type"], allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] })(c, next);
 });
 
 // CSRF: todo lo que cambia algo tiene que venir de la app (Origin conocido). Better Auth valida lo suyo.
@@ -735,6 +735,65 @@ app.post("/households/:id/ops", async (c) => {
     if (error instanceof Error && error.message === OP_CONFLICT) return c.json({ error: "conflict" }, 409);
     throw error;
   }
+});
+
+// --- Fotos (cifradas en el dispositivo) ------------------------------------------------------
+//
+// Cada foto tiene su propia clave, que viaja DENTRO del registro sincronizado (cifrado con el nivel
+// de su receta). Acá solo llegan bytes cifrados: R2 no puede ver ninguna foto. Se pide ser miembro
+// de la casa para subir, bajar o borrar.
+
+const PHOTO_VARIANTS = ["full", "thumb"] as const;
+const PHOTO_MAX_BYTES = 4 * 1024 * 1024;
+const photoKey = (householdId: string, photoId: string, variant: string) => `households/${householdId}/photos/${photoId}/${variant}`;
+
+/** Miembro de la casa y foto bien nombrada; si no, la respuesta de error. */
+async function photoAccess(c: Context<AppEnv>) {
+  const user = await requireUser(c);
+  if (!user) return { error: c.json({ error: "unauthorized" }, 401) };
+  const { id: householdId, photoId, variant } = c.req.param() as { id: string; photoId: string; variant?: string };
+  if (!uuid.safeParse(householdId).success || !uuid.safeParse(photoId).success || (variant && !(PHOTO_VARIANTS as readonly string[]).includes(variant))) {
+    return { error: c.json({ error: "not-found" }, 404) };
+  }
+  const member = await membership(c.env, householdId, user.id);
+  if (!member) return { error: c.json({ error: "not-found" }, 404) };
+  return { user, member, householdId, photoId, variant: variant ?? "full" };
+}
+
+app.put("/households/:id/photos/:photoId/:variant", async (c) => {
+  const access = await photoAccess(c);
+  if ("error" in access) return access.error;
+  const { member, householdId, photoId, variant } = access;
+  if (member.role === "kid") return c.json({ error: "forbidden" }, 403);
+  const plan = await c.env.DB.prepare("select status from household_plans where household_id = ?").bind(householdId).first<{ status: string }>();
+  if (plan?.status === "paused") return c.json({ error: "plan-paused" }, 402);
+  if (Number(c.req.header("Content-Length") ?? 0) > PHOTO_MAX_BYTES) return c.json({ error: "too-large" }, 413);
+  const body = await c.req.arrayBuffer();
+  // iv (12) + etiqueta de AES-GCM (16): menos que eso no es una foto cifrada.
+  if (body.byteLength > PHOTO_MAX_BYTES) return c.json({ error: "too-large" }, 413);
+  if (body.byteLength < 29) return c.json({ error: "invalid" }, 400);
+  const key = photoKey(householdId, photoId, variant);
+  await c.env.PHOTOS.put(key, body, { httpMetadata: { contentType: "application/octet-stream" } });
+  return c.json({ ok: true });
+});
+
+app.get("/households/:id/photos/:photoId/:variant", async (c) => {
+  const access = await photoAccess(c);
+  if ("error" in access) return access.error;
+  const object = await c.env.PHOTOS.get(photoKey(access.householdId, access.photoId, access.variant));
+  if (!object) return c.json({ error: "not-found" }, 404);
+  return new Response(object.body, { headers: { "Content-Type": "application/octet-stream", "Cache-Control": "private, no-store" } });
+});
+
+/** Borrar una foto (las dos variantes): quien puede administrar recetas. */
+app.delete("/households/:id/photos/:photoId", async (c) => {
+  const access = await photoAccess(c);
+  if ("error" in access) return access.error;
+  const { member, householdId, photoId } = access;
+  if (member.role === "kid") return c.json({ error: "forbidden" }, 403);
+  const keys = PHOTO_VARIANTS.map((variant) => photoKey(householdId, photoId, variant));
+  await c.env.PHOTOS.delete(keys);
+  return c.json({ ok: true });
 });
 
 /** Bajar cambios desde `since`: solo los niveles que la persona puede abrir. */

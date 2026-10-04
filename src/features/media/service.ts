@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
 import { compressImage } from "@/lib/images";
+import { getSyncLink } from "@/lib/sync/middleware";
+import { newPhotoKey, queuePhotoDeletes } from "@/lib/sync/photos";
 import { PHOTO_LIMITS, type PhotoOwner } from "./domain";
 
 const MANAGE: Record<PhotoOwner, Permission> = { recipe: "recipes.manage" };
@@ -30,7 +32,18 @@ export async function addPhotos(actor: Actor | null, ownerType: PhotoOwner, owne
   }
 
   const now = Date.now();
-  const photos = prepared.map((image, index) => ({ ...image, id: createId(), ownerType, ownerId, createdBy: actor.id, createdAt: now + index }));
+  // Con la casa en la nube, cada foto nace con su clave (sus bytes se suben cifrados con ella).
+  const cloud = !!getSyncLink();
+  const photos = prepared.map((image, index) => ({
+    ...image,
+    id: createId(),
+    ownerType,
+    ownerId,
+    mime: image.blob.type || undefined,
+    ...(cloud ? { key: newPhotoKey() } : {}),
+    createdBy: actor.id,
+    createdAt: now + index,
+  }));
   await db.photos.bulkAdd(photos);
   return photos.map((photo) => photo.id);
 }
@@ -39,7 +52,8 @@ export async function deletePhoto(actor: Actor | null, id: string) {
   const photo = await db.photos.get(id);
   if (!photo) return;
   assertCan(actor, MANAGE[photo.ownerType]);
-  await db.transaction("rw", db.photos, db.recipes, async () => {
+  await db.transaction("rw", db.photos, db.recipes, db.photoDeletes, async () => {
+    await queuePhotoDeletes([id]);
     await db.photos.delete(id);
     // Si era la portada, la receta se queda sin portada (o toma la siguiente foto).
     if (photo.ownerType === "recipe") {
@@ -54,5 +68,7 @@ export async function deletePhoto(actor: Actor | null, id: string) {
 
 /** Borra todas las fotos de algo (al borrarlo). Para otros servicios, dentro de su transacción. */
 export async function deletePhotosOfWithin(ownerType: PhotoOwner, ownerId: string) {
+  const ids = await db.photos.where("[ownerType+ownerId]").equals([ownerType, ownerId]).primaryKeys();
+  await queuePhotoDeletes(ids);
   await db.photos.where("[ownerType+ownerId]").equals([ownerType, ownerId]).delete();
 }

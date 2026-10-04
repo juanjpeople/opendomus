@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import { useT } from "@/i18n";
 import { SPRING } from "@/lib/motion";
 import { PHOTO_LIMITS, type Photo, type PhotoOwner } from "../domain";
-import { useObjectUrl, usePhotoActions, usePhotos } from "../hooks";
+import { useEnsurePhoto, useObjectUrl, usePhotoActions, usePhotos } from "../hooks";
 
 interface PhotoGalleryProps {
   ownerType: PhotoOwner;
@@ -108,6 +108,8 @@ export function PhotoGallery({ ownerType, ownerId, editable, coverId, onSetCover
 function PhotoTile({ photo, editable, isCover, onSetCover }: { photo: Photo; editable: boolean; isCover: boolean; onSetCover?: (photoId: string) => void }) {
   const t = useT();
   const { token } = theme.useToken();
+  // De otro dispositivo: la miniatura y la foto completa se bajan (cifradas) al mostrarla.
+  useEnsurePhoto(photo, "thumb", "blob");
   const thumb = useObjectUrl(photo.thumb, `${photo.id}:thumb`);
   const full = useObjectUrl(photo.blob, `${photo.id}:blob`);
   const { remove } = usePhotoActions();
