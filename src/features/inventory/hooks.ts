@@ -15,6 +15,11 @@ export function useInventoryItems(containerId: string) {
   return useLiveQuery(() => db.inventory.where("containerId").equals(containerId).sortBy("name"), [containerId]);
 }
 
+/** Todos los productos de la casa, por nombre (para la búsqueda global). */
+export function useAllInventoryItems() {
+  return useLiveQuery(() => db.inventory.orderBy("name").toArray());
+}
+
 export function useInventoryItem(id: string | null) {
   return useLiveQuery(async () => (id ? ((await db.inventory.get(id)) ?? null) : null), [id]);
 }

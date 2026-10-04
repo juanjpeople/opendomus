@@ -132,6 +132,7 @@ export const es = {
       recent: "Recientes",
       pages: "Ir a",
       containers: "Contenedores",
+      items: "Productos",
       actions: "Acciones",
     },
     actions: {
@@ -144,6 +145,7 @@ export const es = {
       sidebarHidden: "Ocultar el menú",
       signOut: "Cerrar sesión",
       scan: "Escanear un QR",
+      shoppingAdd: "Anotar en la lista de compras",
     },
     hints: {
       navigate: "moverse",

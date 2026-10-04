@@ -127,6 +127,7 @@ export const en: Messages = {
       recent: "Recent",
       pages: "Go to",
       containers: "Containers",
+      items: "Items",
       actions: "Actions",
     },
     actions: {
@@ -139,6 +140,7 @@ export const en: Messages = {
       sidebarHidden: "Hide the menu",
       signOut: "Sign out",
       scan: "Scan a QR code",
+      shoppingAdd: "Add to the shopping list",
     },
     hints: {
       navigate: "move",
