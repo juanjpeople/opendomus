@@ -13,7 +13,7 @@ import { create } from "zustand";
 export type SyncPhase = "off" | "syncing" | "synced" | "offline" | "error";
 
 /** Por qué no se puede sincronizar (cada uno tiene su texto en `cloud.sync.errors.*`). */
-export type SyncErrorCode = "session" | "keys-changed" | "rejected" | "server";
+export type SyncErrorCode = "session" | "keys-changed" | "rejected" | "server" | "stale-key" | "removed";
 
 interface SyncStatusState {
   phase: SyncPhase;

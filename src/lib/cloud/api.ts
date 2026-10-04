@@ -35,6 +35,10 @@ const CLOUD_ERRORS: Record<string, MessageKey> = {
   INVALID_EMAIL: "errors.cloud.badEmail",
   "rate-limited": "errors.cloud.rateLimited",
   offline: "errors.cloud.offline",
+  "recovery-failed": "errors.cloud.recoveryFailed",
+  "wrong-password": "errors.cloud.wrongPassword",
+  "members-changed": "errors.cloud.membersChanged",
+  "stale-key": "errors.cloud.membersChanged",
 };
 
 export async function api<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<T> {

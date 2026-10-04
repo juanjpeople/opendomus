@@ -1,13 +1,13 @@
 "use client";
 
 import { App, Avatar, Button, Card, Col, Divider, Dropdown, Flex, Input, Modal, Row, Segmented, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
-import { Cloud, Copy, Crown, Ellipsis, LogOut, Share2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { Cloud, Copy, Crown, Ellipsis, LogOut, Share2, ShieldCheck, Trash2, UserMinus, UserPlus } from "lucide-react";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useState } from "react";
 import { IconTile } from "@/components/ui";
 import { useI18n } from "@/i18n";
-import { setAccountRole } from "@/features/members/service";
+import { setAccountRole, unlinkAccount } from "@/features/members/service";
 import { useCurrentUser } from "@/lib/auth/session";
 import { CLOUD_ENABLED } from "@/lib/cloud/api";
 import { getErrorMessage } from "@/lib/errors";
@@ -94,6 +94,7 @@ function HouseholdCard({ household }: { household: CloudHousehold }) {
   const { message, modal } = App.useApp();
   const session = useCloudStore((s) => s.session)!;
   const currentUser = useCurrentUser();
+  const { refresh } = useCloudActions();
   const [members, setMembers] = useState<CloudMember[] | null>(null);
   const [invites, setInvites] = useState<CloudInvite[]>([]);
   const [inviting, setInviting] = useState(false);
@@ -121,11 +122,36 @@ function HouseholdCard({ household }: { household: CloudHousehold }) {
       await service.changeRole(session, household, member, role);
       // Su perfil en la casa refleja el rol nuevo (y le llega a todos con la sincronización).
       if (getSyncLink()?.householdId === household.id) await setAccountRole(currentUser, member.userId, role);
+      // Si se rotó la clave de Adultos, este dispositivo pasa a usar la nueva.
+      await refresh();
       message.success(t("cloud.panel.roleChanged", { name: member.name, role: t(`roles.${role}`) }));
       load();
     } catch (error) {
       message.error(getErrorMessage(error, t));
     }
+  }
+
+  /** Sacar a alguien: claves nuevas para los que quedan; lo que se escriba desde ahora, no lo puede abrir. */
+  function remove(member: CloudMember) {
+    modal.confirm({
+      title: t("cloud.panel.removeTitle", { name: member.name }),
+      content: t("cloud.panel.removeText", { name: member.name }),
+      okText: t("cloud.panel.remove"),
+      okButtonProps: { danger: true },
+      cancelText: t("common.cancel"),
+      onOk: async () => {
+        try {
+          await service.removeMember(household, member);
+          // Su perfil queda en la casa (con su historial), pero ya no atado a su cuenta.
+          if (getSyncLink()?.householdId === household.id) await unlinkAccount(currentUser, member.userId);
+          await refresh();
+          message.success(t("cloud.panel.removed", { name: member.name }));
+          load();
+        } catch (error) {
+          message.error(getErrorMessage(error, t));
+        }
+      },
+    });
   }
 
   return (
@@ -167,9 +193,13 @@ function HouseholdCard({ household }: { household: CloudHousehold }) {
                   <Dropdown
                     trigger={["click"]}
                     menu={{
-                      items: (["admin", "adult", "kid"] as CloudRole[])
-                        .filter((role) => role !== member.role)
-                        .map((role) => ({ key: role, label: t("cloud.panel.makeRole", { role: t(`roles.${role}`) }), onClick: () => changeRole(member, role) })),
+                      items: [
+                        ...(["admin", "adult", "kid"] as CloudRole[])
+                          .filter((role) => role !== member.role)
+                          .map((role) => ({ key: role, label: t("cloud.panel.makeRole", { role: t(`roles.${role}`) }), onClick: () => changeRole(member, role) })),
+                        { type: "divider" as const },
+                        { key: "remove", danger: true, icon: <UserMinus size={16} />, label: t("cloud.panel.remove"), onClick: () => remove(member) },
+                      ],
                     }}
                   >
                     <Button type="text" size="small" icon={<Ellipsis />} aria-label={t("cloud.panel.memberActions", { name: member.name })} />

@@ -87,6 +87,12 @@ export function useCloudActions() {
         useCloudStore.getState().setSession(session);
         return session;
       }),
+    recover: (input: { email: string; recoveryCode: string; password: string }) =>
+      run(async () => {
+        const result = await service.recoverAccount(input);
+        useCloudStore.getState().setSession(result.session);
+        return result;
+      }),
     signOut: () =>
       run(async () => {
         await service.signOut();

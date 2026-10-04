@@ -29,6 +29,25 @@ export interface CloudMember {
   signPublicKey: string | null;
 }
 
+/** Alguien que dejó la casa: queda su rol de entonces y su clave de firma, para verificar sus cambios viejos. */
+export interface FormerMember {
+  userId: string;
+  name: string;
+  role: CloudRole;
+  removedAt: number;
+  signPublicKey: string | null;
+}
+
+/** Un dispositivo (sesión) donde está abierta la cuenta. */
+export interface CloudDevice {
+  id: string;
+  userAgent: string;
+  createdAt: number;
+  lastActiveAt: number;
+  /** Es este mismo dispositivo. */
+  current: boolean;
+}
+
 export interface CloudInvite {
   id: string;
   role: CloudRole;

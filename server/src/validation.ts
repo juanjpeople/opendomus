@@ -27,6 +27,41 @@ export const userKeysInput = z.object({
   signPublicKey: b64(64),
   privateKeys: box(),
   recoveryPrivateKeys: box(),
+  /** Hash de la prueba de que se tiene el kit (la prueba sale del código, en el dispositivo). */
+  recoveryVerifier: b64(64),
+});
+
+/** La "contraseña" que recibe el servidor: la clave de autenticación derivada (32 bytes en base64url). */
+const authKey = z.string().length(43).regex(/^[A-Za-z0-9_-]+$/);
+const email = z.string().trim().toLowerCase().email().max(254);
+
+export const recoveryStartInput = z.object({ email, recoveryAuth: b64(64) });
+
+/** Recuperar = contraseña nueva + claves re-cifradas con ella + un kit nuevo (el usado se descarta). */
+export const recoveryCompleteInput = recoveryStartInput.extend({
+  newPassword: authKey,
+  privateKeys: box(),
+  recoveryPrivateKeys: box(),
+  recoveryVerifier: b64(64),
+});
+
+export const changePasswordInput = z.object({ currentPassword: authKey, newPassword: authKey, privateKeys: box() });
+
+export const recoveryKitInput = z.object({ password: authKey, recoveryPrivateKeys: box(), recoveryVerifier: b64(64) });
+
+/** Sacar a alguien: claves nuevas de los niveles que tenía, para cada uno de los que quedan. */
+export const removeMemberInput = z.object({
+  encryptedName: box(1_024),
+  rotation: z
+    .array(
+      z.object({
+        scope: z.enum(["family", "adults"]),
+        version: z.number().int().min(2).max(1_000_000),
+        envelopes: z.array(z.object({ userId, envelope })).min(1).max(100),
+      }),
+    )
+    .min(1)
+    .max(2),
 });
 
 export const envelopeInput = z.object({
@@ -57,7 +92,16 @@ export const acceptInviteInput = z.object({
   envelopes: z.array(envelopeInput).min(1).max(3),
 });
 
-export const changeRoleInput = z.object({ role: z.enum(ROLES) });
+/** Al pasar a alguien a chico, la clave de Adultos nueva, ensobrada para los adultos que quedan. */
+export const changeRoleInput = z.object({
+  role: z.enum(ROLES),
+  rotation: z
+    .object({
+      version: z.number().int().min(2).max(1_000_000),
+      envelopes: z.array(z.object({ userId, envelope })).min(1).max(100),
+    })
+    .optional(),
+});
 
 // --- Sincronización ---------------------------------------------------------------------------
 

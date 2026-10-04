@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert, Button, Card, Flex, Form, Input, Segmented, Steps, Typography, theme } from "antd";
-import { House, ShieldCheck, TriangleAlert } from "lucide-react";
+import { House, KeyRound, ShieldCheck, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { Reveal } from "@/components/motion";
 import { IconTile } from "@/components/ui";
 import type { Member } from "@/features/members/domain";
 import { useT } from "@/i18n";
+import { getSyncLink } from "@/lib/sync/middleware";
 import { useDeviceStore } from "@/store/useDeviceStore";
 import type { CloudHousehold } from "../domain";
 import { useCloudActions, useCloudStore } from "../hooks";
@@ -17,6 +18,7 @@ import { chooseProfile, claimableMembers, downloadHouse, hasLocalHouse, uploadTh
 import { AuthForm } from "./AuthForm";
 import { ChooseProfile } from "./ChooseProfile";
 import { HouseTransfer } from "./HouseTransfer";
+import { RecoverForm } from "./RecoverForm";
 import { RecoveryKit } from "./RecoveryKit";
 import { useTransfer } from "./useTransfer";
 
@@ -27,12 +29,16 @@ type Step = "auth" | "kit" | "house" | "upload" | "replace" | "download" | "prof
  * - Crear la cuenta → guardar el kit de recuperación → (si viene de "Crear mi casa") nombrar la
  *   casa → la casa de este dispositivo se sube cifrada.
  * - Entrar en un dispositivo → se baja la casa de la nube (si este tenía otra, se avisa antes).
+ * - Olvidé mi contraseña (`modo=recuperar`) → con el kit, contraseña nueva y kit nuevo.
  */
 export function AccountPage() {
   const t = useT();
   const router = useRouter();
   const params = useSearchParams();
-  const [mode, setMode] = useState<"create" | "signin">(params.get("modo") === "entrar" ? "signin" : "create");
+  const [mode, setMode] = useState<"create" | "signin" | "recover">(() => {
+    const requested = params.get("modo");
+    return requested === "entrar" ? "signin" : requested === "recuperar" ? "recover" : "create";
+  });
   const wantsHouse = params.get("siguiente") === "casa";
   const [step, setStep] = useState<Step>("auth");
   const [recoveryCode, setRecoveryCode] = useState("");
@@ -73,10 +79,17 @@ export function AccountPage() {
 
   /** Ya tiene cuenta: si tiene una casa en la nube, se baja a este dispositivo. */
   function afterSignIn() {
-    const existing = useCloudStore.getState().session?.households[0];
+    const current = useCloudStore.getState().session;
+    const link = getSyncLink();
+    // Este dispositivo ya tiene esa casa (volvió a entrar después de cerrarse la sesión): sigue
+    // sincronizando donde estaba, sin bajar nada de nuevo ni borrar lo que no se subió.
+    const linked = current?.households.find((entry) => entry.id === link?.householdId);
+    if (linked && link?.userId === current?.user.id) return router.push("/");
+    const existing = current?.households[0];
     if (!existing) return wantsHouse ? setStep("house") : finishLocal();
     setHousehold(existing);
-    if (hasLocalHouse()) setStep("replace");
+    // Con otra casa en este dispositivo (propia o de otra cuenta), se avisa antes de reemplazarla.
+    if (hasLocalHouse() || link) setStep("replace");
     else void download(existing);
   }
 
@@ -90,7 +103,29 @@ export function AccountPage() {
           <Steps size="small" current={current} items={steps.map((title) => ({ title }))} style={{ marginBottom: 24 }} />
         )}
         <Card styles={{ body: { padding: "clamp(20px, 5vw, 32px)" } }}>
-          {step === "auth" && (
+          {step === "auth" && mode === "recover" && (
+            <Flex vertical gap={20}>
+              <Flex align="center" gap={14}>
+                <IconTile icon={KeyRound} color="gold" size={52} />
+                <div>
+                  <Typography.Title level={3} style={{ margin: 0 }}>
+                    {t("cloud.recover.title")}
+                  </Typography.Title>
+                  <Typography.Text type="secondary">{t("cloud.recover.subtitle")}</Typography.Text>
+                </div>
+              </Flex>
+              <RecoverForm
+                onRecovered={(code) => {
+                  setRecoveryCode(code);
+                  setStep("kit");
+                }}
+              />
+              <Button type="link" onClick={() => setMode("signin")}>
+                {t("cloud.recover.back")}
+              </Button>
+            </Flex>
+          )}
+          {step === "auth" && mode !== "recover" && (
             <Flex vertical gap={20}>
               <div>
                 <Typography.Title level={3} style={{ margin: 0 }}>
@@ -100,7 +135,7 @@ export function AccountPage() {
               </div>
               <Segmented<"create" | "signin">
                 block
-                value={mode}
+                value={mode === "create" ? "create" : "signin"}
                 onChange={setMode}
                 options={[
                   { value: "create", label: t("cloud.auth.createTab") },
@@ -109,16 +144,19 @@ export function AccountPage() {
               />
               <AuthForm
                 key={mode}
-                mode={mode}
+                mode={mode === "create" ? "create" : "signin"}
                 onCreated={(code) => {
                   setRecoveryCode(code);
                   setStep("kit");
                 }}
                 onSignedIn={afterSignIn}
+                onForgot={() => setMode("recover")}
               />
             </Flex>
           )}
-          {step === "kit" && <RecoveryKit code={recoveryCode} email={session?.user.email ?? ""} onDone={() => (wantsHouse ? setStep("house") : finishLocal())} />}
+          {step === "kit" && (
+            <RecoveryKit code={recoveryCode} email={session?.user.email ?? ""} onDone={() => (mode === "recover" ? afterSignIn() : wantsHouse ? setStep("house") : finishLocal())} />
+          )}
           {step === "house" && <NameHouse onCreated={upload} />}
           {step === "upload" && household && <HouseTransfer direction="up" name={household.name} state={transfer.state} onRetry={() => void upload(household)} />}
           {step === "replace" && household && (

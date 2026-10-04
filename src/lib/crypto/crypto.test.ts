@@ -6,15 +6,20 @@ import {
   derivePasswordKeys,
   encodeRecoveryCode,
   envelopeContext,
+  fromB64u,
   importScopeKey,
   inviteSecrets,
+  newRecoveryKit,
   newScopeKey,
   open,
   openEnvelope,
   openText,
   recoverIdentity,
+  recoveryProof,
+  rewrapIdentity,
   seal,
   sealEnvelope,
+  sha256,
   sign,
   unlockIdentity,
   verify,
@@ -82,6 +87,43 @@ describe("identidad y recuperación", () => {
     const { privateKeys } = await recoverIdentity(upload, recoveryCode.toLowerCase(), fresh.encKey);
     const identity = await unlockIdentity({ ...upload, privateKeys }, fresh.encKey);
     assert.equal(identity.signPublicKey, upload.signPublicKey);
+  });
+
+  test("la prueba del kit es lo que el servidor guarda hasheado, y no abre nada", async () => {
+    const keys = await derivePasswordKeys("ana@casa.com", "una frase larga", FAST);
+    const { upload, recoveryCode } = await createIdentity(keys.encKey);
+    const proof = await recoveryProof(recoveryCode);
+    assert.equal(await sha256(proof), upload.recoveryVerifier);
+    assert.equal(await recoveryProof(recoveryCode.toLowerCase()), proof);
+    // Con la prueba como si fuera la clave, la copia del kit no abre.
+    await assert.rejects(open(await importScopeKey(fromB64u(proof)), upload.recoveryPrivateKeys, "identity/recovery"));
+  });
+
+  test("recuperar arma un kit nuevo: el usado deja de servir", async () => {
+    const keys = await derivePasswordKeys("ana@casa.com", "una frase larga", FAST);
+    const { upload, recoveryCode } = await createIdentity(keys.encKey);
+    const fresh = await derivePasswordKeys("ana@casa.com", "contraseña nueva", FAST);
+    const { kit } = await recoverIdentity(upload, recoveryCode, fresh.encKey);
+    assert.notEqual(kit.recoveryCode, recoveryCode);
+    assert.equal(await sha256(await recoveryProof(kit.recoveryCode)), kit.recoveryVerifier);
+    const again = await recoverIdentity({ ...upload, recoveryPrivateKeys: kit.recoveryPrivateKeys }, kit.recoveryCode, fresh.encKey);
+    assert.equal(again.identity.signPublicKey, upload.signPublicKey);
+    await assert.rejects(recoverIdentity({ ...upload, recoveryPrivateKeys: kit.recoveryPrivateKeys }, recoveryCode, fresh.encKey));
+  });
+
+  test("cambiar la contraseña re-cifra las mismas claves; sin la actual, no", async () => {
+    const keys = await derivePasswordKeys("ana@casa.com", "una frase larga", FAST);
+    const { upload } = await createIdentity(keys.encKey);
+    const next = await derivePasswordKeys("ana@casa.com", "otra frase más larga", FAST);
+    const privateKeys = await rewrapIdentity(upload.privateKeys, keys.encKey, next.encKey);
+    assert.equal((await unlockIdentity({ ...upload, privateKeys }, next.encKey)).encPublicKey, upload.encPublicKey);
+    await assert.rejects(unlockIdentity({ ...upload, privateKeys }, keys.encKey));
+    await assert.rejects(rewrapIdentity(upload.privateKeys, next.encKey, next.encKey));
+    // Un kit nuevo también pide la contraseña.
+    const kit = await newRecoveryKit(upload.privateKeys, keys.encKey);
+    const recovered = await recoverIdentity({ ...upload, recoveryPrivateKeys: kit.recoveryPrivateKeys }, kit.recoveryCode, next.encKey);
+    assert.equal(recovered.identity.signPublicKey, upload.signPublicKey);
+    await assert.rejects(newRecoveryKit(upload.privateKeys, next.encKey));
   });
 
   test("el código del kit va y vuelve sin perder bits", () => {

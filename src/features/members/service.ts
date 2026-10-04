@@ -81,6 +81,18 @@ export async function linkMemberToAccount(input: { memberId?: string; userId: st
   });
 }
 
+/** Alguien dejó la casa: su perfil queda (con su historial) pero ya no está atado a una cuenta. */
+export async function unlinkAccount(actor: Actor | null, userId: string) {
+  assertCan(actor, "members.manage");
+  await db.members
+    .where("userId")
+    .equals(userId)
+    .modify((member) => {
+      delete member.userId;
+      member.updatedAt = Date.now();
+    });
+}
+
 /** Un admin cambió el rol de una cuenta en la nube: su perfil en la casa lo refleja. */
 export async function setAccountRole(actor: Actor | null, userId: string, role: Role) {
   assertCan(actor, "members.manage");

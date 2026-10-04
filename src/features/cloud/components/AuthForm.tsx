@@ -14,6 +14,8 @@ interface AuthFormProps {
   onSignedIn?: () => void;
   /** Email sugerido (ej. el de la invitación). */
   defaultEmail?: string;
+  /** "¿Olvidaste tu contraseña?" (al entrar): lleva a recuperar la cuenta con el kit. */
+  onForgot?: () => void;
 }
 
 /**
@@ -21,7 +23,7 @@ interface AuthFormProps {
  * para autenticarse y la que abre tus datos. Por eso tarda un segundo (es a propósito: frena a
  * quien quiera adivinarla) y se avisa que olvidarla exige el kit de recuperación.
  */
-export function AuthForm({ mode, onCreated, onSignedIn, defaultEmail }: AuthFormProps) {
+export function AuthForm({ mode, onCreated, onSignedIn, defaultEmail, onForgot }: AuthFormProps) {
   const t = useT();
   const { token } = theme.useToken();
   const [form] = Form.useForm<{ name: string; email: string; password: string; confirm: string }>();
@@ -65,6 +67,13 @@ export function AuthForm({ mode, onCreated, onSignedIn, defaultEmail }: AuthForm
       >
         <Input.Password size="large" autoComplete={mode === "create" ? "new-password" : "current-password"} prefix={<Lock style={{ color: token.colorTextTertiary }} />} />
       </Form.Item>
+      {mode === "signin" && onForgot && (
+        <Flex justify="flex-end" style={{ marginTop: -12, marginBottom: 12 }}>
+          <Button type="link" size="small" style={{ paddingInline: 0 }} onClick={onForgot}>
+            {t("cloud.recover.forgot")}
+          </Button>
+        </Flex>
+      )}
       {mode === "create" && (
         <>
           <div style={{ marginTop: -12, marginBottom: 16 }}>

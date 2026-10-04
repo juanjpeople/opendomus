@@ -6,6 +6,7 @@
  * los datos ante quien tenga acceso técnico al equipo (DevTools): para eso hace falta cifrar
  * los datos con una clave derivada del PIN/biometría (próximo paso, ver OPENDOMUS_PLAN.md).
  */
+import { deviceLabel } from "@/lib/device";
 import type { BiometricCredential, PinHash } from "./domain";
 
 const PBKDF2_ITERATIONS = 310_000;
@@ -98,13 +99,6 @@ export async function getBiometricSupport(): Promise<BiometricSupport> {
   return "available";
 }
 
-function deviceLabel(): string {
-  const ua = navigator.userAgent;
-  const os = /iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Mac/.test(ua) ? "macOS" : /Windows/.test(ua) ? "Windows" : "Linux";
-  const browser = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Navegador";
-  return `${browser} · ${os}`;
-}
-
 /** Registra la biometría de este dispositivo para un miembro. */
 export async function registerBiometric(member: { id: string; name: string }): Promise<BiometricCredential> {
   const credential = (await navigator.credentials.create({
@@ -126,7 +120,7 @@ export async function registerBiometric(member: { id: string; name: string }): P
   const response = credential.response as AuthenticatorAttestationResponse;
   const publicKey = response.getPublicKey();
   if (!publicKey) throw new Error("no-public-key");
-  return { id: toBase64Url(credential.rawId), publicKey: toBase64(publicKey), algorithm: response.getPublicKeyAlgorithm(), label: deviceLabel(), createdAt: Date.now() };
+  return { id: toBase64Url(credential.rawId), publicKey: toBase64(publicKey), algorithm: response.getPublicKeyAlgorithm(), label: deviceLabel(navigator.userAgent) || "Navegador", createdAt: Date.now() };
 }
 
 /** Firma ECDSA de WebAuthn (DER) → formato r||s que espera Web Crypto. */

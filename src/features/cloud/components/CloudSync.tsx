@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { CLOUD_ENABLED } from "@/lib/cloud/api";
 import { useMembersStore, useSessionStore } from "@/lib/auth/session";
 import { startSync } from "@/lib/sync/engine";
 import { getSyncLink } from "@/lib/sync/middleware";
 import { useSyncStatus } from "@/lib/sync/status";
 import { useDeviceStore } from "@/store/useDeviceStore";
-import { restoreCloudSession, useCloudSession } from "../hooks";
+import { restoreCloudSession, useCloudSession, useCloudStore } from "../hooks";
+import { refreshHouseholds } from "../service";
 import { syncContextFor } from "../sync";
 
 /**
@@ -25,9 +26,14 @@ export function CloudSync() {
   useEffect(() => {
     const link = getSyncLink();
     if (!active || !session || !link) return;
-    const household = session.households.find((entry) => entry.id === link.householdId);
-    if (!household || link.userId !== session.user.id) {
+    if (link.userId !== session.user.id) {
       useSyncStatus.getState().update({ phase: "error", error: "session" });
+      return;
+    }
+    const household = session.households.find((entry) => entry.id === link.householdId);
+    // La sesión es de esta persona, pero la casa ya no está entre las suyas: la sacaron.
+    if (!household) {
+      useSyncStatus.getState().update({ phase: "error", error: "removed" });
       return;
     }
     let stop: (() => void) | undefined;
@@ -41,6 +47,20 @@ export function CloudSync() {
       cancelled = true;
       stop?.();
     };
+  }, [active, session]);
+
+  // Las claves de la casa cambiaron (alguien salió): se piden las nuevas y el motor vuelve a
+  // arrancar con ellas. Con freno: si con las nuevas tampoco alcanza, no se insiste en bucle.
+  const lastRefresh = useRef(0);
+  useEffect(() => {
+    if (!active || !session) return;
+    return useSyncStatus.subscribe((state) => {
+      if (state.error !== "stale-key" || Date.now() - lastRefresh.current < 30_000) return;
+      lastRefresh.current = Date.now();
+      refreshHouseholds(session)
+        .then((households) => useCloudStore.getState().setSession({ ...session, households }))
+        .catch(() => {});
+    });
   }, [active, session]);
 
   // Sin sesión: si es por falta de conexión, se reintenta al volver; si no, hay que volver a entrar.
