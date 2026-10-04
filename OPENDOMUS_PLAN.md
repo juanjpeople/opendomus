@@ -6,8 +6,8 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 
 ## 🛠️ Arquitectura (offline-first y self-hosted)
 
-- **Cliente:** Next.js 16 + React 19, Ant Design 6 (tokens, sin Tailwind), framer-motion, lucide-react. Pensado para instalarse como **PWA**.
-- **Datos locales:** **Dexie.js** (IndexedDB). Cada cambio de esquema es una versión nueva con migración (`src/lib/db.ts`); hoy vamos por la **v5**.
+- **Cliente:** Next.js 16 + React 19, Ant Design 6 (tokens, sin Tailwind), framer-motion, lucide-react. Se instala como **PWA** y funciona sin conexión.
+- **Datos locales:** **Dexie.js** (IndexedDB). Cada cambio de esquema es una versión nueva con migración (`declareSchema` en `src/lib/db.ts`); hoy vamos por la **v7**. La misma cadena de migraciones actualiza los exports viejos al importarlos.
 - **Servidor / sincronización:** a definir (Node.js o Go + SQLite/PostgreSQL). Hasta que exista, los datos viven en cada dispositivo.
 - **Despliegue:** Docker en una NAS o servidor de la casa.
 
@@ -19,9 +19,9 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 1. ✅ **Base:** sistema de diseño, permisos, ajustes por perfil, navegación, historial de acciones, español e inglés.
 2. ✅ **Lugares e inventario:** recintos → contenedores (anidables) → productos, con color e ícono, etiquetas QR imprimibles y escaneo.
 3. ✅ **Precios:** historial por producto, el más barato y dónde, comparación online a pedido.
-4. ⏳ **Consumo:** descontar insumos al usar o cocinar → [especificación](#1-consumo-y-descuento-de-insumos).
-5. ⏳ **Lista de compras:** candidatos automáticos que se confirman o descartan → [especificación](#2-lista-de-compras-con-candidatos-automáticos).
-6. ⏳ **PWA:** manifest + service worker para instalar y usar sin conexión.
+4. ✅ **Consumo:** "Usé" con deshacer, consumo de los últimos 30 días y deshacer desde el historial → [especificación](#1-consumo-y-descuento-de-insumos). Falta "Cociné esto" (llega con Recetas).
+5. ✅ **Lista de compras:** "Para revisar" automático, lista con estimado, reposición al comprar y precio pagado → [especificación](#2-lista-de-compras-con-candidatos-automáticos).
+6. ✅ **PWA:** manifest, íconos, service worker con precache y aviso de versión nueva.
 
 ### 📍 Fase 2: Cocina y vida en común
 1. ✅ **Miembros de la familia** (alta, roles, avatar, cumpleaños) con **PIN, biometría y bloqueo automático**.
@@ -56,6 +56,11 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 - **Sesión y permisos:** selector de perfiles y política RBAC única en `src/lib/auth/permissions.ts`. Fail-closed.
   - ⚠️ Mientras la app sea 100 % cliente, los permisos ordenan la experiencia pero no son seguridad real: la matriz se evalúa en el servidor cuando exista.
 - **Historial de acciones:** cada servicio registra quién hizo qué dentro de la misma transacción; ajustes seguidos se agrupan.
+- **Consumo:** botón "Usé" en cada producto (con "Deshacer" en el aviso), consumo registrable en cualquier cantidad desde el detalle, y estadística de los últimos 30 días. Los cambios de cantidad se deshacen desde el historial durante 24 h: se revierte la diferencia, no se pisa lo que otros hicieron después.
+- **Lista de compras (`/compras`):** lo que cruza el mínimo entra en "Para revisar" (se suma con la cantidad que falta o se descarta, con "no volver a sugerir"); anotar con autocompletado vinculado al inventario; total estimado con el último precio y aviso de dónde está más barato; al marcar algo vinculado se repone el inventario en la misma transacción, y se puede registrar cuánto salió.
+- **PWA:** instalable (Ajustes → Acerca de, solo si el navegador lo permite), funciona sin conexión (páginas fijas y de cada contenedor precargadas), etiqueta "Sin conexión" en el header y aviso discreto cuando hay una versión nueva.
+- **Datos:** exportar e **importar** JSON (con resumen y confirmación; los exports viejos se migran).
+- **Tests:** `npm test` cubre permisos, dominio de inventario, compras, historial, precios y traductor.
 - **Inventario (`/inventario`):** plano de la casa con recintos (color, ícono) y contenedores adentro, con barra de stock. Los contenedores se anidan hasta 3 niveles (placard → puerta → cajón; cama → cajones), cada uno con su etiqueta QR. Página por contenedor con productos, detalle, precios, etiqueta e historial. QR en `/c/<código>` y escáner en `/inventario/escanear`.
 - **Internacionalización:** español e inglés, con diccionario tipado (`src/i18n/messages/`).
 - **Patrón por módulo** en `src/features/<modulo>/`: `domain.ts` (tipos, reglas, validación) → `service.ts` (único que escribe + permisos + historial) → `hooks.ts` (lecturas reactivas y acciones) → `components/`.
@@ -64,7 +69,7 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 
 ## 📐 Especificaciones de las próximas funcionalidades
 
-Orden sugerido, porque cada una se apoya en la anterior: **consumo → lista de compras → recetas → votaciones → calendario**.
+Consumo, lista de compras y calendario ya están hechos (ver Estado actual). Sigue: **recetas → votaciones**.
 
 ### 1. Consumo y descuento de insumos
 
@@ -77,6 +82,7 @@ Orden sugerido, porque cada una se apoya en la anterior: **consumo → lista de 
   - Si un producto está en varios contenedores, se descuenta primero del que tenga menos stock (para ir vaciando).
   - Todo consumo se registra en el historial (acción `consume`) y se puede deshacer desde ahí.
 - **Modelo:** reutiliza `inventory`; agrega a `ActivityAction` el valor `consume`. Para estadísticas futuras alcanza con el historial (no hace falta otra tabla).
+- **Hecho:** consumo de un producto, aviso con deshacer, deshacer desde el historial y estadística de 30 días. **Pendiente:** "Cociné esto" y la regla de varios contenedores, que necesitan Recetas (hoy cada producto vive en un solo contenedor).
 - **Permisos:** `inventory.consume` (adultos y admin; los chicos pueden pedir permiso en una versión futura).
 
 ### 2. Lista de compras con candidatos automáticos
@@ -89,9 +95,10 @@ Orden sugerido, porque cada una se apoya en la anterior: **consumo → lista de 
   - sumar la cantidad al inventario, en su contenedor;
   - registrar el precio pagado (alimenta el historial de precios y, más adelante, las cuentas).
 - **Estimación:** total estimado de la lista usando el último precio conocido de cada producto.
-- **Modelo:** `shoppingList` ya existe en la base (v1). Agregar:
+- **Modelo (v7):** `shoppingList` con `status: "pending" | "bought"` (indexable; reemplaza a `isCompleted`), `restocked` para poder desmarcar sin dejar stock de más.
   - `ShoppingCandidate { id, itemId, reason: "low" | "empty", createdAt, status: "pending" | "confirmed" | "dismissed" }`
-  - en el producto, `autoSuggest: boolean` (default `true`).
+  - en el producto, `autoSuggest?: boolean` (sin definir = `true`).
+  - Una sugerencia nace solo al **cruzar** el mínimo (ok → bajo/agotado): así descartarla no la hace volver con el próximo clic.
 - **Reglas:** un producto no genera un candidato nuevo si ya tiene uno pendiente o si ya está en la lista. Si vuelve a tener stock antes de revisarlo, el candidato se descarta solo.
 - **Permisos:** `shopping.view` (todos), `shopping.manage` (adultos y admin).
 
@@ -168,8 +175,10 @@ Orden sugerido, porque cada una se apoya en la anterior: **consumo → lista de 
 
 ## 🚀 Pendientes técnicos
 
-1. **Importar** el JSON exportado (cierra el círculo de "Exportable, siempre").
-2. **Deshacer** desde el historial (empezando por el consumo y los ajustes).
-3. **Cifrado local** de la base (ver Seguridad).
-4. **Tests** unitarios de `domain.ts`, `permissions.ts` y del traductor (lógica pura, fáciles de cubrir).
+1. ✅ **Importar** el JSON exportado, con migración de exports viejos.
+2. ✅ **Deshacer** cambios de cantidad desde el historial.
+3. ✅ **Tests** unitarios (`npm test`) de dominio, permisos y traductor.
+4. **Cifrado local** de la base (ver Seguridad).
 5. **Sincronización** entre dispositivos (servidor): habilita el QR desde cualquier celular, las votaciones y el calendario compartido de verdad.
+6. **Tests de integración** de los servicios (Dexie en memoria con `fake-indexeddb`) y de punta a punta (Playwright).
+7. **Exportar a CSV** la lista de compras y el inventario (el JSON ya existe).

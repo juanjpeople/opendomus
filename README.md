@@ -31,13 +31,30 @@ Profiles and household data are stored locally in each browser's IndexedDB.
 Different devices, browsers, and origins do not share data automatically.
 Schema v6 recovers completely empty databases left by an interrupted initial setup,
 without replacing existing household data. Database loading errors show a reload
-action instead of an empty profile picker.
+action instead of an empty profile picker. Schema changes are declared in
+`declareSchema()` (`src/lib/db.ts`); the same chain upgrades old JSON exports on import
+(Settings → Data → Import).
 
-Run the ID regression tests with Node.js 24+:
+### Tests and checks
+
+Unit tests cover the pure logic (permissions, domain rules, translator). Node.js runs
+the TypeScript directly; `scripts/test-hooks.mjs` resolves the `@/` alias and
+extensionless imports. Requires Node.js 24+.
 
 ```bash
-node --test src/lib/id.test.mjs
+npm test          # node:test, src/**/*.test.ts
+npm run typecheck # tsc --noEmit
+npm run lint
 ```
+
+### Offline and installable (PWA)
+
+`next build && next start` serves a manifest (`/manifest.webmanifest`), generated icons
+(`/icons/*`) and a service worker (`/sw.js`, generated per build). The service worker is
+only registered in production builds, so `next dev` never caches stale files. Once a page
+has been opened (or pre-cached on install), it loads without a connection; data already
+lives in IndexedDB. New versions wait for the user to click "Update". Installing requires
+HTTPS (or `localhost`).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
