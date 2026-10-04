@@ -1,17 +1,15 @@
 import { expect, test } from "@playwright/test";
 
-test("cuenta accesible sin invitación desde bienvenida, empezar y administración", async ({ page }, testInfo) => {
-  for (const route of ["/bienvenida", "/empezar", "/admin"]) {
+test("cuenta accesible sin invitación desde bienvenida y empezar", async ({ page }, testInfo) => {
+  for (const route of ["/bienvenida", "/empezar"]) {
     await page.goto(route);
-    const suffix = route === "/admin" ? "&volver=/admin" : "";
-    await expect(page.getByRole("link", { name: "Ya tengo cuenta", exact: true })).toHaveAttribute("href", `/cuenta?modo=entrar${suffix}`);
+    await expect(page.getByRole("link", { name: "Ya tengo cuenta", exact: true })).toHaveAttribute("href", "/cuenta?modo=entrar");
     await page.getByRole("link", { name: "Crear cuenta", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Creá tu cuenta" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Código de acceso" })).toHaveCount(0);
     await page.goBack();
     await page.locator('a[href*="modo=recuperar"]').click();
     await expect(page.locator('textarea[placeholder="ODK1-XXXX-XXXX-…"]')).toBeVisible();
-    if (route === "/admin") await expect(page).toHaveURL(/volver=\/admin/);
   }
   await page.goto("/empezar");
   await expect(page.getByRole("link", { name: "Crear cuenta", exact: true })).toBeVisible();

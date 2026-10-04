@@ -15,8 +15,6 @@ export interface AuthEnv {
   baseURL: string;
   /** Otros orígenes permitidos (en desarrollo, la app de `next dev`). */
   trustedOrigins: string[];
-  /** En desarrollo, los emails se muestran en la consola en vez de enviarse. */
-  sendEmail: (to: string, subject: string, text: string) => Promise<void>;
 }
 
 /** La clave de autenticación derivada mide 43 caracteres (32 bytes en base64url). */
@@ -34,7 +32,7 @@ export function authOptions(database: BetterAuthOptions["database"], env: AuthEn
       enabled: true,
       minPasswordLength: DERIVED_AUTH_KEY_LENGTH,
       maxPasswordLength: DERIVED_AUTH_KEY_LENGTH,
-      // El "olvidé mi contraseña" con E2EE necesita el kit de recuperación: llega en el hito 3.
+      // La recuperación E2EE usa el kit; un email no puede reconstruir las claves.
       requireEmailVerification: false,
       revokeSessionsOnPasswordReset: true,
     },

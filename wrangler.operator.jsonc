@@ -1,0 +1,13 @@
+// Despliegue manual independiente. Configurar Access en todo el hostname antes de habilitarlo.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "opendomus-operator",
+  "main": "server/src/operator-gateway.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "services": [{ "binding": "OPENDOMUS", "service": "opendomus" }],
+  // Sin issuer, audience y lista de operadores, todas las solicitudes se rechazan.
+  "observability": { "enabled": false }
+}

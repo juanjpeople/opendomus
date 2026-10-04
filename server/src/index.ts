@@ -8,12 +8,14 @@
 import { betterAuth } from "better-auth";
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
+import { bodyLimit } from "hono/body-limit";
 import type { z } from "zod";
 import { opSigningData, SYNC_LIMITS } from "../../src/lib/sync/protocol";
 import { authOptions } from "./auth-options";
 import type { AppEnv, Env, SessionUser } from "./env";
 import { DAY, INACTIVITY_NOTICE_DAYS, inactivityNoticeWindow, inactiveBefore } from "./inactivity";
 import { PhotoStorageError, photoStorage } from "./photo-storage";
+import { isLocalOperatorTest, verifyOperatorToken } from "./operator-access";
 import { OP_CONFLICT } from "./sync";
 import {
   acceptInviteInput,
@@ -29,7 +31,6 @@ import {
   inactivityNoticeStatusInput,
   inviteTokenInput,
   licenseCheckInput,
-  platformAdminGrantInput,
   pullQuery,
   pushInput,
   recoveryCompleteInput,
@@ -55,8 +56,6 @@ function createAuth(env: Env) {
       secret: env.BETTER_AUTH_SECRET,
       baseURL: env.APP_ORIGIN,
       trustedOrigins: allowedOrigins(env),
-      // Hasta tener un servicio de emails, se registran en el log del Worker (`wrangler tail`).
-      sendEmail: async (to, subject, text) => console.log(`[email] ${to} · ${subject}\n${text}`),
     }),
   );
 }
@@ -124,6 +123,8 @@ app.use("*", async (c, next) => {
   return next();
 });
 
+app.use("/auth/*", bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.json({ error: "too-large" }, 413) }));
+app.use("/feedback", bodyLimit({ maxSize: 8 * 1024, onError: (c) => c.json({ error: "too-large" }, 413) }));
 app.on(["GET", "POST"], "/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
 
 app.get("/health", (c) => c.json({ ok: true }));
@@ -891,43 +892,36 @@ app.get("/households/:id/ops", async (c) => {
 
 // --- Administración (licencias y planes) -----------------------------------------------------
 //
-// Con `Authorization: Bearer <ADMIN_TOKEN>`, sin cookies. La usa la CLI de Juan (`npm run admin`) y,
-// más adelante, el webhook del cobro. Nunca ve contenido de las casas (está cifrado igual).
+// CLI privada: hostname exclusivo, identidad firmada por Access y token maestro, sin cookies.
+// Nunca ve contenido de las casas (está cifrado igual).
 
 const admin = new Hono<AppEnv>();
 
 admin.use("*", async (c, next) => {
+  const localTest = isLocalOperatorTest(c.req.raw, c.env);
+  if (!localTest && (!c.env.OPERATOR_HOST || new URL(c.req.url).hostname !== c.env.OPERATOR_HOST)) return c.json({ error: "not-found" }, 404);
   const token = c.env.ADMIN_TOKEN;
   const given = c.req.header("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   // Sin token configurado, la administración no existe.
-  if (!token || token.length < 32 || !timingSafeEqual(given, token)) return c.json({ error: "unauthorized" }, 401);
+  // Rechazar antes de consultar claves remotas o D1: solicitudes anónimas no disparan consultas.
+  if (!token || token.length < 32 || !timingSafeEqual(given, token)) return c.json({ error: "not-found" }, 404);
+  const email = localTest
+    ? "operator@localhost.test"
+    : await verifyOperatorToken(c.req.header("Cf-Access-Jwt-Assertion") ?? "", c.env);
+  if (!email) return c.json({ error: "not-found" }, 404);
+  c.set("operatorEmail", email);
   return next();
 });
+admin.use("*", bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.json({ error: "too-large" }, 413) }));
 
 const LICENSE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin I, O, 0, 1: no se confunden al dictarlo
 
-/** Solo el operador con el token maestro puede vincular una cuenta a la administración. */
+/** Consulta operativa: nunca otorga privilegios a cuentas domésticas. */
 admin.get("/accounts", async (c) => {
   const email = c.req.query("email")?.trim().toLowerCase();
   if (!email || email.length > 254) return c.json({ error: "invalid" }, 400);
   const result = await c.env.DB.prepare('select id, email, name, "createdAt" from "user" where lower(email) = ?').bind(email).all();
   return c.json({ accounts: result.results });
-});
-
-admin.post("/administrators", async (c) => {
-  const input = await parse(c, platformAdminGrantInput);
-  if (!input) return c.json({ error: "invalid" }, 400);
-  const account = await c.env.DB.prepare('select id from "user" where id = ? and lower(email) = ?')
-    .bind(input.userId, input.email.toLowerCase()).first();
-  if (!account) return c.json({ error: "not-found" }, 404);
-  await c.env.DB.batch([
-    input.enabled
-      ? c.env.DB.prepare("insert into platform_admin_grants (user_id, granted_at) values (?, ?) on conflict (user_id) do nothing").bind(input.userId, Date.now())
-      : c.env.DB.prepare("delete from platform_admin_grants where user_id = ?").bind(input.userId),
-    c.env.DB.prepare("insert into admin_audit (id, actor_user_id, action, target_type, target_id, details, created_at) values (?, null, ?, 'user', ?, ?, ?)")
-      .bind(crypto.randomUUID(), input.enabled ? "admin.grant" : "admin.revoke", input.userId, JSON.stringify({ via: "operator-token" }), Date.now()),
-  ]);
-  return c.json({ ok: true });
 });
 
 /** Código nuevo: "OD-XXXX-XXXX-XXXX-XXXX" (80 bits al azar). */
@@ -953,9 +947,9 @@ async function issueLicenses(env: Env, input: z.infer<typeof createLicensesInput
   return licenses.map(({ id, code }) => ({ id, code, plan: input.plan, expiresAt }));
 }
 
-async function audit(env: Env, actorUserId: string, action: string, targetType: string, targetId: string, details?: Record<string, unknown>) {
-  await env.DB.prepare("insert into admin_audit (id, actor_user_id, action, target_type, target_id, details, created_at) values (?, ?, ?, ?, ?, ?, ?)")
-    .bind(crypto.randomUUID(), actorUserId, action, targetType, targetId, details ? JSON.stringify(details) : null, Date.now())
+async function audit(c: Context<AppEnv>, action: string, targetType: string, targetId: string, details?: Record<string, unknown>) {
+  await c.env.DB.prepare("insert into admin_audit (id, actor_user_id, action, target_type, target_id, details, created_at) values (?, ?, ?, ?, ?, ?, ?)")
+    .bind(crypto.randomUUID(), null, action, targetType, targetId, JSON.stringify({ ...details, operatorEmail: c.var.operatorEmail }), Date.now())
     .run();
 }
 
@@ -968,49 +962,7 @@ async function setHouseholdStatus(env: Env, householdId: string, status: "active
     .run();
 }
 
-admin.post("/licenses", async (c) => {
-  const input = await parse(c, createLicensesInput);
-  if (!input) return c.json({ error: "invalid" }, 400);
-  // Los códigos se ven UNA vez: acá no se guardan en claro.
-  return c.json({ licenses: await issueLicenses(c.env, input) }, 201);
-});
-
-admin.get("/licenses", async (c) => {
-  const rows = await c.env.DB.prepare(
-    "select id, plan, max_households as maxHouseholds, used, status, expires_at as expiresAt, source, note, created_at as createdAt from cloud_licenses order by created_at desc",
-  ).all();
-  return c.json({ licenses: rows.results });
-});
-
-admin.post("/licenses/:id/revoke", async (c) => {
-  const result = await c.env.DB.prepare("update cloud_licenses set status = 'revoked' where id = ?").bind(c.req.param("id")).run();
-  return result.meta.changes ? c.json({ ok: true }) : c.json({ error: "not-found" }, 404);
-});
-
-admin.get("/households", async (c) => {
-  const rows = await c.env.DB.prepare(
-    `select h.id, h.created_at as createdAt, coalesce(p.plan, 'beta') as plan, coalesce(p.status, 'active') as status, p.period_end as periodEnd,
-            (select count(*) from memberships m where m.household_id = h.id) as members, l.note as licenseNote
-       from households h left join household_plans p on p.household_id = h.id left join cloud_licenses l on l.id = p.license_id
-      order by h.created_at desc`,
-  ).all();
-  return c.json({ households: rows.results });
-});
-
-for (const [action, status] of [
-  ["pause", "paused"],
-  ["resume", "active"],
-] as const) {
-  admin.post(`/households/:id/${action}`, async (c) => {
-    const householdId = c.req.param("id");
-    const result = await setHouseholdStatus(c.env, householdId, status);
-    return result.meta.changes ? c.json({ ok: true, status }) : c.json({ error: "not-found" }, 404);
-  });
-}
-
-app.route("/admin", admin);
-
-// --- Feedback y panel administrativo con sesión ---------------------------------------------
+// --- Feedback público y operaciones privadas por CLI ---------------------------------------------
 
 app.post("/feedback", async (c) => {
   const input = await parse(c, feedbackInput);
@@ -1025,19 +977,6 @@ app.post("/feedback", async (c) => {
 });
 
 const platformAdmin = new Hono<AppEnv>();
-
-platformAdmin.use("*", async (c, next) => {
-  const user = await requireUser(c);
-  if (!user) return c.json({ error: "unauthorized" }, 401);
-  const allowed = (c.env.PLATFORM_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-  if (!allowed.includes(user.email.toLowerCase())) return c.json({ error: "forbidden" }, 403);
-  const grant = await c.env.DB.prepare("select user_id from platform_admin_grants where user_id = ?").bind(user.id).first();
-  if (!grant) return c.json({ error: "forbidden" }, 403);
-  return next();
-});
 
 platformAdmin.get("/overview", async (c) => {
   await processInactivity(c.env);
@@ -1077,7 +1016,7 @@ platformAdmin.get("/overview", async (c) => {
         group by u.id, u.email having count(s.id) > 5 order by sessions desc`,
     ).bind(nowIso).all<{ userId: string; email: string; sessions: number }>(),
     c.env.DB.prepare(
-      `select a.action, a.target_type as targetType, a.target_id as targetId, a.created_at as createdAt, u.email as actorEmail
+      `select a.action, a.target_type as targetType, a.target_id as targetId, a.created_at as createdAt, coalesce(json_extract(a.details, '$.operatorEmail'), u.email) as actorEmail
          from admin_audit a left join "user" u on u.id = a.actor_user_id order by a.created_at desc limit 20`,
     ).all(),
   ]);
@@ -1147,7 +1086,7 @@ platformAdmin.post("/licenses", async (c) => {
   const input = await parse(c, createLicensesInput);
   if (!input) return c.json({ error: "invalid" }, 400);
   const licenses = await issueLicenses(c.env, input);
-  await audit(c.env, c.var.user.id, "licenses.create", "license", licenses.map((license) => license.id).join(","), { count: licenses.length });
+  await audit(c, "licenses.create", "license", licenses.map((license) => license.id).join(","), { count: licenses.length });
   return c.json({ licenses }, 201);
 });
 
@@ -1155,7 +1094,7 @@ platformAdmin.post("/licenses/:id/revoke", async (c) => {
   const id = c.req.param("id");
   const result = await c.env.DB.prepare("update cloud_licenses set status = 'revoked' where id = ?").bind(id).run();
   if (!result.meta.changes) return c.json({ error: "not-found" }, 404);
-  await audit(c.env, c.var.user.id, "license.revoke", "license", id);
+  await audit(c, "license.revoke", "license", id);
   return c.json({ ok: true });
 });
 
@@ -1167,7 +1106,7 @@ for (const [action, status] of [
     const id = c.req.param("id");
     const result = await setHouseholdStatus(c.env, id, status);
     if (!result.meta.changes) return c.json({ error: "not-found" }, 404);
-    await audit(c.env, c.var.user.id, `household.${action}`, "household", id);
+    await audit(c, `household.${action}`, "household", id);
     return c.json({ ok: true, status });
   });
 }
@@ -1191,7 +1130,7 @@ platformAdmin.delete("/households/:id", async (c) => {
   }
   const result = await c.env.DB.prepare("delete from households where id = ?").bind(id).run();
   if (!result.meta.changes) return c.json({ error: "not-found" }, 404);
-  await audit(c.env, c.var.user.id, "household.delete", "household", id);
+  await audit(c, "household.delete", "household", id);
   return c.json({ ok: true });
 });
 
@@ -1208,7 +1147,7 @@ platformAdmin.patch("/feedback/:id", async (c) => {
   const id = c.req.param("id");
   const result = await c.env.DB.prepare("update feedback set status = ?, updated_at = ? where id = ?").bind(input.status, Date.now(), id).run();
   if (!result.meta.changes) return c.json({ error: "not-found" }, 404);
-  await audit(c.env, c.var.user.id, "feedback.status", "feedback", id, { status: input.status });
+  await audit(c, "feedback.status", "feedback", id, { status: input.status });
   return c.json({ ok: true });
 });
 
@@ -1235,11 +1174,12 @@ platformAdmin.patch("/notices/:householdId/:days", async (c) => {
     .bind(input.status, Date.now(), householdId, days)
     .run();
   if (!result.meta.changes) return c.json({ error: "not-found" }, 404);
-  await audit(c.env, c.var.user.id, "notice.status", "household", householdId, { days, status: input.status });
+  await audit(c, "notice.status", "household", householdId, { days, status: input.status });
   return c.json({ ok: true });
 });
 
-app.route("/platform-admin", platformAdmin);
+admin.route("/platform", platformAdmin);
+app.route("/admin", admin);
 
 app.notFound((c) => c.json({ error: "not-found" }, 404));
 app.onError((error, c) => {

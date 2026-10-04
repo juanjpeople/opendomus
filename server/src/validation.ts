@@ -101,7 +101,6 @@ export const feedbackInput = z.object({
 });
 
 export const feedbackStatusInput = z.object({ status: z.enum(["open", "resolved"]) });
-export const platformAdminGrantInput = z.object({ userId, email, enabled: z.boolean() });
 
 export const deleteHouseholdInput = z.object({ confirm: uuid });
 

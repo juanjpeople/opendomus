@@ -12,7 +12,6 @@ const options = authOptions(new DatabaseSync(":memory:"), {
   secret: "solo-para-generar-el-esquema-0123456789",
   baseURL: "http://localhost",
   trustedOrigins: [],
-  sendEmail: async () => {},
 });
 
 const { compileMigrations } = await getMigrations(options);

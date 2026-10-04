@@ -28,8 +28,14 @@ export interface Env {
   HOUSEHOLD_ACCESS?: string;
   /** Token de la API de administración (licencias, planes). Sin él, la API de administración no existe. */
   ADMIN_TOKEN?: string;
-  /** Correos elegibles para el panel; además requieren una habilitación por ID de cuenta. */
-  PLATFORM_ADMIN_EMAILS?: string;
+  /** Cloudflare Access: la política debe exigir OTP/IdP + MFA, sin bypass ni service tokens. */
+  OPERATOR_ACCESS_ISSUER?: string;
+  OPERATOR_ACCESS_AUD?: string;
+  OPERATOR_EMAILS?: string;
+  /** Hostname del gateway privado; el hostname público nunca sirve operaciones administrativas. */
+  OPERATOR_HOST?: string;
+  /** Solo tests con APP_ORIGIN y request en localhost HTTP. Nunca configurar en producción. */
+  OPERATOR_LOCAL_TEST?: string;
 }
 
 export interface SessionUser {
@@ -40,6 +46,7 @@ export interface SessionUser {
 
 /** Variables por pedido (Hono `c.var`). */
 export interface Vars {
+  operatorEmail: string;
   user: SessionUser;
   /** La sesión de este pedido (para cerrar "las otras" sin cerrar esta). */
   sessionId: string;

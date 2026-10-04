@@ -41,7 +41,6 @@ export function AccountPage() {
     return requested === "entrar" ? "signin" : requested === "recuperar" ? "recover" : "create";
   });
   const wantsHouse = params.get("siguiente") === "casa";
-  const returnTo = params.get("volver") === "/admin" ? "/admin" : null;
   const [step, setStep] = useState<Step>(() => (wantsHouse && mode === "create" ? "access" : "auth"));
   // La licencia validada en el primer paso (la consume el servidor al crear la casa).
   const [accessCode, setAccessCode] = useState("");
@@ -54,7 +53,6 @@ export function AccountPage() {
 
   /** Cuenta sin casa en la nube: la casa sigue en este dispositivo. */
   const finishLocal = () => {
-    if (returnTo) return router.push(returnTo);
     if (useDeviceStore.getState().mode === "unset") setDeviceMode("local");
     router.push("/familia");
   };
@@ -84,7 +82,6 @@ export function AccountPage() {
 
   /** Ya tiene cuenta: si tiene una casa en la nube, se baja a este dispositivo. */
   function afterSignIn() {
-    if (returnTo) return router.push(returnTo);
     const current = useCloudStore.getState().session;
     const link = getSyncLink();
     // Este dispositivo ya tiene esa casa (volvió a entrar después de cerrarse la sesión): sigue
