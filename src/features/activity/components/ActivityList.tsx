@@ -2,7 +2,7 @@
 
 import { Button, Flex, Skeleton, Tag, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUp, BellOff, ListPlus, MoveRight, PackageMinus, Pencil, Plus, RotateCcwClock, ShoppingBag, Tag as PriceTag, Trash2, Undo2, type LucideIcon } from "lucide-react";
+import { ArrowDown, ArrowUp, BellOff, ChefHat, ListPlus, MoveRight, PackageMinus, Pencil, Plus, RotateCcwClock, ShoppingBag, Tag as PriceTag, Trash2, Undo2, type LucideIcon } from "lucide-react";
 import { Fragment } from "react";
 import { EmptyState } from "@/components/ui";
 import { isUnit } from "@/features/inventory/domain";
@@ -64,6 +64,9 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
     if (entry.module === "storage") {
       return t(`activity.storage.${entry.action as "create" | "update" | "move" | "delete"}`, params);
     }
+    if (entry.module === "recipes") {
+      return t(`activity.recipes.${entry.action as "create" | "update" | "delete" | "cooked"}`, params);
+    }
     if (entry.module === "shopping") {
       const quantity = entry.to ? ` (${entry.to} ${unitLabel(entry.unit, entry.to)})` : "";
       return t(`activity.shopping.${entry.action as "create" | "bought" | "dismiss" | "delete"}`, params) + quantity;
@@ -95,6 +98,8 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
         return { Icon: ShoppingBag, color: token.colorSuccess, bg: token.colorSuccessBg };
       case "undo":
         return { Icon: Undo2, color: token.colorTextSecondary, bg: token.colorFillTertiary };
+      case "cooked":
+        return { Icon: ChefHat, color: token.colorWarning, bg: token.colorWarningBg };
       case "dismiss":
         return { Icon: BellOff, color: token.colorTextSecondary, bg: token.colorFillTertiary };
       default: {

@@ -20,13 +20,52 @@ export interface DataExport {
   tables: Record<string, unknown[]>;
 }
 
-/** Todo lo que hay en la base, en un formato abierto y autodescriptivo. */
+// --- Archivos (fotos) dentro del JSON ----------------------------------------------
+// `JSON.stringify` convierte un Blob en `{}` sin avisar: las fotos se perderían. Se guardan
+// como `{ "$blob": "<base64>", "type": "image/webp" }` y se reconstruyen al importar.
+
+interface EncodedBlob {
+  $blob: string;
+  type: string;
+}
+
+function isEncodedBlob(value: unknown): value is EncodedBlob {
+  return typeof value === "object" && value !== null && typeof (value as EncodedBlob).$blob === "string";
+}
+
+async function encodeBlob(blob: Blob): Promise<EncodedBlob> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = "";
+  // Por partes: `String.fromCharCode(...bytes)` con una foto entera revienta la pila.
+  for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+  return { $blob: btoa(binary), type: blob.type };
+}
+
+function decodeBlob({ $blob, type }: EncodedBlob): Blob {
+  return new Blob([Uint8Array.from(atob($blob), (char) => char.charCodeAt(0))], { type });
+}
+
+async function encodeRow(row: unknown): Promise<unknown> {
+  if (typeof row !== "object" || row === null) return row;
+  const entries = await Promise.all(Object.entries(row).map(async ([key, value]) => [key, value instanceof Blob ? await encodeBlob(value) : value] as const));
+  return Object.fromEntries(entries);
+}
+
+function decodeRow(row: unknown): unknown {
+  if (typeof row !== "object" || row === null) return row;
+  return Object.fromEntries(Object.entries(row).map(([key, value]) => [key, isEncodedBlob(value) ? decodeBlob(value) : value]));
+}
+
+/** Todo lo que hay en la base (fotos incluidas), en un formato abierto y autodescriptivo. */
 export async function exportAllData(actor: Actor | null): Promise<DataExport> {
   assertCan(actor, "settings.data");
-  const tables: Record<string, unknown[]> = {};
+  const raw: Record<string, unknown[]> = {};
   await db.transaction("r", db.tables, async () => {
-    for (const table of db.tables) tables[table.name] = await table.toArray();
+    for (const table of db.tables) raw[table.name] = await table.toArray();
   });
+  // Fuera de la transacción: leer un Blob no es una operación de IndexedDB y la cerraría antes de tiempo.
+  const tables: Record<string, unknown[]> = {};
+  for (const [name, rows] of Object.entries(raw)) tables[name] = await Promise.all(rows.map(encodeRow));
   return { app: "OpenDomus", version: APP_VERSION, schemaVersion: db.verno, exportedAt: new Date().toISOString(), tables };
 }
 
@@ -70,7 +109,7 @@ export async function importAllData(actor: Actor | null, preview: ImportPreview)
     await staging.transaction("rw", staging.tables, async () => {
       for (const table of staging.tables) {
         const rows = data.tables[table.name];
-        if (rows?.length) await table.bulkPut(rows as never[]);
+        if (rows?.length) await table.bulkPut(rows.map(decodeRow) as never[]);
       }
     });
     staging.close();

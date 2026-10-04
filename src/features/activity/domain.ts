@@ -4,7 +4,7 @@
  */
 
 /** Qué tipo de cosa cambió. Cada módulo nuevo suma su valor acá. */
-export type ActivityModule = "inventory" | "storage" | "prices" | "members" | "calendar" | "shopping";
+export type ActivityModule = "inventory" | "storage" | "prices" | "members" | "calendar" | "shopping" | "recipes";
 
 export type ActivityAction =
   | "create"
@@ -22,7 +22,9 @@ export type ActivityAction =
   /** Compras: se marcó como comprado. */
   | "bought"
   /** Compras: se descartó una sugerencia. */
-  | "dismiss";
+  | "dismiss"
+  /** Recetas: alguien la cocinó (los ingredientes descontados quedan como consumos). */
+  | "cooked";
 
 export interface ActivityEntry {
   id: string;

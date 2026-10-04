@@ -7,7 +7,7 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 ## 🛠️ Arquitectura (offline-first y self-hosted)
 
 - **Cliente:** Next.js 16 + React 19, Ant Design 6 (tokens, sin Tailwind), framer-motion, lucide-react. Se instala como **PWA** y funciona sin conexión.
-- **Datos locales:** **Dexie.js** (IndexedDB). Cada cambio de esquema es una versión nueva con migración (`declareSchema` en `src/lib/db.ts`); hoy vamos por la **v7**. La misma cadena de migraciones actualiza los exports viejos al importarlos.
+- **Datos locales:** **Dexie.js** (IndexedDB). Cada cambio de esquema es una versión nueva con migración (`declareSchema` en `src/lib/db.ts`); hoy vamos por la **v8**. La misma cadena de migraciones actualiza los exports viejos al importarlos.
 - **Servidor / sincronización:** a definir (Node.js o Go + SQLite/PostgreSQL). Hasta que exista, los datos viven en cada dispositivo.
 - **Despliegue:** Docker en una NAS o servidor de la casa.
 
@@ -19,14 +19,14 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 1. ✅ **Base:** sistema de diseño, permisos, ajustes por perfil, navegación, historial de acciones, español e inglés.
 2. ✅ **Lugares e inventario:** recintos → contenedores (anidables) → productos, con color e ícono, etiquetas QR imprimibles y escaneo.
 3. ✅ **Precios:** historial por producto, el más barato y dónde, comparación online a pedido.
-4. ✅ **Consumo:** "Usé" con deshacer, consumo de los últimos 30 días y deshacer desde el historial → [especificación](#1-consumo-y-descuento-de-insumos). Falta "Cociné esto" (llega con Recetas).
+4. ✅ **Consumo:** "Usé" con deshacer, consumo de los últimos 30 días, deshacer desde el historial y "Cociné esto" desde las recetas → [especificación](#1-consumo-y-descuento-de-insumos).
 5. ✅ **Lista de compras:** "Para revisar" automático, lista con estimado, reposición al comprar y precio pagado → [especificación](#2-lista-de-compras-con-candidatos-automáticos).
 6. ✅ **PWA:** manifest, íconos, service worker con precache y aviso de versión nueva.
 
 ### 📍 Fase 2: Cocina y vida en común
 1. ✅ **Miembros de la familia** (alta, roles, avatar, cumpleaños) con **PIN, biometría y bloqueo automático**.
 2. ✅ **Calendario compartido** (semana/mes, repetición, participantes, cumpleaños automáticos) → [especificación](#5-calendario-compartido).
-3. **Comidas y recetas** con fotos y comentarios → [especificación](#3-comidas-y-recetas).
+3. ✅ **Comidas y recetas** con fotos, comentarios, "Cociné esto" y "Agregar lo que falta" → [especificación](#3-comidas-y-recetas).
 4. **Votaciones** (empezando por "¿qué comemos?") → [especificación](#4-votaciones).
 
 ### 📍 Fase 3: Cuentas claras y economía
@@ -59,6 +59,7 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 - **Consumo:** botón "Usé" en cada producto (con "Deshacer" en el aviso), consumo registrable en cualquier cantidad desde el detalle, y estadística de los últimos 30 días. Los cambios de cantidad se deshacen desde el historial durante 24 h: se revierte la diferencia, no se pisa lo que otros hicieron después.
 - **Lista de compras (`/compras`):** lo que cruza el mínimo entra en "Para revisar" (se suma con la cantidad que falta o se descarta, con "no volver a sugerir"); anotar con autocompletado vinculado al inventario; total estimado con el último precio y aviso de dónde está más barato; al marcar algo vinculado se repone el inventario en la misma transacción, y se puede registrar cuánto salió.
 - **PWA:** instalable (Ajustes → Acerca de, solo si el navegador lo permite), funciona sin conexión (páginas fijas y de cada contenedor precargadas), etiqueta "Sin conexión" en el header y aviso discreto cuando hay una versión nueva.
+- **Recetas (`/recetas`):** ingredientes vinculados al inventario (o texto libre), pasos, etiquetas, porciones. Cada receta dice si se puede cocinar con lo que hay (hay todo / falta poco / faltan cosas) y la lista se filtra por "se pueden hacer ya". "Cociné esto" muestra qué se descuenta y deja ajustarlo; "Agregar lo que falta" lo anota en la lista. Fotos comprimidas en el dispositivo (galería con portada) y comentarios con puntaje (caritas para los chicos). Detalle y editor en `/recetas/ver?id=` y `/recetas/editar?id=`: páginas fijas, sin rutas dinámicas.
 - **Datos:** exportar e **importar** JSON (con resumen y confirmación; los exports viejos se migran).
 - **Tests:** `npm test` cubre permisos, dominio de inventario, compras, historial, precios y traductor.
 - **Inventario (`/inventario`):** plano de la casa con recintos (color, ícono) y contenedores adentro, con barra de stock. Los contenedores se anidan hasta 3 niveles (placard → puerta → cajón; cama → cajones), cada uno con su etiqueta QR. Página por contenedor con productos, detalle, precios, etiqueta e historial. QR en `/c/<código>` y escáner en `/inventario/escanear`.
@@ -69,7 +70,7 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 
 ## 📐 Especificaciones de las próximas funcionalidades
 
-Consumo, lista de compras y calendario ya están hechos (ver Estado actual). Sigue: **recetas → votaciones**.
+Consumo, lista de compras, calendario y recetas ya están hechos (ver Estado actual). Sigue: **votaciones**.
 
 ### 1. Consumo y descuento de insumos
 
@@ -82,7 +83,7 @@ Consumo, lista de compras y calendario ya están hechos (ver Estado actual). Sig
   - Si un producto está en varios contenedores, se descuenta primero del que tenga menos stock (para ir vaciando).
   - Todo consumo se registra en el historial (acción `consume`) y se puede deshacer desde ahí.
 - **Modelo:** reutiliza `inventory`; agrega a `ActivityAction` el valor `consume`. Para estadísticas futuras alcanza con el historial (no hace falta otra tabla).
-- **Hecho:** consumo de un producto, aviso con deshacer, deshacer desde el historial y estadística de 30 días. **Pendiente:** "Cociné esto" y la regla de varios contenedores, que necesitan Recetas (hoy cada producto vive en un solo contenedor).
+- **Hecho:** consumo de un producto, aviso con deshacer, deshacer desde el historial, estadística de 30 días y "Cociné esto". **Pendiente:** la regla de varios contenedores (hoy cada producto vive en uno solo; haría falta agrupar productos iguales).
 - **Permisos:** `inventory.consume` (adultos y admin; los chicos pueden pedir permiso en una versión futura).
 
 ### 2. Lista de compras con candidatos automáticos
@@ -111,9 +112,9 @@ Consumo, lista de compras y calendario ya están hechos (ver Estado actual). Sig
 - **Cociné esto:** descuenta los ingredientes (ver [Consumo](#1-consumo-y-descuento-de-insumos)) escalados por porciones.
 - **Comentarios y valoraciones:** cada perfil puede comentar ("le puse menos sal") y puntuar; los chicos también pueden puntuar, con caritas.
 - **Fotos (offline):** se guardan como `Blob` en IndexedDB, comprimidas en el dispositivo antes de guardar (máximo ~1600 px, WebP/JPEG ~80 %), con miniatura aparte para las listas. Límite por foto y aviso de espacio usado en Ajustes. Nada se sube a ningún lado hasta que exista la sincronización.
-- **Modelo:**
-  - `Recipe { id, name, servings, minutes, steps[], tags[], coverPhotoId?, createdBy, createdAt }`
-  - `RecipeIngredient { recipeId, itemId?, name, quantity, unit }`
+- **Modelo (v8):**
+  - `Recipe { id, name, servings, minutes, ingredients[], steps[], tags[], coverPhotoId?, createdBy, createdAt, updatedAt }`
+  - Los ingredientes (`{ itemId?, name, quantity, unit }`) viven **dentro** de la receta: se guardan y se exportan juntos, siempre coherentes. Vinculados: cantidad entera en la unidad del producto; al escalar porciones se redondea para arriba.
   - `Photo { id, ownerType, ownerId, blob, thumb, width, height, createdAt }`
   - `Comment { id, ownerType, ownerId, authorId, text, rating?, createdAt }`
   - `Photo` y `Comment` son **genéricos** (`ownerType` + `ownerId`): sirven después para la bóveda, los productos, etc.
@@ -152,7 +153,7 @@ Consumo, lista de compras y calendario ya están hechos (ver Estado actual). Sig
 - **Historial:** cada módulo suma su `ActivityModule` y registra sus acciones en la transacción del servicio.
 - **Búsqueda (`Ctrl+K`):** recetas, votaciones abiertas y eventos aparecen como resultados.
 - **Idiomas:** todo texto nuevo entra por el diccionario (`es` es la fuente de verdad).
-- **Exportación:** el JSON de Ajustes incluye las tablas nuevas; las fotos van en un `.zip` aparte.
+- **Exportación:** el JSON de Ajustes incluye todas las tablas; las fotos viajan adentro en base64 (`{ "$blob": …, "type": … }`) y se reconstruyen al importar.
 - **Para chicos:** cada módulo define qué ve y qué puede hacer un perfil infantil.
 
 ---

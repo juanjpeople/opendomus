@@ -1,9 +1,10 @@
 "use client";
 
-import { Languages, ListPlus, LogOut, Monitor, Moon, Package, PanelLeft, PanelLeftClose, PanelLeftDashed, ScanLine, Sun, type LucideIcon } from "lucide-react";
+import { ChefHat, Languages, ListPlus, LogOut, Monitor, Moon, Package, PanelLeft, PanelLeftClose, PanelLeftDashed, ScanLine, Sun, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { useAllInventoryItems } from "@/features/inventory/hooks";
+import { useRecipeNames } from "@/features/recipes/hooks";
 import { containerAppearance } from "@/features/storage/domain";
 import { useContainers } from "@/features/storage/hooks";
 import { useSetPreference } from "@/hooks/usePreferences";
@@ -16,7 +17,7 @@ import { useVisibleRoutes } from "./Navigation";
 
 export interface Command {
   id: string;
-  group: "recent" | "pages" | "containers" | "items" | "actions";
+  group: "recent" | "pages" | "containers" | "items" | "recipes" | "actions";
   label: string;
   icon: LucideIcon;
   /** Texto extra para la búsqueda (no se muestra). */
@@ -38,6 +39,7 @@ export function useCommands(): Command[] {
   const recent = useNavigationStore((s) => (user ? s.recent[user.id] : undefined));
   const containers = useContainers();
   const items = useAllInventoryItems();
+  const recipes = useRecipeNames();
 
   return useMemo(() => {
     const visible = new Set(routes.map((route) => route.id));
@@ -47,7 +49,7 @@ export function useCommands(): Command[] {
     // Un reciente puede ser una página o un contenedor puntual (/inventario/<id>).
     const recentCommands: Command[] = (recent ?? []).flatMap((visit): Command[] => {
       const route = findRoute(visit.href);
-      if (!route || !visible.has(route.id)) return [];
+      if (!route || !visible.has(route.id) || route.needsId) return [];
       const container = containerById.get(visit.href.split("/")[2] ?? "");
       if (route.id === "inventory" && visit.href !== route.href) {
         if (!container) return [];
@@ -84,7 +86,18 @@ export function useCommands(): Command[] {
         })
       : [];
 
-    const pageCommands: Command[] = routes.map((route) => ({
+    const recipeCommands: Command[] = visible.has("recipes")
+      ? (recipes ?? []).map((recipe) => ({
+          id: `recipe:${recipe.id}`,
+          group: "recipes",
+          label: recipe.name,
+          icon: ChefHat,
+          keywords: recipe.keywords,
+          run: () => router.push(`/recetas/ver?id=${recipe.id}`),
+        }))
+      : [];
+
+    const pageCommands: Command[] = routes.filter((route) => !route.needsId).map((route) => ({
       id: `page:${route.id}`,
       group: "pages",
       label: t(route.labelKey),
@@ -117,6 +130,6 @@ export function useCommands(): Command[] {
       { id: "session:signout", group: "actions", label: t("palette.actions.signOut"), icon: LogOut, run: signOut },
     ];
 
-    return [...recentCommands, ...pageCommands, ...containerCommands, ...itemCommands, ...actionCommands];
-  }, [routes, recent, containers, items, user, t, locale, router, setPreference, signOut]);
+    return [...recentCommands, ...pageCommands, ...containerCommands, ...itemCommands, ...recipeCommands, ...actionCommands];
+  }, [routes, recent, containers, items, recipes, user, t, locale, router, setPreference, signOut]);
 }

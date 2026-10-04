@@ -11,10 +11,15 @@ import { NotFoundError } from "@/lib/errors";
 import { createId } from "@/lib/id";
 import { parseNewShoppingItem, parseShoppingQuantity, SHOPPING_LIMITS, suggestedQuantity, type NewShoppingItem } from "./domain";
 
-const LIST_TABLES = () => [db.shoppingList, db.shoppingCandidates, db.activity, db.inventory];
+/** Tablas que toca anotar en la lista. Otros servicios (recetas) las suman a su transacción. */
+export const LIST_TABLES = () => [db.shoppingList, db.shoppingCandidates, db.activity, db.inventory];
 
-/** Anota algo en la lista. Si ese producto ya estaba pendiente, suma la cantidad en vez de repetirlo. */
-async function addWithin(actor: Actor, input: NewShoppingItem) {
+/**
+ * Anota algo en la lista. Si ese producto ya estaba pendiente, suma la cantidad en vez de repetirlo.
+ * SOLO para servicios, dentro de una transacción que incluya `LIST_TABLES`. Valida la entrada.
+ */
+export async function addToListWithin(actor: Actor, raw: NewShoppingItem) {
+  const input = parseNewShoppingItem(raw);
   const existing = input.inventoryItemId
     ? await db.shoppingList.where("inventoryItemId").equals(input.inventoryItemId).filter((entry) => entry.status === "pending").first()
     : undefined;
@@ -41,7 +46,7 @@ export async function addShoppingItem(actor: Actor | null, input: NewShoppingIte
   const data = parseNewShoppingItem(input);
   await db.transaction("rw", LIST_TABLES(), async () => {
     if (data.inventoryItemId && !(await db.inventory.get(data.inventoryItemId))) throw new NotFoundError("errors.notFound.item");
-    await addWithin(actor, data);
+    await addToListWithin(actor, data);
   });
   await pruneActivity();
 }
@@ -57,7 +62,7 @@ export async function confirmSuggestions(actor: Actor | null, candidateIds: stri
         await db.shoppingCandidates.delete(candidate.id);
         continue;
       }
-      await addWithin(actor, { name: item.name, quantity: suggestedQuantity(item), unit: item.unit, inventoryItemId: item.id });
+      await addToListWithin(actor, { name: item.name, quantity: suggestedQuantity(item), unit: item.unit, inventoryItemId: item.id });
     }
   });
   await pruneActivity();

@@ -1,9 +1,12 @@
 import Dexie, { type EntityTable, type Transaction } from "dexie";
 import type { ActivityEntry } from "@/features/activity/domain";
 import type { CalendarEvent } from "@/features/calendar/domain";
+import type { Comment } from "@/features/comments/domain";
 import type { InventoryItem } from "@/features/inventory/domain";
+import type { Photo } from "@/features/media/domain";
 import { DEFAULT_MEMBERS, type Member } from "@/features/members/domain";
 import type { PriceRecord } from "@/features/prices/domain";
+import type { Recipe } from "@/features/recipes/domain";
 import type { ShoppingCandidate, ShoppingListItem } from "@/features/shopping/domain";
 import type { Container, Space } from "@/features/storage/domain";
 import { buildDefaultStorage } from "@/features/storage/seed";
@@ -26,6 +29,9 @@ export const db = new Dexie("OpenDomusDB") as Dexie & {
   prices: EntityTable<PriceRecord, "id">;
   members: EntityTable<Member, "id">;
   events: EntityTable<CalendarEvent, "id">;
+  recipes: EntityTable<Recipe, "id">;
+  photos: EntityTable<Photo, "id">;
+  comments: EntityTable<Comment, "id">;
 };
 
 /**
@@ -123,6 +129,14 @@ export function declareSchema(target: Dexie, upTo = Infinity) {
           delete entry.isCompleted;
         });
     });
+
+  // v8: recetas (con sus ingredientes adentro), y fotos y comentarios genéricos (de cualquier
+  // cosa: `ownerType` + `ownerId`). Las fotos son Blobs comprimidos en el dispositivo.
+  if (upTo >= 8) target.version(8).stores({
+    recipes: "id, name, updatedAt",
+    photos: "id, [ownerType+ownerId], createdAt",
+    comments: "id, [ownerType+ownerId], createdAt",
+  });
 }
 
 declareSchema(db);

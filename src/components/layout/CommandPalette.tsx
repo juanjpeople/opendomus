@@ -17,7 +17,7 @@ function normalize(text: string) {
 function filterCommands(commands: Command[], query: string) {
   const words = normalize(query).split(/\s+/).filter(Boolean);
   // Sin búsqueda, contenedores y productos no se listan: son muchos y se encuentran escribiendo.
-  if (words.length === 0) return commands.filter((command) => command.group !== "containers" && command.group !== "items");
+  if (words.length === 0) return commands.filter((command) => !["containers", "items", "recipes"].includes(command.group));
   // Con búsqueda, los recientes se ocultan (ya aparecen como páginas).
   return commands.filter((command) => {
     if (command.group === "recent") return false;

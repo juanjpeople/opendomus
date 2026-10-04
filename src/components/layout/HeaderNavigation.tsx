@@ -17,8 +17,11 @@ export function HeaderNavigation() {
   const pathname = usePathname();
   const screens = Grid.useBreakpoint();
   const { canGoBack, canGoForward, back, forward } = useHistoryNavigation();
-  const trail = getRouteTrail(findRoute(pathname));
   const tail = useBreadcrumbStore((s) => s.tail);
+  const fullTrail = getRouteTrail(findRoute(pathname));
+  // En páginas con `?id=` ("Receta", "Editar receta") el nombre real lo pone la página: el
+  // genérico se omite para no leer "Recetas / Receta / Tortilla de papas".
+  const trail = tail.length > 0 && fullTrail.at(-1)?.needsId ? fullTrail.slice(0, -1) : fullTrail;
   const touchStyle = !screens.md ? { width: 44, height: 44 } : undefined;
 
   return (

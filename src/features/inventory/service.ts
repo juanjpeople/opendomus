@@ -107,6 +107,18 @@ export async function consumeInventoryItem(actor: Actor | null, id: string, amou
 }
 
 /**
+ * Consumo dentro de la transacción de otro servicio (ej. "Cociné esto"), que debe incluir
+ * `QUANTITY_TABLES`. Mismas reglas que `consumeInventoryItem`; si el producto ya no existe, no hace nada.
+ */
+export async function consumeWithin(actor: Actor, id: string, amount: number): Promise<ConsumptionPlan | null> {
+  const item = await db.inventory.get(id);
+  if (!item) return null;
+  const plan = planConsumption(item.quantity, amount);
+  if (plan.consumed > 0) await writeQuantity(actor, item, plan.quantity, "consume");
+  return plan;
+}
+
+/**
  * Suma lo comprado al inventario. SOLO para otros servicios (la lista de compras), dentro de
  * su transacción, que debe incluir `QUANTITY_TABLES`. Devuelve cuánto se sumó de verdad.
  */

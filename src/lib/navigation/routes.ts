@@ -1,4 +1,4 @@
-import { Boxes, CalendarDays, House, Palette, ScanLine, Settings, ShoppingCart, Sparkles, Users, type LucideIcon } from "lucide-react";
+import { Boxes, CalendarDays, ChefHat, House, Palette, ScanLine, Settings, ShoppingCart, Sparkles, Users, type LucideIcon } from "lucide-react";
 import type { MessageKey } from "@/i18n/translate";
 import type { Permission } from "@/lib/auth/permissions";
 
@@ -16,6 +16,8 @@ export interface AppRoute {
   external?: boolean;
   /** No aparece en el menú (sí en la búsqueda y en las migas). */
   hidden?: boolean;
+  /** Necesita `?id=`: sin él no sirve, así que no va a la búsqueda ni a "Recientes". */
+  needsId?: boolean;
 }
 
 /**
@@ -29,6 +31,10 @@ export const APP_ROUTES: AppRoute[] = [
   { id: "scan", href: "/inventario/escanear", labelKey: "nav.routes.scan", icon: ScanLine, permission: "inventory.view", section: "main", parent: "inventory", hidden: true },
   { id: "calendar", href: "/calendario", labelKey: "nav.routes.calendar", icon: CalendarDays, permission: "calendar.view", section: "main" },
   { id: "compras", href: "/compras", labelKey: "nav.routes.compras", icon: ShoppingCart, permission: "shopping.view", section: "main" },
+  { id: "recipes", href: "/recetas", labelKey: "nav.routes.recipes", icon: ChefHat, permission: "recipes.view", section: "main" },
+  // Detalle y editor con `?id=`: páginas fijas (sin rutas dinámicas), así la app se puede publicar como sitio estático.
+  { id: "recipe", href: "/recetas/ver", labelKey: "nav.routes.recipe", icon: ChefHat, permission: "recipes.view", section: "main", parent: "recipes", hidden: true, needsId: true },
+  { id: "recipeEdit", href: "/recetas/editar", labelKey: "nav.routes.recipeEdit", icon: ChefHat, permission: "recipes.manage", section: "main", parent: "recipes", hidden: true, needsId: true },
   { id: "family", href: "/familia", labelKey: "nav.routes.family", icon: Users, section: "system" },
   { id: "settings", href: "/ajustes", labelKey: "nav.routes.settings", icon: Settings, section: "system" },
   { id: "design", href: "/design", labelKey: "nav.routes.design", icon: Palette, permission: "settings.design", section: "system" },

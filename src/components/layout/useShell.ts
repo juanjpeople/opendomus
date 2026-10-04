@@ -65,7 +65,7 @@ export function useNavigationTracking() {
 
   // Se guarda la URL real (ej. /inventario/<id>), así "Recientes" lleva al contenedor exacto.
   useEffect(() => {
-    if (user && route) visit(user.id, pathname);
+    if (user && route && !route.needsId) visit(user.id, pathname);
   }, [user, route, pathname, visit]);
 
   useEffect(() => {

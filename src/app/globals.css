@@ -56,3 +56,11 @@ body {
     print-color-adjust: exact;
   }
 }
+
+/* Galería de fotos: la miniatura llena su casilla cuadrada (antd Image es inline por defecto). */
+.od-photo-tile,
+.od-photo-tile .ant-image-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
