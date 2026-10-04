@@ -66,12 +66,19 @@ for the user to click "Update". Installing requires HTTPS (or `localhost`).
 
 Preview the build locally with `npx serve out`.
 
-### Deploy (Cloudflare Pages)
+### Deploy (Cloudflare)
 
-1. Push the repo to GitHub and create a Cloudflare Pages project from it.
-2. Build command: `npm run build` · Output directory: `out` · Environment variable
-   `NODE_VERSION=24`.
-3. Every push to `main` deploys; PRs get preview URLs.
+`wrangler.jsonc` deploys `out/` as static assets (no server code, so Cloudflare doesn't try
+to build a Next.js server with OpenNext). In the Cloudflare dashboard, connect the GitHub
+repo (Workers & Pages → Create → Import a repository) and set:
+
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy`
+- Environment variable: `NODE_VERSION=24`
+
+Every push to `main` deploys. `public/_redirects` sends printed QR links (`/c/<code>`) to
+`/c?code=…`, and unknown paths get `404.html`. Check the config locally with
+`npm run build && npx wrangler dev`.
 
 Any static host works the same way (Netlify, GitHub Pages, nginx/Caddy on a NAS): serve
 `out/`. Household data stays on each device until sync exists (see `OPENDOMUS_PLAN.md`).

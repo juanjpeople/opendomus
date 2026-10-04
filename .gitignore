@@ -47,3 +47,6 @@ next-env.d.ts
 /out/
 /playwright-report/
 /test-results/
+
+# wrangler (Cloudflare) local
+/.wrangler/

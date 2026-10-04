@@ -1,0 +1,14 @@
+// Cloudflare (Workers con archivos estáticos): sirve `out/`, el sitio estático que genera `npm run build`.
+// Sin código de servidor: la app vive en el navegador. Con este archivo, Cloudflare no intenta
+// armar un servidor de Next (OpenNext), que esta app no usa.
+// En el panel: Build command `npm run build` · Deploy command `npx wrangler deploy`.
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "opendomus",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./out",
+    // Páginas inexistentes → 404.html, que además traduce URLs viejas (los QR impresos /c/<código>).
+    "not_found_handling": "404-page",
+  },
+}
