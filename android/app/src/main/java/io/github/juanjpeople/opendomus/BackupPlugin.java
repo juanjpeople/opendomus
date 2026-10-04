@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 /** Writes only to a destination explicitly selected by the user. No storage permission or cache copy. */
 @CapacitorPlugin(name = "Backup")
 public class BackupPlugin extends Plugin {
-    private boolean pending;
+    private volatile boolean pending;
 
     @PluginMethod
     public void save(PluginCall call) {
