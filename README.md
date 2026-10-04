@@ -127,7 +127,7 @@ reintentos hasta volver a entrar o reiniciar el motor con una sesión válida.
 
 Para saber qué falta configurar, ejecutar `npm run admin -- diagnostico`. Funciona
 sin cuenta doméstica ni tokens: revisa el formato del origen, presencia de variables
-y disponibilidad de `cloudflared`, sin contactar la red ni mostrar sus valores.
+y disponibilidad de `cloudflared`, sin contactar la red ni mostrar secretos; indica el URL privado si el origen está configurado.
 No valida credenciales, políticas, OTP o MFA. No hay que registrarse en la app pública
 para convertirse en operador; el acceso depende de la configuración privada siguiente.
 `OPENDOMUS_API` debe ser solo el origen del gateway (`https://HOST`), sin rutas,
@@ -165,18 +165,21 @@ El sitio público sigue accesible para las familias; no se protege todo el sitio
 3. Cargar los cuatro valores devueltos (`OPERATOR_HOST`, `OPERATOR_ACCESS_ISSUER`,
    `OPERATOR_ACCESS_AUD`, `OPERATOR_EMAILS`) en **ambos** Workers, mediante
    `wrangler secret put NOMBRE` y el mismo comando con `--config wrangler.operator.jsonc`.
-   Mantener `ADMIN_TOKEN` en el Worker principal y en la terminal del operador. Para el panel, guardar el mismo valor como `OPERATOR_BROWSER_TOKEN` en el gateway; nunca en variables de build, HTML o JavaScript.
+   Mantener `ADMIN_TOKEN` en el Worker principal; configurarlo también en la terminal solo si se usa el CLI de operación. Para el panel, guardar el mismo valor como `OPERATOR_BROWSER_TOKEN` en el gateway; nunca en variables de build, HTML o JavaScript.
    Nunca configurar `OPERATOR_LOCAL_TEST` en producción.
 4. Aplicar migraciones pendientes manualmente y compilar: `npm run build` y `npm run build:operator`. Desplegar el
    Worker principal con `npx wrangler deploy` y el gateway con
    `npx wrangler deploy --config wrangler.operator.jsonc`. Si Cloudflare necesita crear el
    Worker antes de asociarlo con Access, crearlo sin los cuatro valores: rechaza todo hasta
    terminar la política. Confirmar en Domains & Routes que Access cubra su workers.dev.
-5. Instalar `cloudflared` desde Cloudflare y configurar en el entorno o `.env.admin`
-   (ignorado por Git): `OPENDOMUS_API=https://HOST-DEL-GATEWAY` y
-   `OPENDOMUS_ADMIN_TOKEN`. Ejecutar `npm run admin -- login`, ingresar el OTP recibido
-   y enrolar/completar el segundo factor. No pegar tokens, OTP ni códigos de recuperación
-   en chats o issues. El login usa la identidad de Access; no crea una cuenta doméstica.
+5. Abrir `https://HOST-DEL-GATEWAY/admin` en el navegador e ingresar con el correo
+   autorizado, OTP y segundo factor. **No requiere `cloudflared`, cuenta doméstica ni
+   token maestro en el navegador.** El CLI de habilitación muestra esa dirección;
+   desplegar y configurar Access es lo que la vuelve utilizable.
+   Solo para operar también por terminal: instalar `cloudflared`, configurar
+   `OPENDOMUS_API=https://HOST-DEL-GATEWAY` y `OPENDOMUS_ADMIN_TOKEN` en el entorno o
+   `.env.admin` (ignorado por Git), y ejecutar `npm run admin -- login`.
+   No pegar tokens, OTP ni códigos de recuperación en chats o issues.
 6. Verificar correo permitido + MFA, rechazo de otro correo, token vencido, peticiones
    directas al hostname público y `/admin` ausente. **OTP/MFA no se considera operativo
    hasta completar estas pruebas reales.** Revocar sesiones de Access al retirar un operador

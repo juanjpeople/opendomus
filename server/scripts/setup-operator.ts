@@ -35,6 +35,7 @@ async function main() {
     console.log(JSON.stringify({
       action: "create-access-application",
       host: input.host,
+      panelUrl: `https://${input.host}/admin`,
       team: input.team,
       allowedEmails: [...new Set(input.emails)],
       authentication: "Email OTP + Security key o Authenticator app; segundo factor en cada login",
@@ -72,7 +73,7 @@ async function main() {
   const otp = providers.find((provider) => provider.type === "onetimepin") ?? await api<{ id: string }>("identity_providers", { name: "Email OTP", type: "onetimepin", config: {} });
   const app = await api<{ id: string; aud: string }>("apps", { ...application, allowed_idps: [otp.id] });
   if (!app.aud) throw new Error("Access creó la aplicación pero no devolvió audiencia. Revisala en el dashboard antes de configurar Workers.");
-  console.log(JSON.stringify({ applicationId: app.id, OPERATOR_HOST: input.host, OPERATOR_ACCESS_ISSUER: `https://${org.auth_domain}`, OPERATOR_ACCESS_AUD: app.aud, OPERATOR_EMAILS: input.emails.join(",") }, null, 2));
+  console.log(JSON.stringify({ applicationId: app.id, panelUrl: `https://${input.host}/admin`, OPERATOR_HOST: input.host, OPERATOR_ACCESS_ISSUER: `https://${org.auth_domain}`, OPERATOR_ACCESS_AUD: app.aud, OPERATOR_EMAILS: input.emails.join(",") }, null, 2));
   console.log("Aplicación configurada. Falta cargar estos valores en ambos Workers y probar OTP, segundo factor y rechazo de otro usuario. No se desplegó ningún Worker.");
 }
 
