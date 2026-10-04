@@ -1,6 +1,6 @@
 # OpenDomus: plan para llevarla a producción
 
-> Estado: ✅ Etapa 0 · ✅ Etapa 1 (falta solo el monorepo, que se hace al arrancar la Etapa 2). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
+> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida; sigue: monorepo, servidor y cuentas). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
 > Mantener este archivo al día al cerrar cada paso.
 
 ## Contexto
@@ -23,22 +23,68 @@ Lo que juega a favor:
 
 ---
 
-## Decisiones de arquitectura (recomendadas)
+## Decisiones de arquitectura
 
-| Tema | Decisión | Por qué |
-|---|---|---|
-| Servidor | **TypeScript: Hono + Drizzle + Better Auth**, en `apps/server` | Reutiliza `domain.ts` y `permissions.ts` sin reescribir nada. Corre en Raspberry Pi (Docker arm64 o binario de Bun). |
-| Base del servidor | **SQLite** autoalojado / **Postgres** en la nube (Drizzle soporta las dos) | Liviano en la Raspberry, escalable en la nube. |
-| Login | Better Auth: email + contraseña con recuperación, magic link, Google, GitHub y passkeys | Cubre los 5 métodos que pediste con plugins oficiales. |
-| Casa e invitaciones | Plugin `organization` de Better Auth: casa = organización; invitación por email, link o QR, con rol (admin/adulto/niño) | Es exactamente "el admin manda invites". |
-| Miembros sin cuenta | Un `Member` puede tener `userId` o no. Los chicos sin email siguen como perfil con PIN en la tablet de la casa | No obliga a nadie a tener email. |
-| Sincronización | **Offline-first por comandos**: el servicio escribe local y encola el comando (outbox) → el servidor lo vuelve a ejecutar con el mismo dominio y permisos y le asigna un `rev` → los clientes bajan cambios con `?since=rev` y reaplican lo pendiente. Avisos en tiempo real por SSE | Las cantidades son deltas (dos personas usando leche a la vez no se pisan). Es el modelo de Replicache, hecho a medida. |
-| Fotos | Almacenamiento compatible con S3 (o disco local en el autoalojado); se bajan bajo demanda | Las fotos no viajan en la sincronización de datos. |
-| Web | `output: "export"` (sitio estático) → Cloudflare Pages en la nube; en el autoalojado lo sirve el mismo servidor | Mismo build para la web, la PWA y Android. |
-| Android | **Capacitor** sobre el build estático | Plugins nativos (cámara para QR, biometría, push, deep links de los QR). |
-| Suscripciones | Modelo de **entitlements por casa** + proveedor intercambiable (adaptador). Ver "Decisiones abiertas" | Desde Argentina, Stripe no está disponible directo: conviene no atarse a un proveedor todavía. |
-| ESP32 | Cliente, no servidor: **tokens de dispositivo** con permisos acotados y una API HTTP simple (botón "se acabó", pantalla e-ink con la lista, sensores) | Un ESP32 no puede alojar el servidor. La Raspberry es el mínimo para eso. |
-| Repositorio | Monorepo **npm workspaces**: `apps/web`, `apps/server`, `packages/core` (dominio, permisos, i18n, protocolo de sync) | Un solo lugar para las reglas. |
+> Actualizadas el 2026-10-04: cifrado de extremo a extremo, todo en Cloudflare, tres niveles de privacidad. El servidor local (Raspberry) y el ESP32 quedan para más adelante.
+
+### Cómo entra cada persona (✅ hecho: landing + `/empezar`)
+
+1. La primera vez en un dispositivo se ve la **landing**; "Empezar" lleva a **/empezar**.
+2. Tres caminos: **Crear mi casa** (admin, nube), **Unirme a una casa** (invitación por link o QR) o **Probar en este dispositivo** (sin cuenta, como hasta ahora).
+3. "¿Quién está en casa?" queda para dispositivos compartidos (la tablet de la cocina).
+4. Siempre se ve **dónde vive la casa**: el indicador "Este dispositivo" o "Nube cifrada" (abajo del menú, en el selector de perfiles y en Ajustes → Datos). Implementado en `src/store/useDeviceStore.ts` (`mode`: `unset` | `local` | `cloud`).
+
+### Seguridad: cifrado de extremo a extremo (E2EE)
+
+La nube guarda solo datos cifrados. Ni el servidor, ni Cloudflare, ni quien los comprometa pueden leer una casa.
+
+- **Claves por alcance**: cada casa tiene una clave para **Familia**, otra para **Adultos** y cada persona una para **Privado** (simétricas, AES-256-GCM).
+- **Claves de cada persona**: un par de claves por usuario (X25519 para recibir claves, Ed25519 para firmar cambios). Las claves de alcance se le entregan cifradas con su clave pública.
+- **Login sin que el servidor vea la contraseña**: de la contraseña se derivan, en el dispositivo, dos claves distintas (PBKDF2/Argon2 + HKDF). Una sirve para autenticarse ante el servidor; la otra, para abrir las claves de la persona. El servidor nunca recibe la contraseña ni la segunda clave.
+- **Varios dispositivos por persona**: un dispositivo nuevo se habilita con la contraseña, con la passkey/huella (extensión PRF de WebAuthn) o aprobándolo desde otro dispositivo (QR). Hay lista de dispositivos y se pueden revocar.
+- **Sacar a alguien de la casa** rota las claves de los alcances que tenía: no lee nada nuevo.
+- **Recuperación**:
+  - un **kit de recuperación** (código para imprimir) abre lo privado;
+  - lo compartido, otro miembro (el admin) te lo vuelve a entregar;
+  - sin kit ni otro dispositivo, lo privado no se puede recuperar (es el precio de que nadie más pueda leerlo, y se explica antes de crear la cuenta).
+- Login con Google, GitHub o enlace mágico prueba **quién sos**; para abrir los datos hace falta además la passkey, la clave de cifrado o la aprobación desde otro dispositivo.
+
+### Privacidad: tres niveles para cada cosa
+
+**Familia** (todos), **Adultos** (finanzas, regalos sorpresa) y **Privado** (solo yo). Cada lista, receta, evento o proyecto tiene su nivel (por defecto, Familia). Una página de **Privacidad** muestra qué se comparte con quién.
+
+### Nube en Cloudflare (plan gratuito para empezar)
+
+| Pieza | Para qué |
+|---|---|
+| **Workers** (Hono + Better Auth) | API: cuentas, casas, invitaciones, dispositivos, sincronización. |
+| **D1** (SQLite) | Usuarios, casas, membresías, claves cifradas, registro de cambios cifrados. |
+| **Durable Objects** (uno por casa) | Orden de los cambios y aviso en tiempo real (WebSocket). Más adelante, el modo party. |
+| **R2** | Fotos cifradas. |
+| **Workers con archivos estáticos** | La app (ya publicada). |
+
+El servidor es TypeScript y comparte `packages/core` (dominio, permisos, protocolo) con la app. Más adelante el mismo código corre en una Raspberry (Node + SQLite).
+
+### Sincronización con E2EE
+
+El servidor no puede ejecutar el dominio sobre datos que no lee. Por eso la regla pasa al cliente:
+
+- cada cambio es una **operación cifrada y firmada** (ej. "ajustar Leche −1"), con metadatos en claro mínimos (tipo de operación, alcance, autor) para que el servidor autorice a grandes rasgos (un chico no puede escribir en "Adultos");
+- el Durable Object de la casa le asigna un número de orden y la reparte;
+- cada dispositivo aplica las operaciones en ese orden con el **mismo `domain.ts`** y verifica firma y permisos con `permissions.ts`;
+- las cantidades son deltas (dos consumos simultáneos no se pisan); en ediciones gana la última por campo; borrar gana sobre editar;
+- local primero: se escribe en IndexedDB al instante y se sube cuando hay conexión.
+
+### Resto (sin cambios)
+
+| Tema | Decisión |
+|---|---|
+| Web | Sitio estático (`output: "export"`), ✅ publicado en Cloudflare. |
+| Android | **Capacitor** sobre el build estático. |
+| Suscripciones | Entitlements por casa + proveedor intercambiable (ver "Decisiones abiertas"). |
+| Repositorio | Monorepo npm workspaces: `apps/web`, `apps/server`, `packages/core`. |
+| Autoalojado y ESP32 | Más adelante (Etapa 4): el mismo servidor en Docker; el ESP32 como cliente con token de dispositivo. |
+| Multimedia y modo party | Fase 6: contenido desde Jellyfin (en casa) o desde la nube propia (R2); el modo party usa el canal en tiempo real de la casa (play/pausa/salto sincronizados). |
 
 ---
 
@@ -89,7 +135,7 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
 7. ✅ **Deploy** en **Cloudflare** (Workers con archivos estáticos, `wrangler.jsonc`) (sigue siendo local-first; sirve para probar en el celular por HTTPS).
 8. **Monorepo**: mover a `apps/web` y extraer `packages/core` (dominio, permisos, i18n). Sin cambiar comportamiento.
 
-## Etapa 2: servidor, cuentas, casas e invitaciones
+## Etapa 2: nube (Cloudflare), cuentas, casas, invitaciones y cifrado
 
 - `apps/server`:
   - Hono + Better Auth (email y contraseña, magic link, Google, GitHub, passkeys) + Drizzle.

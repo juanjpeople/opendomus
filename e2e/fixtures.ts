@@ -1,8 +1,9 @@
 import { expect, test as base, type Page } from "@playwright/test";
 
-/** Entra como Administrador en una casa nueva (cada test tiene su propio navegador, sin datos). */
+/** Entra como Administrador en una casa nueva de este dispositivo (cada test tiene su propio navegador, sin datos). */
 async function signIn(page: Page) {
-  await page.goto("/");
+  await page.goto("/empezar");
+  await page.getByRole("button", { name: "Empezar acá" }).click();
   await page.getByText("Administrador", { exact: true }).first().click();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 }

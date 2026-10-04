@@ -135,7 +135,7 @@ export function useCommands(): Command[] {
         : []),
     ];
 
-    const pageCommands: Command[] = routes.filter((route) => !route.needsId).map((route) => ({
+    const pageCommands: Command[] = routes.filter((route) => !route.needsId && !(route.external && route.hidden)).map((route) => ({
       id: `page:${route.id}`,
       group: "pages",
       label: t(route.labelKey),

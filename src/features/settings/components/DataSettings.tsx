@@ -1,9 +1,11 @@
 "use client";
 
-import { Alert, App, Button, Flex, Input, Modal, Progress, Typography, theme } from "antd";
-import { Download, Eraser, HardDrive, RotateCcw, TriangleAlert, Upload } from "lucide-react";
+import { Alert, App, Button, Flex, Input, Modal, Progress, Tag, Typography, theme } from "antd";
+import { Cloud, Download, Eraser, HardDrive, RotateCcw, TriangleAlert, Upload } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Can } from "@/components/auth/Can";
+import { DataModeBadge } from "@/components/layout/DataModeBadge";
+import { IconTile } from "@/components/ui";
 import { useResetPreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n";
 import { useCurrentUser } from "@/lib/auth/session";
@@ -100,7 +102,21 @@ export function DataSettings() {
 
   return (
     <Flex vertical gap={8}>
-      <Alert type="success" showIcon icon={<HardDrive />} title={t("settings.data.localNotice")} />
+      {/* Dónde vive la casa: lo primero que se ve (a esto lleva el indicador del menú). */}
+      <Flex
+        gap={14}
+        align="flex-start"
+        style={{ padding: 16, borderRadius: token.borderRadiusLG, border: `1px solid ${token.colorBorderSecondary}`, background: token.colorFillQuaternary }}
+      >
+        <IconTile icon={HardDrive} color="orange" size={44} />
+        <Flex vertical gap={6} style={{ minWidth: 0, flex: 1 }}>
+          <Flex align="center" gap={8} wrap>
+            <Typography.Text strong>{t("dataMode.title")}</Typography.Text>
+            <DataModeBadge />
+          </Flex>
+          <Typography.Text type="secondary">{t("dataMode.localText")}</Typography.Text>
+        </Flex>
+      </Flex>
       {estimate && estimate.quota > 0 && (
         <div style={{ paddingBlock: 8 }}>
           <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
@@ -116,6 +132,12 @@ export function DataSettings() {
             {t("settings.data.export.button")}
           </Button>
         ))}
+      </SettingRow>
+
+      <SettingRow label={t("dataMode.cloudSoon")} description={t("dataMode.cloudSoonText")}>
+        <Tag color="processing" icon={<Cloud />} style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
+          {t("onboarding.soon")}
+        </Tag>
       </SettingRow>
 
       <SettingRow label={t("settings.data.import.title")} description={t("settings.data.import.text")}>

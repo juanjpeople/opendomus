@@ -131,6 +131,7 @@ export const es = {
       inventory: "Inventario",
       scan: "Escanear QR",
       container: "Contenedor",
+      start: "Empezar",
       compras: "Compras",
       recipes: "Recetas",
       recipe: "Receta",
@@ -853,6 +854,54 @@ export const es = {
     title: "No encontramos esta página",
     text: "Puede que el enlace sea viejo o que se haya borrado lo que mostraba.",
   },
+  onboarding: {
+    title: "¿Cómo querés empezar?",
+    subtitle: "Podés crear la casa de tu familia, sumarte a una que ya existe o probar sin cuenta en este dispositivo.",
+    soon: "Muy pronto",
+    soonButton: "Estamos terminándolo",
+    back: "Volver",
+    values: "Nuestros valores",
+    security: {
+      title: "Tu casa, tus datos",
+      text: "En la nube, tu casa se va a guardar cifrada de extremo a extremo: solo tu familia puede leerla, ni siquiera OpenDomus. Vos elegís qué se comparte con todos, qué solo con los adultos y qué es solo tuyo.",
+    },
+    choices: {
+      create: {
+        title: "Crear mi casa",
+        text: "Sos quien administra: invitás a tu familia y decidís qué se comparte.",
+        point1: "Tu casa en todos tus dispositivos",
+        point2: "Invitaciones por link o QR",
+        point3: "Cifrada de extremo a extremo",
+        cta: "Crear mi casa",
+      },
+      join: {
+        title: "Unirme a una casa",
+        text: "Alguien de tu casa te invitó: abrí su link o escaneá su QR.",
+        point1: "Ves lo que la familia comparte",
+        point2: "Tus cosas privadas siguen siendo tuyas",
+        point3: "En todos tus dispositivos",
+        cta: "Unirme",
+      },
+      local: {
+        title: "Probar en este dispositivo",
+        text: "Sin cuenta y sin nube: todo queda solo acá.",
+        point1: "Empezás en un segundo",
+        point2: "Funciona sin internet",
+        point3: "Después la podés pasar a la nube",
+        cta: "Empezar acá",
+      },
+    },
+  },
+  dataMode: {
+    local: "Este dispositivo",
+    localHint: "Tu casa vive solo en este dispositivo: no se comparte ni se respalda sola. Exportá un respaldo desde Ajustes.",
+    cloud: "Nube cifrada",
+    cloudHint: "Tu casa se sincroniza entre tus dispositivos y tu familia, cifrada de extremo a extremo.",
+    title: "Dónde vive tu casa",
+    localText: "Solo en este dispositivo. Nadie más la ve, pero si se borra el navegador o perdés el equipo, se pierde: exportá un respaldo de vez en cuando.",
+    cloudSoon: "Pasar a la nube cifrada",
+    cloudSoonText: "Muy pronto vas a poder llevar esta casa a la nube, invitar a tu familia y usarla en todos tus dispositivos.",
+  },
   forbidden: {
     title: "Sin acceso",
     text: "Tu perfil no tiene permiso para ver esta sección.",
@@ -1032,6 +1081,8 @@ export const es = {
     },
   },
   landing: {
+    start: "Empezar",
+    goHome: "Ir a mi casa",
     hero: {
       tags: {
         open: "Código abierto",

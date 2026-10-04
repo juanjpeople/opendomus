@@ -12,6 +12,7 @@ import { MemberAvatar } from "@/components/ui/MemberAvatar";
 import { isSecured } from "@/features/members/domain";
 import { useMembersStore, useSessionStore } from "@/lib/auth/session";
 import { SPRING } from "@/lib/motion";
+import { DataModeBadge } from "./DataModeBadge";
 import { LanguageSwitch, ThemeModeSwitch } from "./HeaderActions";
 
 /** Pantalla de "¿Quién sos?". Sin sesión no se ve nada de la app (fail-closed). */
@@ -56,9 +57,12 @@ export function ProfilePicker() {
         >
           {t("picker.title")}
         </Typography.Title>
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 32, textAlign: "center", fontSize: token.fontSizeLG }}>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 12, textAlign: "center", fontSize: token.fontSizeLG }}>
           {t("picker.subtitle")}
         </Typography.Paragraph>
+        <Flex justify="center" style={{ marginBottom: 28 }}>
+          <DataModeBadge />
+        </Flex>
       </Reveal>
 
       <Stagger delay={0.6} stagger={0.08} style={{ maxWidth: 640, width: "100%" }}>

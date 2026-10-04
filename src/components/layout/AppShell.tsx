@@ -3,8 +3,8 @@
 import { Alert, Button, ConfigProvider, Drawer, Flex, Grid, Layout, Tooltip, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, type ReactNode } from "react";
 import { LockScreen } from "@/components/auth/LockScreen";
 import { MembersBridge } from "@/components/auth/MembersBridge";
 import { HouseMark } from "@/components/illustrations/HouseMark";
@@ -12,9 +12,12 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useT } from "@/i18n";
 import { useCurrentUser, useIsLocked, useLockStore, useMembersStore, useSessionStore } from "@/lib/auth/session";
+import { APP_ROUTES } from "@/lib/navigation/routes";
+import { useDeviceStore } from "@/store/useDeviceStore";
 import { useUiStore } from "@/store/useNavigationStore";
 import type { SidebarMode } from "@/store/usePreferencesStore";
 import { CommandPalette } from "./CommandPalette";
+import { DataModeBadge } from "./DataModeBadge";
 import { SIDEBAR_WIDTH } from "./constants";
 import { HeaderActions, UserMenu } from "./HeaderActions";
 import { HeaderNavigation } from "./HeaderNavigation";
@@ -24,12 +27,12 @@ import { useAutoLock, useGlobalShortcuts, useNavigationTracking, useToggleSideba
 
 const { Header, Content } = Layout;
 
-/** Rutas públicas: se ven sin sesión y sin el layout de la app (ej. la landing). */
-const PUBLIC_ROUTES = ["/bienvenida"];
+/** Rutas públicas: se ven sin sesión y sin el layout de la app (la landing, la bienvenida). */
+const PUBLIC_ROUTES = APP_ROUTES.filter((route) => route.external).map((route) => route.href);
 
 /**
- * Estructura de la app. Decide qué mostrar según el estado de sesión:
- * cargando → selector de perfil → layout (estándar o infantil).
+ * Estructura de la app. Decide qué mostrar según el estado del dispositivo y la sesión:
+ * primera vez → landing · cargando → selector de perfil → layout (estándar o infantil).
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useT();
@@ -41,8 +44,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const locked = useIsLocked();
   const unlock = useLockStore((s) => s.unlock);
   const signOut = useSessionStore((s) => s.signOut);
+  const router = useRouter();
+  const mode = useDeviceStore((s) => s.mode);
+  const isPublic = PUBLIC_ROUTES.includes(pathname);
+  // Primera vez en este dispositivo: arranca por la landing, no por "¿Quién está en casa?".
+  const firstVisit = hydrated && mode === "unset" && !isPublic;
 
-  if (PUBLIC_ROUTES.includes(pathname)) return children;
+  useEffect(() => {
+    if (firstVisit) router.replace("/bienvenida");
+  }, [firstVisit, router]);
+
+  if (isPublic) return children;
+  if (firstVisit) return null;
 
   if (hydrated && membersLoadFailed) {
     return (
@@ -142,7 +155,12 @@ function DefaultLayout({ children }: { children: ReactNode }) {
         open={drawerOpen && mode === "hidden"}
         onClose={() => setDrawerOpen(false)}
         styles={{ body: { padding: "8px 0" } }}
-        footer={<UserMenu labeled onSelect={() => setDrawerOpen(false)} />}
+        footer={
+          <Flex vertical gap={8}>
+            <DataModeBadge />
+            <UserMenu labeled onSelect={() => setDrawerOpen(false)} />
+          </Flex>
+        }
       >
         <Navigation layoutGroup="drawer" onNavigate={() => setDrawerOpen(false)} />
       </Drawer>
@@ -172,7 +190,15 @@ function DefaultLayout({ children }: { children: ReactNode }) {
             <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
               <Navigation collapsed={collapsed} />
             </div>
-            <Flex justify={collapsed ? "center" : "flex-end"} style={{ padding: 12, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
+            {/* Abajo, siempre a la vista: dónde vive la casa (y el botón del menú). */}
+            <Flex
+              vertical={collapsed}
+              align="center"
+              justify={collapsed ? "center" : "space-between"}
+              gap={8}
+              style={{ padding: 12, borderTop: `1px solid ${token.colorBorderSecondary}` }}
+            >
+              <DataModeBadge iconOnly={collapsed} />
               <Tooltip title={`${t(collapsed ? "nav.expand" : "nav.collapse")} (Ctrl+B)`} placement="right">
                 <Button
                   type="text"

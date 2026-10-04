@@ -41,6 +41,7 @@ export const APP_ROUTES: AppRoute[] = [
   { id: "family", href: "/familia", labelKey: "nav.routes.family", icon: Users, section: "system" },
   { id: "settings", href: "/ajustes", labelKey: "nav.routes.settings", icon: Settings, section: "system" },
   { id: "design", href: "/design", labelKey: "nav.routes.design", icon: Palette, permission: "settings.design", section: "system" },
+  { id: "start", href: "/empezar", labelKey: "nav.routes.start", icon: Sparkles, section: "system", external: true, hidden: true },
   { id: "values", href: "/bienvenida", labelKey: "nav.routes.values", icon: Sparkles, section: "system", external: true },
 ];
 

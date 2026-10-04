@@ -18,6 +18,8 @@ import { LanguageSwitch, ThemeModeSwitch } from "@/components/layout/HeaderActio
 import { IconTile } from "@/components/ui";
 import { useT } from "@/i18n";
 import { GUIDELINES, ROADMAP, VALUES } from "./content";
+import { useHydrated } from "@/hooks/useHydrated";
+import { useDeviceStore } from "@/store/useDeviceStore";
 
 const MAX_WIDTH = 1160;
 
@@ -38,6 +40,24 @@ export function Landing() {
 
 function Container({ children, style }: { children: ReactNode; style?: React.CSSProperties }) {
   return <div style={{ maxWidth: MAX_WIDTH, margin: "0 auto", paddingInline: 20, ...style }}>{children}</div>;
+}
+
+/**
+ * Entrada a la app: la primera vez lleva a la bienvenida (crear casa, unirse o probar);
+ * si este dispositivo ya tiene su casa, directo a ella.
+ */
+function EnterButton({ size }: { size?: "large" }) {
+  const t = useT();
+  const hydrated = useHydrated();
+  const mode = useDeviceStore((s) => s.mode);
+  const returning = hydrated && mode !== "unset";
+  return (
+    <Link href={returning ? "/" : "/empezar"}>
+      <Button type="primary" size={size} icon={size ? <ArrowRight /> : undefined} iconPlacement="end">
+        {returning ? t("landing.goHome") : size ? t("landing.hero.primary") : t("landing.start")}
+      </Button>
+    </Link>
+  );
 }
 
 function LandingHeader() {
@@ -67,9 +87,7 @@ function LandingHeader() {
           <Flex align="center" gap={12}>
             <LanguageSwitch />
             {screens.sm && <ThemeModeSwitch />}
-            <Link href="/">
-              <Button type="primary">{t("common.enter")}</Button>
-            </Link>
+            <EnterButton />
           </Flex>
         </Flex>
       </Container>
@@ -149,11 +167,7 @@ function Hero() {
             </motion.div>
             <motion.div {...fadeUp(0.3)}>
               <Flex gap={12} wrap>
-                <Link href="/">
-                  <Button type="primary" size="large" icon={<ArrowRight />} iconPlacement="end">
-                    {t("landing.hero.primary")}
-                  </Button>
-                </Link>
+                <EnterButton size="large" />
                 <Button size="large" href="#valores" icon={<ArrowDown />} iconPlacement="end">
                   {t("landing.hero.secondary")}
                 </Button>
@@ -460,11 +474,7 @@ function Closing() {
           <Typography.Paragraph type="secondary" style={{ fontSize: "1.25rem", maxWidth: 560, margin: "0 auto 32px" }}>
             {t("landing.closing.text")}
           </Typography.Paragraph>
-          <Link href="/">
-            <Button type="primary" size="large" icon={<ArrowRight />} iconPlacement="end">
-              {t("landing.hero.primary")}
-            </Button>
-          </Link>
+          <EnterButton size="large" />
         </motion.div>
         <Flex justify="space-between" wrap gap={8} style={{ marginTop: 48 }}>
           <Typography.Text type="secondary">{t("landing.closing.footerLeft")}</Typography.Text>

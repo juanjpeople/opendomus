@@ -126,6 +126,7 @@ export const en: Messages = {
       inventory: "Inventory",
       scan: "Scan QR",
       container: "Container",
+      start: "Get started",
       compras: "Shopping",
       recipes: "Recipes",
       recipe: "Recipe",
@@ -848,6 +849,54 @@ export const en: Messages = {
     title: "We couldn't find this page",
     text: "The link may be old, or what it showed may have been deleted.",
   },
+  onboarding: {
+    title: "How do you want to start?",
+    subtitle: "Create your family's home, join one that already exists, or try it without an account on this device.",
+    soon: "Coming soon",
+    soonButton: "We're finishing it",
+    back: "Back",
+    values: "Our values",
+    security: {
+      title: "Your home, your data",
+      text: "In the cloud, your home will be stored end-to-end encrypted: only your family can read it, not even OpenDomus. You choose what's shared with everyone, what only with the adults, and what's just yours.",
+    },
+    choices: {
+      create: {
+        title: "Create my home",
+        text: "You're the admin: invite your family and decide what's shared.",
+        point1: "Your home on all your devices",
+        point2: "Invitations by link or QR",
+        point3: "End-to-end encrypted",
+        cta: "Create my home",
+      },
+      join: {
+        title: "Join a home",
+        text: "Someone in your home invited you: open their link or scan their QR.",
+        point1: "See what the family shares",
+        point2: "Your private things stay yours",
+        point3: "On all your devices",
+        cta: "Join",
+      },
+      local: {
+        title: "Try it on this device",
+        text: "No account, no cloud: everything stays here.",
+        point1: "Start in a second",
+        point2: "Works offline",
+        point3: "Move it to the cloud later",
+        cta: "Start here",
+      },
+    },
+  },
+  dataMode: {
+    local: "This device",
+    localHint: "Your home lives only on this device: it isn't shared or backed up automatically. Export a backup from Settings.",
+    cloud: "Encrypted cloud",
+    cloudHint: "Your home syncs across your devices and your family, end-to-end encrypted.",
+    title: "Where your home lives",
+    localText: "Only on this device. Nobody else sees it, but if the browser data is cleared or you lose the device, it's gone: export a backup now and then.",
+    cloudSoon: "Move to the encrypted cloud",
+    cloudSoonText: "Soon you'll be able to move this home to the cloud, invite your family and use it on all your devices.",
+  },
   forbidden: {
     title: "No access",
     text: "Your profile doesn't have permission to see this section.",
@@ -1027,6 +1076,8 @@ export const en: Messages = {
     },
   },
   landing: {
+    start: "Get started",
+    goHome: "Go to my home",
     hero: {
       tags: {
         open: "Open source",
