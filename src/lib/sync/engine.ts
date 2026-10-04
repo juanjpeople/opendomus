@@ -497,11 +497,16 @@ class Engine {
       // Las fotos que este dispositivo tiene y la nube todavía no (cifradas). Si falla, la próxima vuelta.
       await uploadPendingPhotos(this.ctx.link.householdId).catch((error: unknown) => console.warn("[fotos] no se pudieron subir", error));
       this.failures = 0;
+      this.connect();
       status.update({ phase: "synced", error: null, lastSyncAt: Date.now() });
     } catch (error) {
       const next = errorPhase(error);
       status.update(next);
-      if (next.error === "keys-changed" || next.error === "session" || next.error === "removed" || next.error === "stale-key" || next.error === "paused") return;
+      if (next.error === "session" || next.error === "removed") {
+        this.stop();
+        return;
+      }
+      if (next.error === "keys-changed" || next.error === "stale-key" || next.error === "paused") return;
       // Reintento con espera creciente (2 s, 4 s, 8 s… hasta 1 min).
       this.failures++;
       this.schedule(Math.min(60_000, 2_000 * 2 ** (this.failures - 1)));
@@ -530,9 +535,14 @@ class Engine {
       if (this.ping) clearInterval(this.ping);
       this.ping = setInterval(() => socket.readyState === WebSocket.OPEN && socket.send("ping"), 25_000);
     };
-    socket.onclose = () => {
+    socket.onclose = (event) => {
       if (this.ping) clearInterval(this.ping);
       if (this.socket === socket) this.socket = null;
+      if (event.code === 1008) {
+        // Confirmar por HTTP si terminó la sesión o la membresía; no reconectar en bucle.
+        this.schedule(0);
+        return;
+      }
       if (!this.stopped && navigator.onLine) setTimeout(() => this.connect(), 5_000 + Math.random() * 5_000);
     };
   }

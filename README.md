@@ -91,6 +91,27 @@ Cloud photo sync stores only client-encrypted bytes in the private Supabase Stor
 or commit it. Review provider quotas and billing controls before enabling storage. The bucket limits every encrypted object to 4 MB and accepts only
 `application/octet-stream`.
 
+### Dispositivos y revocación
+
+En Ajustes → Cuenta se muestran las sesiones y se puede cerrar la de otro dispositivo.
+Cerrar una sesión corta el acceso futuro a la API; no borra los datos ya descargados.
+Los avisos de sincronización por WebSocket revalidan sesión, vencimiento y membresía
+antes de enviar cada tanda. Una sesión revocada o un ex miembro se desconecta al
+siguiente aviso, sin recibirlo. Las conexiones anteriores sin identidad asociada deben
+reconectarse y volver a autenticarse.
+
+La identidad del socket la asigna el Worker después de autenticar la cookie: nunca
+se confía en encabezados de identidad enviados por el cliente. Se guarda solo la
+referencia de sesión/usuario/casa, no el token, en el attachment hibernable. D1 se
+consulta una vez por tanda para las sesiones conectadas; sin conexiones no hay consulta.
+Ante una falla de D1 se omite el aviso y se cierra el canal para reintentar.
+
+Hay un máximo de cuatro canales por sesión y 64 por casa. Alcanzar ese límite no
+bloquea los datos locales ni la sincronización HTTP de respaldo. Los pings conservan
+la [hibernación de Cloudflare](https://developers.cloudflare.com/durable-objects/best-practices/websockets/).
+Si la API confirma que terminó la sesión o la membresía, el cliente detiene sus
+reintentos hasta volver a entrar o reiniciar el motor con una sesión válida.
+
 ### Administración privada (CLI + Cloudflare Access)
 
 La app pública **no compila ni publica `/admin`**. Sus cuentas domésticas no otorgan
