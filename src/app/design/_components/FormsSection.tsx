@@ -1,12 +1,13 @@
 "use client";
 
 import { App, Button, Col, Form, Input, InputNumber, Row, Segmented, Select, Space, Switch } from "antd";
-import { INVENTORY_LIMITS, INVENTORY_TYPES } from "@/features/inventory/domain";
+import { INVENTORY_LIMITS, UNITS } from "@/features/inventory/domain";
+import { useT } from "@/i18n";
 import { DemoBlock } from "./DemoBlock";
 
 interface DemoValues {
   name: string;
-  inventory: "alacena" | "taller";
+  kind: "fridge" | "pantry" | "toolbox";
   quantity: number;
   unit: string;
   tags?: string[];
@@ -15,9 +16,9 @@ interface DemoValues {
 }
 
 export function FormsSection() {
+  const t = useT();
   const [form] = Form.useForm<DemoValues>();
   const { message } = App.useApp();
-  const inventory = Form.useWatch("inventory", form) ?? "alacena";
 
   return (
     <DemoBlock
@@ -44,7 +45,7 @@ export function FormsSection() {
         form={form}
         layout="vertical"
         requiredMark="optional"
-        initialValues={{ inventory: "alacena", quantity: 1, unit: "unidades", notify: true }}
+        initialValues={{ kind: "pantry", quantity: 1, unit: "unidades", notify: true }}
         onFinish={(values) => message.success(`Formulario válido: ${values.name}`)}
         onFinishFailed={() => message.error("Revisá los campos marcados")}
       >
@@ -62,10 +63,10 @@ export function FormsSection() {
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item name="inventory" label="Inventario">
+            <Form.Item name="kind" label="Contenedor">
               <Segmented
                 block
-                options={Object.entries(INVENTORY_TYPES).map(([value, { label }]) => ({ value, label }))}
+                options={(["fridge", "pantry", "toolbox"] as const).map((value) => ({ value, label: t(`storage.containerKinds.${value}`) }))}
                 onChange={() => form.setFieldValue("unit", "unidades")}
               />
             </Form.Item>
@@ -77,7 +78,7 @@ export function FormsSection() {
           </Col>
           <Col xs={12} md={6}>
             <Form.Item name="unit" label="Unidad">
-              <Select options={INVENTORY_TYPES[inventory].units.map((unit) => ({ value: unit, label: unit }))} />
+              <Select options={UNITS.map((unit) => ({ value: unit, label: t(`inventory.units.${unit}`, { count: 2 }) }))} />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>

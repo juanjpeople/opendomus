@@ -1,78 +1,105 @@
 "use client";
 
-import { Button, Card, Empty, Flex, Popconfirm, Skeleton, Typography, theme } from "antd";
+import { Button, Card, Flex, Popconfirm, Skeleton, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
-import { Trash2 } from "lucide-react";
+import { ChevronRight, PackageOpen, Tag as PriceTag, Trash2 } from "lucide-react";
 import { Can } from "@/components/auth/Can";
-import { QuantityStepper, StockTag } from "@/components/ui";
+import { EmptyState, QuantityStepper, StockTag } from "@/components/ui";
+import { usePriceSummaries } from "@/features/prices/hooks";
+import { useI18n } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
-import { getStockStatus, INVENTORY_TYPES, type InventoryType } from "../domain";
+import { SPRING } from "@/lib/motion";
+import { getStockStatus, isUnit } from "../domain";
 import { useInventoryActions, useInventoryItems } from "../hooks";
 
-export function InventoryList({ type }: { type: InventoryType }) {
+interface InventoryListProps {
+  containerId: string;
+  /** Abre el detalle del producto (datos, lugar y precios). */
+  onOpen: (itemId: string) => void;
+}
+
+export function InventoryList({ containerId, onOpen }: InventoryListProps) {
   const { token } = theme.useToken();
-  const items = useInventoryItems(type);
-  const { adjust, remove } = useInventoryActions(type);
+  const { t, format } = useI18n();
+  const items = useInventoryItems(containerId);
+  const prices = usePriceSummaries(containerId);
+  const { adjust, remove } = useInventoryActions();
   const canAdjust = usePermission("inventory.adjust");
-  const config = INVENTORY_TYPES[type];
+  const unitLabel = (unit: string, count: number) => (isUnit(unit) ? t(`inventory.units.${unit}`, { count }) : unit);
 
   return (
-    <Card title="Inventario actual" styles={{ body: { padding: 0 } }}>
+    <Card title={t("inventory.list.title")} styles={{ body: { padding: 0 } }}>
       {items === undefined && <Skeleton active style={{ padding: 24 }} />}
 
-      {items?.length === 0 && (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={`Todavía no hay ${config.itemNounPlural}.`}
-          style={{ padding: 32 }}
-        />
-      )}
+      {items?.length === 0 && <EmptyState icon={PackageOpen} title={t("inventory.list.emptyTitle")} description={t("inventory.list.emptyText")} />}
 
-      <AnimatePresence initial={false}>
-        {items?.map((item) => (
-          <motion.div
-            key={item.id}
-            layout
-            initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}
-          >
-            <Flex justify="space-between" align="center" gap={16} wrap style={{ padding: "12px 24px" }}>
-              <Flex vertical gap={4} style={{ minWidth: 0 }}>
-                <Typography.Text strong ellipsis>
-                  {item.name}
-                </Typography.Text>
-                <Flex gap={8} align="center" wrap>
-                  <StockTag status={getStockStatus(item)} />
-                  <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                    Mínimo: {item.minThreshold} {item.unit}
-                  </Typography.Text>
+      <AnimatePresence>
+        {items?.map((item, index) => {
+          const price = prices?.get(item.id);
+          return (
+            <motion.div
+              key={item.id}
+              layout
+              initial={{ opacity: 0, x: -16 }}
+              // Entrada escalonada (tope de 8 filas para que una lista larga no haga esperar).
+              animate={{ opacity: 1, x: 0, transition: { ...SPRING.snappy, delay: Math.min(index, 8) * 0.03 } }}
+              exit={{ opacity: 0, x: 16, transition: { duration: 0.18 } }}
+              whileHover={{ backgroundColor: token.colorFillQuaternary, transition: { duration: 0.15 } }}
+              transition={SPRING.snappy}
+              style={{ borderBottom: `1px solid ${token.colorBorderSecondary}`, backgroundColor: "rgba(0,0,0,0)" }}
+            >
+              <Flex justify="space-between" align="center" gap={16} wrap style={{ padding: "12px 24px" }}>
+                <button
+                  type="button"
+                  onClick={() => onOpen(item.id)}
+                  aria-label={t("inventory.list.openAria", { name: item.name })}
+                  style={{ all: "unset", cursor: "pointer", minWidth: 0, flex: "1 1 220px" }}
+                >
+                  <Flex vertical gap={4}>
+                    <Flex align="center" gap={4}>
+                      <Typography.Text strong ellipsis>
+                        {item.name}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" style={{ display: "inline-flex" }}>
+                        <ChevronRight />
+                      </Typography.Text>
+                    </Flex>
+                    <Flex gap={8} align="center" wrap>
+                      <StockTag status={getStockStatus(item)} />
+                      <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                        {t("inventory.list.min", { min: item.minThreshold, unit: unitLabel(item.unit, item.minThreshold) })}
+                      </Typography.Text>
+                      {price && (
+                        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <PriceTag /> {format.money(price.latest.amountCents, price.latest.currency)}
+                        </Typography.Text>
+                      )}
+                    </Flex>
+                  </Flex>
+                </button>
+
+                <Flex align="center" gap={8}>
+                  <QuantityStepper
+                    value={item.quantity}
+                    unit={unitLabel(item.unit, item.quantity)}
+                    onStep={canAdjust ? (delta) => adjust(item.id, delta) : undefined}
+                  />
+                  <Can perform="inventory.delete">
+                    <Popconfirm
+                      title={t("inventory.list.deleteConfirm", { name: item.name })}
+                      okText={t("inventory.list.deleteOk")}
+                      okButtonProps={{ danger: true }}
+                      cancelText={t("common.cancel")}
+                      onConfirm={() => remove(item.id)}
+                    >
+                      <Button type="text" danger aria-label={t("inventory.list.deleteAria", { name: item.name })} icon={<Trash2 />} />
+                    </Popconfirm>
+                  </Can>
                 </Flex>
               </Flex>
-
-              <Flex align="center" gap={8}>
-                <QuantityStepper
-                  value={item.quantity}
-                  unit={item.unit}
-                  onStep={canAdjust ? (delta) => adjust(item.id, delta) : undefined}
-                />
-                <Can perform="inventory.delete">
-                  <Popconfirm
-                    title={`¿Eliminar "${item.name}"?`}
-                    okText="Eliminar"
-                    okButtonProps={{ danger: true }}
-                    cancelText="Cancelar"
-                    onConfirm={() => remove(item.id)}
-                  >
-                    <Button type="text" danger aria-label={`Eliminar ${item.name}`} icon={<Trash2 />} />
-                  </Popconfirm>
-                </Can>
-              </Flex>
-            </Flex>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </AnimatePresence>
     </Card>
   );

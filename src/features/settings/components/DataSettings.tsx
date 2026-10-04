@@ -1,0 +1,184 @@
+"use client";
+
+import { Alert, App, Button, Flex, Input, Modal, Progress, Typography, theme } from "antd";
+import { Download, Eraser, HardDrive, RotateCcw, TriangleAlert } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Can } from "@/components/auth/Can";
+import { useResetPreferences } from "@/hooks/usePreferences";
+import { useI18n } from "@/i18n";
+import { useCurrentUser } from "@/lib/auth/session";
+import { downloadJson } from "@/lib/download";
+import { getErrorMessage } from "@/lib/errors";
+import { clearCache, deleteAllData, exportAllData, getStorageEstimate } from "../service";
+import { SettingRow } from "./SettingRow";
+
+export function DataSettings() {
+  const { t, format } = useI18n();
+  const { token } = theme.useToken();
+  const { message } = App.useApp();
+  const user = useCurrentUser();
+  const resetPreferences = useResetPreferences();
+  const [estimate, setEstimate] = useState<{ usage: number; quota: number } | null>(null);
+  const [busy, setBusy] = useState<"export" | "cache" | null>(null);
+  const [wipeOpen, setWipeOpen] = useState(false);
+
+  useEffect(() => {
+    getStorageEstimate().then(setEstimate);
+  }, []);
+
+  async function run(kind: "export" | "cache", action: () => Promise<void>) {
+    setBusy(kind);
+    try {
+      await action();
+    } catch (error) {
+      message.error(getErrorMessage(error, t));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const onExport = () =>
+    run("export", async () => {
+      const data = await exportAllData(user);
+      downloadJson(data, `opendomus-${new Date().toISOString().slice(0, 10)}.json`);
+      message.success(t("settings.data.export.done"));
+    });
+
+  const onClearCache = () =>
+    run("cache", async () => {
+      await clearCache();
+      window.location.reload();
+    });
+
+  const adminOnly = (children: (disabled: boolean) => ReactNode) => (
+    <Can perform="settings.data" fallback="disable" reason={t("settings.data.adminOnly")}>
+      {children}
+    </Can>
+  );
+
+  return (
+    <Flex vertical gap={8}>
+      <Alert type="success" showIcon icon={<HardDrive />} title={t("settings.data.localNotice")} />
+      {estimate && estimate.quota > 0 && (
+        <div style={{ paddingBlock: 8 }}>
+          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+            {t("settings.data.usage", { used: format.bytes(estimate.usage), quota: format.bytes(estimate.quota) })}
+          </Typography.Text>
+          <Progress percent={Math.max(1, (estimate.usage / estimate.quota) * 100)} showInfo={false} size="small" />
+        </div>
+      )}
+
+      <SettingRow label={t("settings.data.export.title")} description={t("settings.data.export.text")}>
+        {adminOnly((disabled) => (
+          <Button icon={<Download />} loading={busy === "export"} disabled={disabled} onClick={onExport}>
+            {t("settings.data.export.button")}
+          </Button>
+        ))}
+      </SettingRow>
+
+      <SettingRow label={t("settings.data.cache.title")} description={t("settings.data.cache.text")}>
+        <Button icon={<Eraser />} loading={busy === "cache"} onClick={onClearCache}>
+          {t("settings.data.cache.button")}
+        </Button>
+      </SettingRow>
+
+      <SettingRow label={t("settings.data.reset.title")} description={t("settings.data.reset.text")}>
+        <Button
+          icon={<RotateCcw />}
+          onClick={() => {
+            resetPreferences();
+            message.success(t("settings.data.reset.done"));
+          }}
+        >
+          {t("settings.data.reset.button")}
+        </Button>
+      </SettingRow>
+
+      <div
+        style={{
+          marginTop: 16,
+          padding: "4px 16px",
+          borderRadius: token.borderRadiusLG,
+          border: `1px solid ${token.colorErrorBorder}`,
+          background: token.colorErrorBg,
+        }}
+      >
+        <Typography.Text type="danger" strong style={{ display: "block", paddingTop: 12 }}>
+          {t("settings.data.danger.title")}
+        </Typography.Text>
+        <SettingRow label={t("settings.data.danger.wipeTitle")} description={t("settings.data.danger.wipeText")} last>
+          {adminOnly((disabled) => (
+            <Button danger icon={<TriangleAlert />} disabled={disabled} onClick={() => setWipeOpen(true)}>
+              {t("settings.data.danger.button")}
+            </Button>
+          ))}
+        </SettingRow>
+      </div>
+
+      <WipeModal open={wipeOpen} onClose={() => setWipeOpen(false)} onExport={onExport} />
+    </Flex>
+  );
+}
+
+/** Confirmación escrita: borrar todo no puede pasar por un clic distraído. */
+function WipeModal({ open, onClose, onExport }: { open: boolean; onClose: () => void; onExport: () => void }) {
+  const { t } = useI18n();
+  const { message } = App.useApp();
+  const user = useCurrentUser();
+  const [typed, setTyped] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const phrase = t("settings.data.danger.phrase");
+
+  async function onConfirm() {
+    setDeleting(true);
+    try {
+      await deleteAllData(user);
+      // Recarga completa a propósito: los stores en memoria y la conexión a la base tienen que reiniciarse.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign("/");
+    } catch (error) {
+      message.error(getErrorMessage(error, t));
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onCancel={onClose}
+      afterClose={() => setTyped("")}
+      title={
+        <Flex align="center" gap={8}>
+          <Typography.Text type="danger" style={{ display: "inline-flex" }}>
+            <TriangleAlert />
+          </Typography.Text>
+          {t("settings.data.danger.modalTitle")}
+        </Flex>
+      }
+      footer={[
+        <Button key="export" icon={<Download />} onClick={onExport}>
+          {t("settings.data.export.button")}
+        </Button>,
+        <Button key="confirm" danger type="primary" loading={deleting} disabled={typed !== phrase} onClick={onConfirm}>
+          {t("settings.data.danger.confirm")}
+        </Button>,
+      ]}
+    >
+      <Typography.Paragraph>{t("settings.data.danger.wipeText")}</Typography.Paragraph>
+      <Typography.Paragraph>
+        {t("settings.data.danger.modalText")}{" "}
+        <Typography.Text code strong>
+          {phrase}
+        </Typography.Text>
+      </Typography.Paragraph>
+      <Input
+        value={typed}
+        onChange={(event) => setTyped(event.target.value)}
+        placeholder={phrase}
+        autoComplete="off"
+        status={typed && typed !== phrase ? "error" : undefined}
+        onPressEnter={() => typed === phrase && onConfirm()}
+      />
+    </Modal>
+  );
+}

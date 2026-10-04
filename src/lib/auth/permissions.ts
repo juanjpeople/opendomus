@@ -16,24 +16,26 @@ import { PermissionError } from "@/lib/errors";
 export const ROLES = ["admin", "adult", "kid"] as const;
 export type Role = (typeof ROLES)[number];
 
-export const ROLE_LABELS: Record<Role, string> = {
-  admin: "Administrador",
-  adult: "Adulto",
-  kid: "Niño",
-};
+/** Las etiquetas de roles y permisos están en el diccionario: `t(`roles.${role}`)`, `t(`permissions.${permission}`)`. */
+export const PERMISSIONS = [
+  "inventory.view",
+  "inventory.create",
+  "inventory.adjust",
+  "inventory.delete",
+  "storage.manage",
+  "prices.manage",
+  "shopping.view",
+  "finance.pay",
+  "activity.view",
+  "calendar.view",
+  "calendar.manage",
+  "members.manage",
+  "settings.design",
+  "settings.data",
+] as const;
+export type Permission = (typeof PERMISSIONS)[number];
 
-export const PERMISSIONS = {
-  "inventory.view": "Ver inventarios",
-  "inventory.create": "Agregar ítems",
-  "inventory.adjust": "Ajustar cantidades",
-  "inventory.delete": "Eliminar ítems",
-  "shopping.view": "Ver lista de compras",
-  "finance.pay": "Registrar pagos",
-  "settings.design": "Acceder al sistema de diseño",
-} as const;
-export type Permission = keyof typeof PERMISSIONS;
-
-const ALL_PERMISSIONS = Object.keys(PERMISSIONS) as Permission[];
+const ALL_PERMISSIONS: readonly Permission[] = PERMISSIONS;
 
 const ROLE_PERMISSIONS: Record<Role, ReadonlySet<Permission>> = {
   admin: new Set(ALL_PERMISSIONS),
@@ -42,10 +44,15 @@ const ROLE_PERMISSIONS: Record<Role, ReadonlySet<Permission>> = {
     "inventory.create",
     "inventory.adjust",
     "inventory.delete",
+    "storage.manage",
+    "prices.manage",
     "shopping.view",
     "finance.pay",
+    "activity.view",
+    "calendar.view",
+    "calendar.manage",
   ]),
-  kid: new Set(["inventory.view", "shopping.view"]),
+  kid: new Set(["inventory.view", "shopping.view", "calendar.view"]),
 };
 
 /** Quien ejecuta una acción. Mínimo necesario para decidir permisos. */
@@ -63,6 +70,6 @@ export function can(actor: Actor | null | undefined, permission: Permission): bo
 /** Para servicios: corta la operación si el actor no tiene el permiso. */
 export function assertCan(actor: Actor | null | undefined, permission: Permission): asserts actor is Actor {
   if (!can(actor, permission)) {
-    throw new PermissionError(permission, PERMISSIONS[permission]);
+    throw new PermissionError(permission);
   }
 }

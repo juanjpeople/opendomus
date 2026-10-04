@@ -39,3 +39,20 @@ body {
 .od-can-disabled > * {
   pointer-events: none;
 }
+
+/* Impresión de etiquetas: al imprimir solo se ve .od-print-root (ver LabelModal); en pantalla no se ve. */
+.od-print-root {
+  display: none;
+}
+@media print {
+  body > *:not(.od-print-root) {
+    display: none !important;
+  }
+  .od-print-root {
+    display: block !important;
+  }
+  .od-print-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

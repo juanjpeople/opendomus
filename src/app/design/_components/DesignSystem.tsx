@@ -8,10 +8,11 @@ import { ActionsSection } from "./ActionsSection";
 import { DataSection } from "./DataSection";
 import { FormsSection } from "./FormsSection";
 import { FoundationsSection } from "./FoundationsSection";
+import { MotionSection } from "./MotionSection";
 import { SecuritySection } from "./SecuritySection";
 
 const TOC = [
-  { group: "Fundamentos", items: [["principios", "Principios"], ["tokens", "Tokens"], ["tipografia", "Tipografía e íconos"]] },
+  { group: "Fundamentos", items: [["principios", "Principios"], ["tokens", "Tokens"], ["tipografia", "Tipografía e íconos"], ["movimiento", "Movimiento"]] },
   { group: "Componentes", items: [["botones", "Botones"], ["feedback", "Feedback"], ["formularios", "Formularios"], ["tablas", "Tablas"], ["componentes", "Componentes propios"]] },
   { group: "Seguridad", items: [["permisos", "Matriz de permisos"], ["can", "<Can>"], ["servicios", "Servicios"]] },
 ] as const;
@@ -38,6 +39,7 @@ export function DesignSystem() {
         <Col xs={24} lg={19}>
           <Section title="Fundamentos">
             <FoundationsSection />
+            <MotionSection />
           </Section>
           <Section title="Componentes">
             <ActionsSection />

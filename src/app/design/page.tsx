@@ -1,7 +1,6 @@
-import type { Metadata } from "next";
 import { DesignSystem } from "./_components/DesignSystem";
 
-export const metadata: Metadata = { title: "Sistema de diseño" };
+// El título de la pestaña lo pone el cliente en el idioma activo (ver useNavigationTracking).
 
 export default function DesignPage() {
   return <DesignSystem />;

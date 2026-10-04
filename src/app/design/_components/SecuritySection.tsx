@@ -3,16 +3,18 @@
 import { Alert, App, Button, Col, Flex, Row, Table, Tag, Typography, theme, type TableColumnsType } from "antd";
 import { Check, ShieldAlert, X } from "lucide-react";
 import { Can } from "@/components/auth/Can";
-import { can, PERMISSIONS, ROLE_LABELS, ROLES, type Permission } from "@/lib/auth/permissions";
-import { HOUSEHOLD_PROFILES, useCurrentUser } from "@/lib/auth/session";
+import { useT } from "@/i18n";
+import { can, PERMISSIONS, ROLES, type Permission } from "@/lib/auth/permissions";
+import { useCurrentUser } from "@/lib/auth/session";
 import { deleteInventoryItem } from "@/features/inventory/service";
 import { getErrorMessage } from "@/lib/errors";
 import { DemoBlock, DemoLabel } from "./DemoBlock";
 
 /** Un perfil de ejemplo por rol, para evaluar la matriz con la misma función `can` que usa la app. */
-const SAMPLE_ACTOR_BY_ROLE = Object.fromEntries(ROLES.map((role) => [role, HOUSEHOLD_PROFILES.find((p) => p.role === role)]));
+const SAMPLE_ACTOR_BY_ROLE = Object.fromEntries(ROLES.map((role) => [role, { id: `sample-${role}`, name: role, role }]));
 
 export function SecuritySection() {
+  const t = useT();
   const user = useCurrentUser();
 
   return (
@@ -32,7 +34,7 @@ export function SecuritySection() {
         title="<Can>: ocultar o deshabilitar"
         description={
           <>
-            Tu perfil actual es <Tag color="processing">{user ? ROLE_LABELS[user.role] : "—"}</Tag>
+            Tu perfil actual es <Tag color="processing">{user ? t(`roles.${user.role}`) : "—"}</Tag>
             Cambialo desde el menú de usuario (arriba a la derecha) para ver cómo reaccionan.
           </>
         }
@@ -80,6 +82,7 @@ const canDelete = usePermission("inventory.delete");
 }
 
 function MatrixBlock() {
+  const t = useT();
   const { token } = theme.useToken();
   const user = useCurrentUser();
 
@@ -89,7 +92,7 @@ function MatrixBlock() {
       key: "permission",
       render: (_, { permission }) => (
         <Flex vertical>
-          <Typography.Text>{PERMISSIONS[permission]}</Typography.Text>
+          <Typography.Text>{t(`permissions.${permission}`)}</Typography.Text>
           <Typography.Text type="secondary" code style={{ fontSize: 12 }}>
             {permission}
           </Typography.Text>
@@ -99,7 +102,7 @@ function MatrixBlock() {
     ...ROLES.map((role) => ({
       title: (
         <Typography.Text strong={user?.role === role} type={user?.role === role ? undefined : "secondary"}>
-          {ROLE_LABELS[role]}
+          {t(`roles.${role}`)}
         </Typography.Text>
       ),
       key: role,
@@ -139,7 +142,7 @@ assertCan(user, "inventory.delete"); // lanza PermissionError
         rowKey="permission"
         size="small"
         columns={columns}
-        dataSource={(Object.keys(PERMISSIONS) as Permission[]).map((permission) => ({ permission }))}
+        dataSource={PERMISSIONS.map((permission) => ({ permission }))}
         pagination={false}
         scroll={{ x: true }}
       />
@@ -148,6 +151,7 @@ assertCan(user, "inventory.delete"); // lanza PermissionError
 }
 
 function ServiceGuardBlock() {
+  const t = useT();
   const user = useCurrentUser();
   const { message } = App.useApp();
 
@@ -157,7 +161,7 @@ function ServiceGuardBlock() {
       await deleteInventoryItem(user, "demo-inexistente");
       message.success("El servicio aceptó la operación: tu perfil tiene inventory.delete.");
     } catch (error) {
-      message.error(getErrorMessage(error));
+      message.error(getErrorMessage(error, t));
     }
   }
 

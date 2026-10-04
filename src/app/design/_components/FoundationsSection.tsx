@@ -16,7 +16,8 @@ import {
   Wrench,
 } from "lucide-react";
 import { ThemeModeSwitch } from "@/components/layout/HeaderActions";
-import { DEFAULT_APPEARANCE, usePreferencesStore } from "@/store/usePreferencesStore";
+import { usePreferences, useSetPreference } from "@/hooks/usePreferences";
+import { BRAND_PRESETS, DEFAULT_PREFERENCES } from "@/store/usePreferencesStore";
 import { DemoBlock, DemoLabel } from "./DemoBlock";
 
 const APP_ICONS = { House, Refrigerator, Wrench, ShoppingCart, Palette, UserRound, Bell, Search, Plus, Trash2, Settings };
@@ -28,6 +29,11 @@ const PRINCIPLES = [
   ["Permisos", "Preguntar por permisos (can, usePermission, <Can>), nunca por rol. La matriz vive en lib/auth/permissions.ts."],
   ["Datos", "La UI no escribe en db: usa los hooks del feature, que llaman al servicio (y el servicio verifica permisos)."],
   ["Páginas", "page.tsx es Server Component (metadata) y renderiza componentes cliente del feature."],
+  ["Textos", "Nunca escritos en el componente: t(\"clave\") con useT(). El diccionario base es i18n/messages/es.ts; TypeScript exige la misma clave en cada idioma. Los errores de dominio llevan clave, no texto."],
+  ["Navegación", "Toda página se registra en lib/navigation/routes.ts: de ahí salen el menú, las migas, la búsqueda (Ctrl+K), los recientes y el título de la pestaña."],
+  ["Historial", "Cada cambio de datos llama a recordActivity() dentro de la transacción del servicio. Sin registro no hay cambio."],
+  ["Preferencias", "Por perfil: usePreferences() / useSetPreference(), nunca el store directo. Lo que se lee de localStorage se valida."],
+  ["Movimiento", "Usar @/components/motion (Reveal, Stagger, AnimatedNumber) y los tokens de lib/motion. Corto, solo transform/opacity, nunca bloquea una acción."],
 ] as const;
 
 const STRUCTURE = `
@@ -38,12 +44,15 @@ src/
     auth/                   Can, RequirePermission
     layout/                 AppShell, Navigation, HeaderActions, ProfilePicker
     providers/              ThemeProvider
+    motion/                 Reveal, Stagger, AnimatedNumber
+    illustrations/          House, HouseMark
   features/<modulo>/
     domain.ts               tipos, reglas y validación (sin React ni DB)
     service.ts              único punto que escribe en la DB + chequeo de permisos
     hooks.ts                lecturas reactivas y acciones para la UI
     components/             UI específica del módulo
-  lib/                      auth/, db.ts, errors.ts
+  i18n/                     config, messages/<idioma>.ts, useT(), formatos (fechas, números)
+  lib/                      auth/, navigation/routes.ts, db.ts, errors.ts, motion.ts
   hooks/ · store/           hooks y stores globales
 `;
 
@@ -122,7 +131,6 @@ import { Wrench } from "lucide-react";
   );
 }
 
-const BRAND_PRESETS = ["#1677ff", "#722ed1", "#13c2c2", "#52c41a", "#fa8c16", "#eb2f96"];
 
 const SEMANTIC_TOKENS = [
   "colorPrimary",
@@ -140,11 +148,14 @@ const SEMANTIC_TOKENS = [
 
 function TokensBlock() {
   const { token } = theme.useToken();
-  const brandColor = usePreferencesStore((s) => s.brandColor);
-  const borderRadius = usePreferencesStore((s) => s.borderRadius);
-  const setBrandColor = usePreferencesStore((s) => s.setBrandColor);
-  const setBorderRadius = usePreferencesStore((s) => s.setBorderRadius);
-  const resetAppearance = usePreferencesStore((s) => s.resetAppearance);
+  const { brandColor, borderRadius } = usePreferences();
+  const setPreference = useSetPreference();
+  const setBrandColor = (color: string) => setPreference("brandColor", color);
+  const setBorderRadius = (radius: number) => setPreference("borderRadius", radius);
+  const resetAppearance = () => {
+    setBrandColor(DEFAULT_PREFERENCES.brandColor);
+    setBorderRadius(DEFAULT_PREFERENCES.borderRadius);
+  };
 
   return (
     <DemoBlock
@@ -174,7 +185,7 @@ function MiComponente() {
             <ColorPicker
               value={brandColor}
               onChangeComplete={(color) => setBrandColor(color.toHexString())}
-              presets={[{ label: "Sugeridos", colors: BRAND_PRESETS }]}
+              presets={[{ label: "Sugeridos", colors: [...BRAND_PRESETS] }]}
               showText
             />
             {BRAND_PRESETS.map((color) => (
@@ -199,7 +210,7 @@ function MiComponente() {
             <ThemeModeSwitch />
             <Button
               onClick={resetAppearance}
-              disabled={brandColor === DEFAULT_APPEARANCE.brandColor && borderRadius === DEFAULT_APPEARANCE.borderRadius}
+              disabled={brandColor === DEFAULT_PREFERENCES.brandColor && borderRadius === DEFAULT_PREFERENCES.borderRadius}
             >
               Restaurar valores
             </Button>

@@ -1,7 +1,6 @@
-import type { Metadata } from "next";
 import { ComingSoon } from "./_components/ComingSoon";
 
-export const metadata: Metadata = { title: "Compras" };
+// El título de la pestaña lo pone el cliente en el idioma activo (ver useNavigationTracking).
 
 export default function ComprasPage() {
   return <ComingSoon />;

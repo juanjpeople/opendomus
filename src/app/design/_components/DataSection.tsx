@@ -1,11 +1,12 @@
 "use client";
 
 import { Button, Col, Flex, Popconfirm, Row, Table, Typography, type TableColumnsType } from "antd";
-import { Pencil, Trash2 } from "lucide-react";
+import { PackageOpen, Pencil, Refrigerator, Trash2, Wrench } from "lucide-react";
 import { useState } from "react";
 import { Can } from "@/components/auth/Can";
-import { PageHeader, QuantityStepper, StockTag } from "@/components/ui";
+import { EmptyState, IconTile, PageHeader, QuantityStepper, StockTag } from "@/components/ui";
 import { getStockStatus, STOCK_STATUS_META, type InventoryItem } from "@/features/inventory/domain";
+import { useT } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
 import { DemoBlock, DemoLabel } from "./DemoBlock";
 
@@ -19,6 +20,7 @@ const SAMPLE_ITEMS: DemoItem[] = [
 ];
 
 export function DataSection() {
+  const t = useT();
   const [items, setItems] = useState(SAMPLE_ITEMS);
   const canAdjust = usePermission("inventory.adjust");
 
@@ -32,7 +34,7 @@ export function DataSection() {
       title: "Estado",
       key: "status",
       render: (_, item) => <StockTag status={getStockStatus(item)} />,
-      filters: Object.entries(STOCK_STATUS_META).map(([value, { label }]) => ({ text: label, value })),
+      filters: (Object.keys(STOCK_STATUS_META) as (keyof typeof STOCK_STATUS_META)[]).map((value) => ({ text: t(`inventory.stock.${value}`), value })),
       onFilter: (value, item) => getStockStatus(item) === value,
     },
     {
@@ -110,9 +112,11 @@ const columns: TableColumnsType<InventoryItem> = [
         title="Componentes propios (@/components/ui)"
         description="Piezas reutilizables de la app. Antes de crear un componente nuevo, revisá si ya existe acá."
         code={`
-import { PageHeader, QuantityStepper, StockTag } from "@/components/ui";
+import { EmptyState, IconTile, PageHeader, QuantityStepper, StockTag } from "@/components/ui";
 
-<PageHeader title="Alacena" description="..." extra={<Button>Exportar</Button>} />
+<PageHeader eyebrow="Inventario" title="Alacena" description="..." extra={<Button>Exportar</Button>} />
+<IconTile icon={Wrench} />            {/* solid para destacado */}
+<EmptyState icon={PackageOpen} title="Sin ítems" description="..." action={<Button>Agregar</Button>} />
 <StockTag status={getStockStatus(item)} />
 <QuantityStepper value={item.quantity} unit={item.unit} onStep={(delta) => adjust(item.id, delta)} />
 <QuantityStepper value={3} unit="kg" />   {/* solo lectura */}
@@ -141,6 +145,22 @@ import { PageHeader, QuantityStepper, StockTag } from "@/components/ui";
               <QuantityStepper value={items[0]?.quantity ?? 0} unit="paquetes" onStep={(d) => step("1", d)} />
               <QuantityStepper value={3} unit="kg" />
             </Flex>
+          </Col>
+          <Col xs={24} md={12}>
+            <DemoLabel>IconTile (normal / solid)</DemoLabel>
+            <Flex gap={12}>
+              <IconTile icon={Refrigerator} />
+              <IconTile icon={Wrench} solid />
+            </Flex>
+          </Col>
+          <Col xs={24}>
+            <DemoLabel>EmptyState</DemoLabel>
+            <EmptyState
+              icon={PackageOpen}
+              title="Todavía no hay productos"
+              description="Cargá el primero y OpenDomus te avisa cuando quede poco."
+              action={<Button type="primary">Agregar</Button>}
+            />
           </Col>
         </Row>
       </DemoBlock>

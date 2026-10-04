@@ -1,10 +1,10 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { useSessionStore } from "@/lib/auth/session";
+import { useLockStore, useSessionStore } from "@/lib/auth/session";
 import { usePreferencesStore } from "@/store/usePreferencesStore";
 
-const stores = [useSessionStore, usePreferencesStore];
+const stores = [useSessionStore, usePreferencesStore, useLockStore];
 
 function subscribe(onChange: () => void) {
   const unsubscribers = stores.map((store) => store.persist.onFinishHydration(onChange));

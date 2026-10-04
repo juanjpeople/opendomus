@@ -2,6 +2,7 @@
 
 import { Tooltip } from "antd";
 import type { ReactNode } from "react";
+import { useT } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
 import type { Permission } from "@/lib/auth/permissions";
 
@@ -34,6 +35,7 @@ type CanProps =
  */
 export function Can(props: CanProps) {
   const allowed = usePermission(props.perform);
+  const t = useT();
 
   if (props.fallback !== "disable") {
     return allowed ? props.children : null;
@@ -42,7 +44,7 @@ export function Can(props: CanProps) {
   if (allowed) return props.children(false);
 
   return (
-    <Tooltip title={props.reason ?? "No tenés permiso para esta acción"}>
+    <Tooltip title={props.reason ?? t("forbidden.reason")}>
       {/* El span recibe el hover: los elementos deshabilitados no disparan eventos de mouse. */}
       <span className="od-can-disabled">{props.children(true)}</span>
     </Tooltip>

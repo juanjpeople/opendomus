@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { usePreferencesStore } from "@/store/usePreferencesStore";
+import { usePreferences } from "@/hooks/usePreferences";
 
 const QUERY = "(prefers-color-scheme: dark)";
 
@@ -16,7 +16,7 @@ const getServerSnapshot = () => false;
 
 /** Modo oscuro efectivo: preferencia del usuario o, en "system", la del sistema operativo (en vivo). */
 export function useIsDark(): boolean {
-  const themeMode = usePreferencesStore((s) => s.themeMode);
+  const { themeMode } = usePreferences();
   const systemIsDark = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   return themeMode === "dark" || (themeMode === "system" && systemIsDark);
 }
