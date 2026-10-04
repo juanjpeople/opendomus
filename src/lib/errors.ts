@@ -5,19 +5,26 @@
 import type { MessageKey, MessageParams, Translator } from "@/i18n/translate";
 import type { Permission } from "@/lib/auth/permissions";
 
+// Campos declarados a mano (sin `constructor(readonly …)`): así este archivo es TypeScript que
+// Node corre directo en los tests, sin compilar.
 export class AppError extends Error {
-  constructor(
-    readonly key: MessageKey,
-    readonly params?: MessageParams,
-  ) {
+  readonly key: MessageKey;
+  readonly params?: MessageParams;
+
+  constructor(key: MessageKey, params?: MessageParams) {
     super(key);
+    this.key = key;
+    this.params = params;
     this.name = new.target.name;
   }
 }
 
 export class PermissionError extends AppError {
-  constructor(readonly permission: Permission) {
+  readonly permission: Permission;
+
+  constructor(permission: Permission) {
     super("errors.permission");
+    this.permission = permission;
   }
 }
 
