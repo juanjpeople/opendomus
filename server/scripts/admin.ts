@@ -9,6 +9,7 @@
  *   npm run admin -- reanudar <id-de-casa>
  *   npm run admin -- cuenta <email>
  *   npm run admin -- login
+ *   npm run admin -- diagnostico
  *   npm run admin -- metricas
  *   npm run admin -- usuarios
  *   npm run admin -- feedback
@@ -20,6 +21,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { operatorDiagnostics, operatorOrigin } from "./operator-config.ts";
 
 function loadEnvFile(path: string) {
   if (!existsSync(path)) return;
@@ -39,7 +41,7 @@ function flag(args: string[], name: string) {
 }
 
 async function call<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<T> {
-  const url = new URL(API);
+  const url = operatorOrigin(API);
   const local = url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
   if (!local && url.protocol !== "https:") throw new Error("La administración requiere HTTPS.");
   const access = local ? "" : process.env.OPENDOMUS_ACCESS_TOKEN ?? execFileSync("cloudflared", ["access", "token", "--app", API], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
@@ -62,7 +64,17 @@ async function main(args: string[]) {
     console.log(readFileSync(new URL(import.meta.url), "utf8").match(/\/\*\*([\s\S]*?)\*\//)![1].replace(/^ \* ?/gm, "").trim());
     return;
   }
+  if (command === "diagnostico") {
+    let available = false;
+    try {
+      execFileSync("cloudflared", ["--version"], { stdio: "ignore", timeout: 5000, windowsHide: true });
+      available = true;
+    } catch { /* Ausente o no ejecutable: se informa sin mostrar salida del proceso. */ }
+    console.log(operatorDiagnostics(process.env, available).join("\n"));
+    return;
+  }
   if (!API) throw new Error("Falta OPENDOMUS_API: usá el Worker administrativo protegido por Access.");
+  operatorOrigin(API);
   if (command === "login") {
     if (new URL(API).protocol !== "https:") throw new Error("El login requiere HTTPS.");
     execFileSync("cloudflared", ["access", "login", API], { stdio: "inherit" });
