@@ -28,6 +28,13 @@ El APK queda en `android/app/build/outputs/apk/debug/app-debug.apk`.
 Con `ANDROID_HOME` apuntando al SDK, `npm run android:build` hace el build web,
 la sincronización y la compilación debug en un solo comando, en Windows o Linux/macOS.
 El workflow Android compila y adjunta un APK de prueba, sin publicar ni desplegar.
+`bash scripts/test-android.sh` ejecuta dos fases sobre un emulador conectado y limpio:
+el recorrido de la app, y después una instalación con `versionCode=2` sobre la primera.
+La segunda fase comprueba sesión, anotación y foto sin desinstalar. No ejecutarlo
+contra un teléfono con datos reales: usa fixtures e importa una casa de prueba.
+Para compilar una versión con un código distinto: desde `android/`,
+`./gradlew assembleDebug -PappVersionCode=2` (en Windows, `./gradlew.bat`).
+Incrementar ese código para cada actualización distribuida con la misma firma.
 
 ## Datos y actualizaciones
 

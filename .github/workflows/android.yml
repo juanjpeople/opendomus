@@ -51,7 +51,7 @@ jobs:
           script: |
             adb shell svc wifi disable
             adb shell svc data disable
-            cd android && bash gradlew --no-daemon :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true; result=$?; adb pull /sdcard/Android/data/io.github.juanjpeople.opendomus/files/test-screenshots app/build/reports/native-screenshots || true; exit $result
+            bash scripts/test-android.sh
       - uses: actions/upload-artifact@v7
         if: always()
         with:

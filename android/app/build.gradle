@@ -1,5 +1,10 @@
 apply plugin: 'com.android.application'
 
+def buildVersionCode = providers.gradleProperty('appVersionCode').getOrElse('1').toInteger()
+if (buildVersionCode < 1 || buildVersionCode > 2100000000) {
+    throw new GradleException('appVersionCode must be between 1 and 2100000000')
+}
+
 android {
     namespace = "io.github.juanjpeople.opendomus"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,7 +12,7 @@ android {
         applicationId "io.github.juanjpeople.opendomus"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode buildVersionCode
         versionName "0.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
