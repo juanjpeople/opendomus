@@ -77,9 +77,10 @@ public class NativeFlowTest {
 
     /** A real touch supplies the user activation required by the WebView file picker. */
     private void tap(ActivityScenario<MainActivity> scenario, String element) throws Exception {
-        evaluate(scenario, "window.__tapTarget = " + element + "; window.__tapTarget.scrollIntoView({block:'center'})");
+        evaluate(scenario, "window.__tapTarget = " + element + "; window.__tapTarget.scrollIntoView({block:'center',behavior:'instant'})");
         await(scenario, "(() => { let e=window.__tapTarget; if (!e?.isConnected || e.disabled) return false; for (; e; e=e.parentElement) if (Number(getComputedStyle(e).opacity) < 0.99 || e.getAnimations().some(a => a.playState === 'running')) return false; return true; })()");
-        evaluate(scenario, "(() => {const r=window.__tapTarget.getBoundingClientRect(); window.__tap={x:r.x+r.width/2,y:r.y+r.height/2};})()");
+        evaluate(scenario, "window.__tap = null; (() => { let previous=null, stable=0; const sample=()=>{const e=window.__tapTarget;if(!e?.isConnected)return;const r=e.getBoundingClientRect(),p={x:r.x+r.width/2,y:r.y+r.height/2};const hit=document.elementFromPoint(p.x,p.y);const valid=hit && (hit===e || e.contains(hit));stable=valid && previous && Math.abs(p.x-previous.x)<0.5 && Math.abs(p.y-previous.y)<0.5?stable+1:0;previous=p;if(stable>=8){window.__tap=p;return;}requestAnimationFrame(sample)};requestAnimationFrame(sample)})()");
+        await(scenario, "window.__tap !== null");
         JSONObject point = new JSONObject(evaluate(scenario, "window.__tap"));
         float[] screen = new float[2];
         float x = (float) point.getDouble("x"), y = (float) point.getDouble("y");
@@ -90,6 +91,7 @@ public class NativeFlowTest {
             screen[0] = offset[0] + x * scale;
             screen[1] = offset[1] + y * scale;
         });
+        System.out.println("ANDROID_TEST_TAP css=" + point + " screen=" + screen[0] + "," + screen[1]);
         long time = SystemClock.uptimeMillis();
         MotionEvent down = MotionEvent.obtain(time, time, MotionEvent.ACTION_DOWN, screen[0], screen[1], 0);
         MotionEvent up = MotionEvent.obtain(time, time + 60, MotionEvent.ACTION_UP, screen[0], screen[1], 0);
