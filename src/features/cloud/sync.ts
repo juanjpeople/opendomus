@@ -15,6 +15,7 @@ import { getSyncLink, setSyncLink, untracked, type SyncLink } from "@/lib/sync/m
 import { SYNC_META_TABLES, SYNC_TABLES } from "@/lib/sync/tables";
 import { useSessionStore } from "@/lib/auth/session";
 import { useDeviceStore } from "@/store/useDeviceStore";
+import { persistStorage } from "./diagnostics";
 import type { CloudHousehold, CloudRole } from "./domain";
 import { listRoster, openScopeKey, scopesFor, type CloudSession } from "./service";
 
@@ -103,6 +104,7 @@ export async function uploadThisHouse(session: CloudSession, household: CloudHou
     }
   });
   useDeviceStore.getState().setMode("cloud");
+  void persistStorage();
   selectProfile(memberId);
   await syncOnce(await syncContextFor(session, household, link), { upload: onProgress });
 }
@@ -121,6 +123,7 @@ export async function downloadHouse(session: CloudSession, household: CloudHouse
   setSyncLink(link);
   await syncOnce(await syncContextFor(session, household, link), { download: onProgress });
   useDeviceStore.getState().setMode("cloud");
+  void persistStorage();
   const member = await myMember(session.user.id);
   if (member) selectProfile(member.id);
   return member ?? null;

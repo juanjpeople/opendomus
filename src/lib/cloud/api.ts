@@ -39,6 +39,9 @@ const CLOUD_ERRORS: Record<string, MessageKey> = {
   "wrong-password": "errors.cloud.wrongPassword",
   "members-changed": "errors.cloud.membersChanged",
   "stale-key": "errors.cloud.membersChanged",
+  "license-required": "errors.cloud.licenseInvalid",
+  "license-invalid": "errors.cloud.licenseInvalid",
+  "plan-paused": "errors.cloud.planPaused",
 };
 
 export async function api<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<T> {

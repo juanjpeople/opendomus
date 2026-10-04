@@ -19,6 +19,7 @@ import { AuthForm } from "./AuthForm";
 import { ChooseProfile } from "./ChooseProfile";
 import { HouseTransfer } from "./HouseTransfer";
 import { RecoveryKit } from "./RecoveryKit";
+import { CryptoSupportGate, InstallAppCard } from "./CloudSteps";
 import { useTransfer } from "./useTransfer";
 
 type View =
@@ -104,116 +105,119 @@ export function JoinPage() {
     <PublicLayout width={520}>
       <Reveal>
         <Card styles={{ body: { padding: "clamp(20px, 5vw, 32px)" } }}>
-          {(!hydrated || view.kind === "loading") && <Skeleton active />}
+          <CryptoSupportGate>
+            {(!hydrated || view.kind === "loading") && <Skeleton active />}
 
-          {hydrated && view.kind === "paste" && (
-            <Flex vertical gap={16}>
-              <Flex align="center" gap={14}>
-                <IconTile icon={MailOpen} color="green" size={52} />
-                <div>
-                  <Typography.Title level={3} style={{ margin: 0 }}>
-                    {t("cloud.join.pasteTitle")}
-                  </Typography.Title>
-                  <Typography.Text type="secondary">{t("cloud.join.pasteText")}</Typography.Text>
-                </div>
-              </Flex>
-              <Input
-                size="large"
-                prefix={<Link2 style={{ color: token.colorTextTertiary }} />}
-                placeholder="https://…/unirme#…"
-                value={pasted}
-                onChange={(event) => setPasted(event.target.value)}
-              />
-              <Button type="primary" size="large" block disabled={!parseInviteLink(pasted.split("#")[1] ?? "")} onClick={openPasted}>
-                {t("cloud.join.open")}
-              </Button>
-            </Flex>
-          )}
-
-          {view.kind === "error" && (
-            <Flex vertical gap={16}>
-              <Alert type="error" showIcon icon={<TriangleAlert />} title={t("cloud.join.errorTitle")} description={view.message} />
-              <Button
-                onClick={() => {
-                  setLink(null);
-                  setView({ kind: "paste" });
-                }}
-              >
-                {t("cloud.join.tryAnother")}
-              </Button>
-            </Flex>
-          )}
-
-          {view.kind === "preview" && (
-            <Flex vertical gap={20}>
-              <div style={{ textAlign: "center" }}>
-                <Typography.Text type="secondary">{t("cloud.join.invitedBy", { name: view.preview.inviterName })}</Typography.Text>
-                <Typography.Title level={2} style={{ margin: "6px 0", letterSpacing: "-0.02em" }}>
-                  {view.preview.householdName}
-                </Typography.Title>
-                <Flex justify="center" gap={8} wrap>
-                  <Tag color="blue">{t("cloud.join.as", { role: roleLabel(view.preview.role) })}</Tag>
-                  <Tag>{t("cloud.join.expires", { date: format.date(view.preview.expiresAt, { day: "numeric", month: "long" }) })}</Tag>
+            {hydrated && view.kind === "paste" && (
+              <Flex vertical gap={16}>
+                <Flex align="center" gap={14}>
+                  <IconTile icon={MailOpen} color="green" size={52} />
+                  <div>
+                    <Typography.Title level={3} style={{ margin: 0 }}>
+                      {t("cloud.join.pasteTitle")}
+                    </Typography.Title>
+                    <Typography.Text type="secondary">{t("cloud.join.pasteText")}</Typography.Text>
+                  </div>
                 </Flex>
-              </div>
-              {replacesLocal && <Alert type="warning" showIcon title={t("cloud.transfer.replaceTitle")} description={t("cloud.transfer.replaceText", { name: view.preview.householdName })} />}
-              {status === "ready" && session ? (
-                <>
-                  <Typography.Text type="secondary" style={{ textAlign: "center" }}>
-                    {t("cloud.join.signedInAs", { email: session.user.email })}
-                  </Typography.Text>
-                  <Button type="primary" size="large" block loading={joining} onClick={() => join(view.preview)}>
-                    {t("cloud.join.join", { name: view.preview.householdName })}
-                  </Button>
-                </>
-              ) : status === "restoring" ? (
-                <Skeleton active paragraph={{ rows: 2 }} />
-              ) : (
-                <>
-                  <Segmented<"create" | "signin">
-                    block
-                    value={mode}
-                    onChange={setMode}
-                    options={[
-                      { value: "create", label: t("cloud.auth.createTab") },
-                      { value: "signin", label: t("cloud.auth.signInTab") },
-                    ]}
-                  />
-                  <AuthForm key={mode} mode={mode} onCreated={(code) => setView({ kind: "kit", preview: view.preview, code })} onSignedIn={() => join(view.preview)} />
-                </>
-              )}
-            </Flex>
-          )}
+                <Input
+                  size="large"
+                  prefix={<Link2 style={{ color: token.colorTextTertiary }} />}
+                  placeholder="https://…/unirme#…"
+                  value={pasted}
+                  onChange={(event) => setPasted(event.target.value)}
+                />
+                <Button type="primary" size="large" block disabled={!parseInviteLink(pasted.split("#")[1] ?? "")} onClick={openPasted}>
+                  {t("cloud.join.open")}
+                </Button>
+              </Flex>
+            )}
 
-          {view.kind === "kit" && session && <RecoveryKit code={view.code} email={session.user.email} onDone={() => join(view.preview)} />}
+            {view.kind === "error" && (
+              <Flex vertical gap={16}>
+                <Alert type="error" showIcon icon={<TriangleAlert />} title={t("cloud.join.errorTitle")} description={view.message} />
+                <Button
+                  onClick={() => {
+                    setLink(null);
+                    setView({ kind: "paste" });
+                  }}
+                >
+                  {t("cloud.join.tryAnother")}
+                </Button>
+              </Flex>
+            )}
 
-          {view.kind === "download" && (
-            <HouseTransfer direction="down" name={view.preview.householdName} state={transfer.state} onRetry={() => void download(view.preview, view.household)} />
-          )}
+            {view.kind === "preview" && (
+              <Flex vertical gap={20}>
+                <div style={{ textAlign: "center" }}>
+                  <Typography.Text type="secondary">{t("cloud.join.invitedBy", { name: view.preview.inviterName })}</Typography.Text>
+                  <Typography.Title level={2} style={{ margin: "6px 0", letterSpacing: "-0.02em" }}>
+                    {view.preview.householdName}
+                  </Typography.Title>
+                  <Flex justify="center" gap={8} wrap>
+                    <Tag color="blue">{t("cloud.join.as", { role: roleLabel(view.preview.role) })}</Tag>
+                    <Tag>{t("cloud.join.expires", { date: format.date(view.preview.expiresAt, { day: "numeric", month: "long" }) })}</Tag>
+                  </Flex>
+                </div>
+                {replacesLocal && <Alert type="warning" showIcon title={t("cloud.transfer.replaceTitle")} description={t("cloud.transfer.replaceText", { name: view.preview.householdName })} />}
+                {status === "ready" && session ? (
+                  <>
+                    <Typography.Text type="secondary" style={{ textAlign: "center" }}>
+                      {t("cloud.join.signedInAs", { email: session.user.email })}
+                    </Typography.Text>
+                    <Button type="primary" size="large" block loading={joining} onClick={() => join(view.preview)}>
+                      {t("cloud.join.join", { name: view.preview.householdName })}
+                    </Button>
+                  </>
+                ) : status === "restoring" ? (
+                  <Skeleton active paragraph={{ rows: 2 }} />
+                ) : (
+                  <>
+                    <Segmented<"create" | "signin">
+                      block
+                      value={mode}
+                      onChange={setMode}
+                      options={[
+                        { value: "create", label: t("cloud.auth.createTab") },
+                        { value: "signin", label: t("cloud.auth.signInTab") },
+                      ]}
+                    />
+                    <AuthForm key={mode} mode={mode} onCreated={(code) => setView({ kind: "kit", preview: view.preview, code })} onSignedIn={() => join(view.preview)} />
+                  </>
+                )}
+              </Flex>
+            )}
 
-          {view.kind === "profile" && session && (
-            <ChooseProfile
-              candidates={view.candidates}
-              accountName={session.user.name}
-              onChoose={async (memberId) => {
-                await chooseProfile(session, view.household, memberId);
-                setView({ kind: "joined", preview: view.preview });
-              }}
-            />
-          )}
+            {view.kind === "kit" && session && <RecoveryKit code={view.code} email={session.user.email} onDone={() => join(view.preview)} />}
 
-          {view.kind === "joined" && (
-            <Flex vertical align="center" gap={16} style={{ textAlign: "center" }}>
-              <IconTile icon={CircleCheck} color="green" size={64} />
-              <Typography.Title level={3} style={{ margin: 0 }}>
-                {t("cloud.join.joinedTitle", { name: view.preview.householdName })}
-              </Typography.Title>
-              <Typography.Text type="secondary">{t("cloud.join.joinedText")}</Typography.Text>
-              <Button type="primary" size="large" onClick={() => router.push("/")}>
-                {t("cloud.join.go")}
-              </Button>
-            </Flex>
-          )}
+            {view.kind === "download" && (
+              <HouseTransfer direction="down" name={view.preview.householdName} state={transfer.state} onRetry={() => void download(view.preview, view.household)} />
+            )}
+
+            {view.kind === "profile" && session && (
+              <ChooseProfile
+                candidates={view.candidates}
+                accountName={session.user.name}
+                onChoose={async (memberId) => {
+                  await chooseProfile(session, view.household, memberId);
+                  setView({ kind: "joined", preview: view.preview });
+                }}
+              />
+            )}
+
+            {view.kind === "joined" && (
+              <Flex vertical align="center" gap={16} style={{ textAlign: "center" }}>
+                <IconTile icon={CircleCheck} color="green" size={64} />
+                <Typography.Title level={3} style={{ margin: 0 }}>
+                  {t("cloud.join.joinedTitle", { name: view.preview.householdName })}
+                </Typography.Title>
+                <Typography.Text type="secondary">{t("cloud.join.joinedText")}</Typography.Text>
+                <InstallAppCard />
+                <Button type="primary" size="large" onClick={() => router.push("/")}>
+                  {t("cloud.join.go")}
+                </Button>
+              </Flex>
+            )}
+          </CryptoSupportGate>
         </Card>
         <Flex align="center" gap={8} justify="center" style={{ marginTop: 16 }}>
           <span style={{ display: "inline-flex", color: token.colorSuccess }}>

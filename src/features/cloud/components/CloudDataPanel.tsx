@@ -1,12 +1,14 @@
 "use client";
 
-import { Alert, App, Button, Flex, Modal, Radio, Typography, theme } from "antd";
-import { CloudOff, LogIn, RefreshCw } from "lucide-react";
+import { Alert, App, Button, Flex, Modal, Radio, Tooltip, Typography, theme } from "antd";
+import { ClipboardCopy, CloudOff, LogIn, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n, useT } from "@/i18n";
 import { syncNow } from "@/lib/sync/engine";
 import { useSyncStatus } from "@/lib/sync/status";
+import { useDeviceStore } from "@/store/useDeviceStore";
+import { diagnosticText, isStoragePersisted } from "../diagnostics";
 import { useCloudActions } from "../hooks";
 import { leaveCloudOnDevice } from "../sync";
 
@@ -14,7 +16,28 @@ import { leaveCloudOnDevice } from "../sync";
 export function SyncSummary() {
   const { t, format } = useI18n();
   const { token } = theme.useToken();
+  const { message } = App.useApp();
   const { phase, pending, lastSyncAt, error, rejected } = useSyncStatus();
+  const mode = useDeviceStore((s) => s.mode);
+  const [persisted, setPersisted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    isStoragePersisted().then((value) => !cancelled && setPersisted(value));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function copyDiagnostic() {
+    const text = await diagnosticText(mode, { phase, error, pending, lastSyncAt, rejected });
+    try {
+      await navigator.clipboard.writeText(text);
+      message.success(t("cloud.diagnostic.copied"));
+    } catch {
+      message.error(t("cloud.diagnostic.failed"));
+    }
+  }
 
   return (
     <Flex vertical gap={10}>
@@ -26,7 +49,13 @@ export function SyncSummary() {
         <Button size="small" icon={<RefreshCw size={14} />} loading={phase === "syncing"} disabled={phase === "off"} onClick={syncNow}>
           {t("cloud.sync.now")}
         </Button>
+        <Tooltip title={t("cloud.diagnostic.hint")}>
+          <Button size="small" type="text" icon={<ClipboardCopy size={14} />} onClick={copyDiagnostic}>
+            {t("cloud.diagnostic.copy")}
+          </Button>
+        </Tooltip>
       </Flex>
+      {persisted === false && <Alert type="info" showIcon title={t("cloud.diagnostic.notPersisted")} />}
       {phase === "error" && error && (
         <Alert
           type={error === "keys-changed" ? "error" : "warning"}

@@ -115,6 +115,8 @@ export const es = {
       wrongPassword: "La contraseña no es la correcta.",
       membersChanged: "La casa cambió mientras tanto (alguien entró o cambió de rol). Probá de nuevo.",
       badKit: "Ese código no parece un kit de OpenDomus. Empieza con ODK1 y tiene 13 grupos de 4.",
+      licenseInvalid: "Ese código de acceso no sirve: puede estar mal escrito, ya usado o vencido.",
+      planPaused: "La nube de esta casa está en pausa: tu copia sigue funcionando y no se pierde nada.",
       rateLimited: "Demasiados intentos seguidos. Esperá un minuto.",
     },
     activity: {
@@ -910,17 +912,19 @@ export const es = {
     title: "¿Cómo querés empezar?",
     subtitle: "Podés crear la casa de tu familia, sumarte a una que ya existe o probar sin cuenta en este dispositivo.",
     soon: "Muy pronto",
+    beta: "Beta · por invitación",
+    free: "Gratis",
     soonButton: "Estamos terminándolo",
     back: "Volver",
     values: "Nuestros valores",
     security: {
       title: "Tu casa, tus datos",
-      text: "En la nube, tu casa se va a guardar cifrada de extremo a extremo: solo tu familia puede leerla, ni siquiera OpenDomus. Vos elegís qué se comparte con todos, qué solo con los adultos y qué es solo tuyo.",
+      text: "En tu dispositivo es gratis y sin cuenta. Si la compartís en la nube, se guarda cifrada de extremo a extremo: solo tu familia puede leerla, ni siquiera OpenDomus. Vos elegís qué se comparte con todos, qué solo con los adultos y qué es solo tuyo.",
     },
     choices: {
       create: {
         title: "Crear mi casa",
-        text: "Sos quien administra: invitás a tu familia y decidís qué se comparte.",
+        text: "En la nube, para compartirla con tu familia. Sos quien administra: invitás y decidís qué se comparte. Necesitás un código de acceso.",
         point1: "Tu casa en todos tus dispositivos",
         point2: "Invitaciones por link o QR",
         point3: "Cifrada de extremo a extremo",
@@ -936,7 +940,7 @@ export const es = {
       },
       local: {
         title: "Probar en este dispositivo",
-        text: "Sin cuenta y sin nube: todo queda solo acá.",
+        text: "Gratis, sin cuenta y sin nube: todo queda acá.",
         point1: "Empezás en un segundo",
         point2: "Funciona sin internet",
         point3: "Después la podés pasar a la nube",
@@ -960,6 +964,7 @@ export const es = {
   },
   cloud: {
     steps: {
+      access: "Acceso",
       account: "Cuenta",
       kit: "Kit de recuperación",
       house: "Tu casa",
@@ -1114,6 +1119,7 @@ export const es = {
         server: "La nube no respondió bien. Se reintenta sola; tus cambios quedan guardados.",
         "stale-key": "Las claves de la casa se renovaron (alguien salió). Actualizando…",
         removed: "Ya no sos parte de esta casa. Lo que hay en este dispositivo quedó como estaba; podés salir de la nube.",
+        paused: "La nube de esta casa está en pausa: seguís viendo lo que hacen los demás y tu copia funciona igual, pero tus cambios se guardan acá hasta que vuelva.",
       },
     },
     leave: {
@@ -1165,6 +1171,41 @@ export const es = {
       revokeTitle: "¿Cerrar la sesión en {device}?",
       revokeText: "Deja de sincronizar y tiene que volver a entrar. Lo que ya tenía guardado ese dispositivo no se borra a distancia.",
       revoked: "Sesión cerrada en ese dispositivo.",
+    },
+    access: {
+      title: "Código de acceso",
+      subtitle: "La nube está en beta por invitación: para crear una casa necesitás un código.",
+      code: "Código de acceso",
+      codeRequired: "Escribí el código",
+      continue: "Continuar",
+      noCodeTitle: "¿No tenés código?",
+      noCodeText: "Si alguien de tu casa te invitó, no lo necesitás: abrí su link. Y OpenDomus es gratis en este dispositivo, sin cuenta.",
+      haveInvite: "Tengo una invitación",
+      useLocal: "Usarla en este dispositivo",
+    },
+    support: {
+      title: "Este navegador no puede abrir la nube cifrada",
+      text: "Le falta algo del cifrado que usamos. Actualizá Chrome (o usá una versión reciente de Chrome, Firefox, Safari o Edge) y volvé a intentar.",
+      insecure: "La nube cifrada solo funciona en una conexión segura (https).",
+      local: "Usar OpenDomus en este dispositivo",
+    },
+    install: {
+      title: "Instalá OpenDomus",
+      text: "Se abre como una app y el celular cuida mejor tus datos.",
+    },
+    done: {
+      title: "¡{name} está en la nube!",
+      created: "Tu casa se subió cifrada. Ahora invitá a tu familia.",
+      downloaded: "Tu casa ya está en este dispositivo.",
+      invite: "Invitar a mi familia",
+      go: "Ir a mi casa",
+    },
+    diagnostic: {
+      copy: "Copiar diagnóstico",
+      hint: "Si algo no anda, copiá esto y mandáselo a quien te ayuda. No incluye nombres, emails ni nada de tu casa.",
+      copied: "Diagnóstico copiado",
+      failed: "No se pudo copiar",
+      notPersisted: "El navegador podría borrar los datos si le falta espacio. Instalá la app para que los cuide.",
     },
   },
   forbidden: {
@@ -1354,11 +1395,11 @@ export const es = {
       tags: {
         open: "Código abierto",
         offline: "Offline-first",
-        hardware: "En tu propio hardware",
+        hardware: "Gratis en tu dispositivo",
       },
       titleA: "El sistema operativo de tu casa.",
       titleB: "Que vive en tu casa.",
-      text: "Inventarios, compras, cuentas claras y los papeles importantes de toda la familia. Corre en tu propio hardware, funciona sin internet y tus datos nunca salen de casa.",
+      text: "Inventarios, compras, cuentas claras y los papeles importantes de toda la familia. Gratis en tu dispositivo, sin cuenta, y funciona sin internet. Si querés compartirla con tu familia, la nube es opcional y cifrada de extremo a extremo: ni nosotros podemos leerla.",
       primary: "Entrar a mi casa",
       secondary: "Nuestros valores",
     },
@@ -1369,7 +1410,7 @@ export const es = {
       items: {
         datos: {
           title: "Tu casa, tus datos",
-          text: "Todo vive en tu hardware: una NAS, una Raspberry, la compu de siempre. Sin nubes ajenas, sin telemetría, sin nadie mirando lo que pasa adentro.",
+          text: "Gratis y en tu dispositivo, sin cuenta. Si elegís la nube para compartir con tu familia, tu casa viaja y se guarda cifrada de extremo a extremo: ni nosotros podemos leerla. Sin publicidad, sin telemetría, sin nadie mirando lo que pasa adentro.",
         },
         offline: {
           title: "Funciona sin internet",

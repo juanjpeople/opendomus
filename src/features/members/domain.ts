@@ -54,6 +54,16 @@ export const DEFAULT_MEMBERS: Omit<Member, "createdAt" | "updatedAt">[] = [
   { id: "profile-kid", name: "Explorador", role: "kid", color: "orange" },
 ];
 
+/**
+ * Qué perfiles se pueden elegir en este dispositivo. Con la casa en la nube (`accountUserId`), el
+ * propio y los que no tienen cuenta (un chico con PIN en la tablet); el de otra cuenta, no: ese
+ * perfil es de esa persona y se usa desde sus dispositivos (si no, Flor podría "ser Juan").
+ */
+export function pickableProfiles<T extends Pick<Member, "userId">>(members: T[], accountUserId: string | null): T[] {
+  if (!accountUserId) return members;
+  return members.filter((member) => !member.userId || member.userId === accountUserId);
+}
+
 /** Un perfil está protegido si tiene PIN o biometría. */
 export function isSecured(member: Pick<Member, "pin" | "credentials">): boolean {
   return !!member.pin || (member.credentials?.length ?? 0) > 0;

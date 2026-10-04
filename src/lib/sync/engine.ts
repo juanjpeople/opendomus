@@ -221,6 +221,8 @@ async function push(ctx: SyncContext, onProgress?: Progress) {
         await db.syncState.delete(STATE.inflight);
         // Las claves de la casa cambiaron (alguien salió): se vuelve a armar con las nuevas.
         if (error.code === "stale-key") throw new SyncStop("stale-key");
+        // Casa en pausa (plan vencido o pausado): lo pendiente queda guardado para cuando vuelva.
+        if (error.status === 402) throw new SyncStop("paused");
         if (error.status === 404) throw new SyncStop("removed");
         throw new SyncStop("server");
       }
@@ -472,14 +474,22 @@ class Engine {
     // "Sincronizando…" solo si tarda: una vuelta rápida no hace parpadear el indicador.
     const slow = setTimeout(() => status.update({ phase: "syncing" }), 700);
     try {
-      await push(this.ctx);
+      // En pausa no se sube, pero se sigue bajando: nadie se queda sin lo que hacen los demás.
+      let paused = false;
+      try {
+        await push(this.ctx);
+      } catch (error) {
+        if (!(error instanceof SyncStop && error.code === "paused")) throw error;
+        paused = true;
+      }
       await pull(this.ctx);
+      if (paused) throw new SyncStop("paused");
       this.failures = 0;
       status.update({ phase: "synced", error: null, lastSyncAt: Date.now() });
     } catch (error) {
       const next = errorPhase(error);
       status.update(next);
-      if (next.error === "keys-changed" || next.error === "session" || next.error === "removed" || next.error === "stale-key") return;
+      if (next.error === "keys-changed" || next.error === "session" || next.error === "removed" || next.error === "stale-key" || next.error === "paused") return;
       // Reintento con espera creciente (2 s, 4 s, 8 s… hasta 1 min).
       this.failures++;
       this.schedule(Math.min(60_000, 2_000 * 2 ** (this.failures - 1)));

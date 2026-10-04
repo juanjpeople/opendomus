@@ -99,10 +99,10 @@ export function useCloudActions() {
         useCloudStore.getState().setSession(null);
         return true;
       }),
-    createHousehold: (name: string) =>
+    createHousehold: (name: string, accessCode: string) =>
       run(async () => {
         const session = useCloudStore.getState().session!;
-        const id = await service.createHousehold(session, name);
+        const id = await service.createHousehold(session, name, accessCode);
         await refresh();
         return id;
       }),

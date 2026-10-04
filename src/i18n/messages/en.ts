@@ -110,6 +110,8 @@ export const en: Messages = {
       wrongPassword: "That's not the right password.",
       membersChanged: "The home changed in the meantime (someone joined or changed role). Try again.",
       badKit: "That code doesn't look like an OpenDomus kit. It starts with ODK1 and has 13 groups of 4.",
+      licenseInvalid: "That access code doesn't work: it may be mistyped, already used or expired.",
+      planPaused: "This home's cloud is paused: your copy keeps working and nothing is lost.",
       rateLimited: "Too many attempts in a row. Wait a minute.",
     },
     activity: {
@@ -905,17 +907,19 @@ export const en: Messages = {
     title: "How do you want to start?",
     subtitle: "Create your family's home, join one that already exists, or try it without an account on this device.",
     soon: "Coming soon",
+    beta: "Beta · invite only",
+    free: "Free",
     soonButton: "We're finishing it",
     back: "Back",
     values: "Our values",
     security: {
       title: "Your home, your data",
-      text: "In the cloud, your home will be stored end-to-end encrypted: only your family can read it, not even OpenDomus. You choose what's shared with everyone, what only with the adults, and what's just yours.",
+      text: "On your device it's free, no account needed. If you share it in the cloud, it's stored end-to-end encrypted: only your family can read it, not even OpenDomus. You choose what's shared with everyone, what only with the adults, and what's just yours.",
     },
     choices: {
       create: {
         title: "Create my home",
-        text: "You're the admin: invite your family and decide what's shared.",
+        text: "In the cloud, to share it with your family. You're the admin: invite them and decide what's shared. You need an access code.",
         point1: "Your home on all your devices",
         point2: "Invitations by link or QR",
         point3: "End-to-end encrypted",
@@ -931,7 +935,7 @@ export const en: Messages = {
       },
       local: {
         title: "Try it on this device",
-        text: "No account, no cloud: everything stays here.",
+        text: "Free, no account, no cloud: everything stays here.",
         point1: "Start in a second",
         point2: "Works offline",
         point3: "Move it to the cloud later",
@@ -955,6 +959,7 @@ export const en: Messages = {
   },
   cloud: {
     steps: {
+      access: "Access",
       account: "Account",
       kit: "Recovery kit",
       house: "Your home",
@@ -1109,6 +1114,7 @@ export const en: Messages = {
         server: "The cloud didn't respond properly. It retries on its own; your changes are saved.",
         "stale-key": "The home's keys were renewed (someone left). Updating…",
         removed: "You're no longer part of this home. What's on this device stays as it was; you can leave the cloud.",
+        paused: "This home's cloud is paused: you still see what others do and your copy works the same, but your changes are kept here until it's back.",
       },
     },
     leave: {
@@ -1160,6 +1166,41 @@ export const en: Messages = {
       revokeTitle: "Sign out {device}?",
       revokeText: "It stops syncing and has to sign in again. What that device already stored isn't wiped remotely.",
       revoked: "That device was signed out.",
+    },
+    access: {
+      title: "Access code",
+      subtitle: "The cloud is in invite-only beta: you need a code to create a home.",
+      code: "Access code",
+      codeRequired: "Enter the code",
+      continue: "Continue",
+      noCodeTitle: "No code?",
+      noCodeText: "If someone in your home invited you, you don't need one: open their link. And OpenDomus is free on this device, no account needed.",
+      haveInvite: "I have an invite",
+      useLocal: "Use it on this device",
+    },
+    support: {
+      title: "This browser can't open the encrypted cloud",
+      text: "It's missing part of the encryption we use. Update Chrome (or use a recent Chrome, Firefox, Safari or Edge) and try again.",
+      insecure: "The encrypted cloud only works over a secure connection (https).",
+      local: "Use OpenDomus on this device",
+    },
+    install: {
+      title: "Install OpenDomus",
+      text: "It opens like an app and your phone takes better care of your data.",
+    },
+    done: {
+      title: "{name} is in the cloud!",
+      created: "Your home was uploaded encrypted. Now invite your family.",
+      downloaded: "Your home is now on this device.",
+      invite: "Invite my family",
+      go: "Go to my home",
+    },
+    diagnostic: {
+      copy: "Copy diagnostics",
+      hint: "If something's off, copy this and send it to whoever helps you. It doesn't include names, emails or anything from your home.",
+      copied: "Diagnostics copied",
+      failed: "Couldn't copy",
+      notPersisted: "The browser could delete the data if it runs out of space. Install the app so it keeps it safe.",
     },
   },
   forbidden: {
@@ -1349,11 +1390,11 @@ export const en: Messages = {
       tags: {
         open: "Open source",
         offline: "Offline-first",
-        hardware: "On your own hardware",
+        hardware: "Free on your device",
       },
       titleA: "Your home's operating system.",
       titleB: "That lives in your home.",
-      text: "Inventories, shopping, clear finances and the whole family's important papers. It runs on your own hardware, works without internet, and your data never leaves home.",
+      text: "Inventories, shopping, clear finances and the whole family's important papers. Free on your device, no account, and it works without internet. If you want to share it with your family, the cloud is optional and end-to-end encrypted: not even we can read it.",
       primary: "Enter my home",
       secondary: "Our values",
     },
@@ -1364,7 +1405,7 @@ export const en: Messages = {
       items: {
         datos: {
           title: "Your home, your data",
-          text: "Everything lives on your hardware: a NAS, a Raspberry Pi, the computer you already have. No one else's cloud, no telemetry, no one watching what happens inside.",
+          text: "Free and on your device, no account. If you choose the cloud to share with your family, your home travels and is stored end-to-end encrypted: not even we can read it. No ads, no telemetry, no one watching what happens inside.",
         },
         offline: {
           title: "Works without internet",

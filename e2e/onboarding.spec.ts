@@ -6,8 +6,13 @@ test("la primera vez arranca por la landing y la bienvenida; después, directo a
 
   await page.getByRole("link", { name: "Empezar" }).first().click();
   await expect(page).toHaveURL(/empezar/);
-  // La nube todavía no está: se ve el camino, pero no se puede elegir.
-  await expect(page.getByRole("button", { name: "Estamos terminándolo" })).toHaveCount(2);
+  // En el dispositivo es gratis; la nube es opcional y está en beta por invitación (pide un código).
+  await expect(page.getByText("Gratis", { exact: true })).toBeVisible();
+  await expect(page.getByText("Beta · por invitación")).toBeVisible();
+  await page.getByRole("button", { name: "Crear mi casa" }).click();
+  await expect(page).toHaveURL(/cuenta/);
+  await expect(page.getByRole("heading", { name: "Código de acceso" })).toBeVisible();
+  await page.goBack();
 
   await page.getByRole("button", { name: "Empezar acá" }).click();
   await expect(page.getByText("¿Quién está en casa?")).toBeVisible();
