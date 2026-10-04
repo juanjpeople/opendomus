@@ -9,8 +9,10 @@ import { betterAuth } from "better-auth";
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import type { z } from "zod";
+import { opSigningData, SYNC_LIMITS } from "../../src/lib/sync/protocol";
 import { authOptions } from "./auth-options";
 import type { AppEnv, Env, SessionUser } from "./env";
+import { OP_CONFLICT } from "./sync";
 import {
   acceptInviteInput,
   changeRoleInput,
@@ -18,12 +20,16 @@ import {
   createInviteInput,
   envelopeInput,
   inviteTokenInput,
+  pullQuery,
+  pushInput,
   userId,
   userKeysInput,
   uuid,
   type Role,
   type Scope,
 } from "./validation";
+
+export { HouseholdLog } from "./sync";
 
 const DAY = 86_400_000;
 
@@ -51,6 +57,21 @@ function scopesFor(role: Role): Scope[] {
 async function sha256(text: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function fromB64u(value: string) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(atob(base64 + "=".repeat((4 - (base64.length % 4)) % 4)), (char) => char.charCodeAt(0));
+}
+
+/** Firma Ed25519 válida (una clave o firma mal formada cuenta como inválida). */
+async function verifySignature(publicKey: string, data: string, signature: string) {
+  try {
+    const key = await crypto.subtle.importKey("raw", fromB64u(publicKey), { name: "Ed25519" }, false, ["verify"]);
+    return await crypto.subtle.verify({ name: "Ed25519" }, key, fromB64u(signature), new TextEncoder().encode(data));
+  } catch {
+    return false;
+  }
 }
 
 /** Comparación en tiempo constante (no corta en el primer carácter distinto). */
@@ -353,15 +374,90 @@ app.post("/invites/:id/accept", async (c) => {
   return c.json({ householdId: invite.householdId, role: invite.role }, 201);
 });
 
+// --- Sincronización -----------------------------------------------------------------------
+
+function householdLog(env: Env, householdId: string) {
+  return env.HOUSEHOLD.get(env.HOUSEHOLD.idFromName(householdId));
+}
+
+/**
+ * Subir cambios. El servidor no los lee, pero exige: ser miembro, poder escribir en ese nivel
+ * (un chico no escribe en "Adultos"), la versión vigente de la clave y la firma de quien tiene la
+ * sesión. Con una cookie robada sola no alcanza: sin la clave privada de la persona, no se escribe.
+ */
+app.post("/households/:id/ops", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const householdId = c.req.param("id");
+  if (!uuid.safeParse(householdId).success) return c.json({ error: "not-found" }, 404);
+  const member = await membership(c.env, householdId, user.id);
+  if (!member) return c.json({ error: "not-found" }, 404);
+  if (Number(c.req.header("Content-Length") ?? 0) > SYNC_LIMITS.pushBytes) return c.json({ error: "too-large" }, 413);
+  const input = await parse(c, pushInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+
+  const [household, keys] = await Promise.all([
+    c.env.DB.prepare("select family_key_version as family, adults_key_version as adults from households where id = ?").bind(householdId).first<{ family: number; adults: number }>(),
+    c.env.DB.prepare("select sign_public_key as signPublicKey from user_keys where user_id = ?").bind(user.id).first<{ signPublicKey: string }>(),
+  ]);
+  if (!household || !keys) return c.json({ error: "not-found" }, 404);
+  const allowed = scopesFor(member.role);
+  for (const op of input.ops) {
+    if (!allowed.includes(op.scope)) return c.json({ error: "forbidden-scope" }, 403);
+    const current = op.scope === "private" ? 1 : household[op.scope];
+    if (op.keyVersion !== current) return c.json({ error: "stale-key" }, 409);
+  }
+  const signed = await Promise.all(input.ops.map((op) => verifySignature(keys.signPublicKey, opSigningData(householdId, op, user.id), op.sig)));
+  if (signed.some((ok) => !ok)) return c.json({ error: "bad-signature" }, 400);
+
+  try {
+    return c.json(await householdLog(c.env, householdId).push(user.id, input.ops));
+  } catch (error) {
+    if (error instanceof Error && error.message === OP_CONFLICT) return c.json({ error: "conflict" }, 409);
+    throw error;
+  }
+});
+
+/** Bajar cambios desde `since`: solo los niveles que la persona puede abrir. */
+app.get("/households/:id/ops", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const householdId = c.req.param("id");
+  if (!uuid.safeParse(householdId).success) return c.json({ error: "not-found" }, 404);
+  const member = await membership(c.env, householdId, user.id);
+  if (!member) return c.json({ error: "not-found" }, 404);
+  const query = pullQuery.safeParse(c.req.query());
+  if (!query.success) return c.json({ error: "invalid" }, 400);
+  return c.json(await householdLog(c.env, householdId).pull({ userId: user.id, adults: member.role !== "kid", ...query.data }));
+});
+
 app.notFound((c) => c.json({ error: "not-found" }, 404));
 app.onError((error, c) => {
   console.error(error);
   return c.json({ error: "server-error" }, 500);
 });
 
+/**
+ * Avisos en tiempo real (WebSocket). Va por fuera de Hono: la respuesta 101 lleva el socket y no
+ * se puede copiar para sumarle encabezados. Los navegadores mandan la cookie también a sockets de
+ * otros sitios, así que el origen se exige acá igual que en lo que cambia datos.
+ */
+async function live(request: Request, env: Env, householdId: string) {
+  const json = (error: string, status: number) => Response.json({ error }, { status, headers: { "Cache-Control": "no-store" } });
+  const origin = request.headers.get("Origin");
+  if (!origin || !allowedOrigins(env).includes(origin)) return json("forbidden-origin", 403);
+  if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") return json("expected-websocket", 426);
+  const session = await createAuth(env).api.getSession({ headers: request.headers });
+  if (!session) return json("unauthorized", 401);
+  if (!uuid.safeParse(householdId).success || !(await membership(env, householdId, session.user.id))) return json("not-found", 404);
+  return householdLog(env, householdId).fetch(request);
+}
+
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
+    const socket = url.pathname.match(/^\/api\/households\/([^/]+)\/live$/);
+    if (socket) return live(request, env, socket[1]);
     // `run_worker_first` manda acá solo /api/*; lo demás son los archivos de la app.
     if (url.pathname.startsWith("/api/")) return app.fetch(request, env, ctx);
     return env.ASSETS.fetch(request);

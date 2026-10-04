@@ -3,6 +3,7 @@
  * la forma correcta y un tamaño razonable (nada de blobs gigantes ni campos de más).
  */
 import { z } from "zod";
+import { SYNC_LIMITS } from "../../src/lib/sync/protocol";
 
 /** base64url sin relleno. */
 const b64 = (max: number) => z.string().min(16).max(max).regex(/^[A-Za-z0-9_-]+$/);
@@ -57,3 +58,23 @@ export const acceptInviteInput = z.object({
 });
 
 export const changeRoleInput = z.object({ role: z.enum(ROLES) });
+
+// --- Sincronización ---------------------------------------------------------------------------
+
+/** Firma Ed25519: 64 bytes en base64url. */
+const signature = z.string().length(86).regex(/^[A-Za-z0-9_-]+$/);
+
+export const wireOp = z.object({
+  id: uuid,
+  scope: z.enum(SCOPES),
+  keyVersion: z.number().int().min(1).max(1_000_000),
+  body: box(SYNC_LIMITS.opBodyChars),
+  sig: signature,
+});
+
+export const pushInput = z.object({ ops: z.array(wireOp).min(1).max(SYNC_LIMITS.opsPerPush) });
+
+export const pullQuery = z.object({
+  since: z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER).default(0),
+  limit: z.coerce.number().int().min(1).max(SYNC_LIMITS.pullOps).default(SYNC_LIMITS.pullOps),
+});
