@@ -12,6 +12,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { SYNC_LIMITS, type PullResponse, type PushResponse, type StoredOp, type SyncScope, type WireOp } from "../../src/lib/sync/protocol";
 import type { Env } from "./env";
+import { authorizedLiveSessions, LIVE_LIMITS, liveIdentity } from "./live-access";
 
 /** Se reintentó una operación con un id que ya usó otra persona (el error cruza la llamada RPC por su mensaje). */
 export const OP_CONFLICT = "op-conflict";
@@ -45,7 +46,7 @@ export class HouseholdLog extends DurableObject<Env> {
    * Agrega operaciones, todas o ninguna. Reintentar una que ya entró devuelve el mismo número
    * (idempotente), siempre que sea del mismo autor.
    */
-  push(author: string, ops: WireOp[]): PushResponse {
+  async push(author: string, ops: WireOp[]): Promise<PushResponse> {
     const now = Date.now();
     const acks = this.ctx.storage.transactionSync(() =>
       ops.map((op) => {
@@ -69,7 +70,8 @@ export class HouseholdLog extends DurableObject<Env> {
         return { id: op.id, seq };
       }),
     );
-    this.broadcast(JSON.stringify({ type: "head", seq: this.head() }));
+    // El aviso es auxiliar: una caída de D1 no debe convertir un push ya guardado en un error.
+    await this.broadcast(JSON.stringify({ type: "head", seq: this.head() }));
     return { acks };
   }
 
@@ -105,10 +107,26 @@ export class HouseholdLog extends DurableObject<Env> {
   /** WebSocket de avisos. El Worker ya validó la sesión y la membresía. */
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") return new Response("expected websocket", { status: 426 });
+    const identity = liveIdentity({
+      householdId: request.headers.get("X-OpenDomus-Household"),
+      userId: request.headers.get("X-OpenDomus-User"),
+      sessionId: request.headers.get("X-OpenDomus-Session"),
+    });
+    if (!identity) return new Response("unauthorized", { status: 401 });
+    const atCapacity = () => {
+      const sockets = this.ctx.getWebSockets();
+      return sockets.length >= LIVE_LIMITS.household || sockets.filter((socket) => liveIdentity(socket.deserializeAttachment())?.sessionId === identity.sessionId).length >= LIVE_LIMITS.session;
+    };
+    if (atCapacity()) return new Response("too many connections", { status: 429 });
+    // Revalidar después del salto al Durable Object, por si la sesión cambió durante la conexión.
+    if (!(await authorizedLiveSessions(this.env.DB, [identity])).has(identity.sessionId)) return new Response("unauthorized", { status: 401 });
+    // Otras conexiones pueden haberse aceptado mientras se esperaba a D1.
+    if (atCapacity()) return new Response("too many connections", { status: 429 });
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     // Hibernable: con la casa en silencio, el objeto se duerme y no consume.
     this.ctx.acceptWebSocket(server);
+    server.serializeAttachment(identity);
     server.send(JSON.stringify({ type: "head", seq: this.head() }));
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -126,9 +144,22 @@ export class HouseholdLog extends DurableObject<Env> {
     await this.ctx.storage.deleteAll();
   }
 
-  private broadcast(message: string) {
-    for (const ws of this.ctx.getWebSockets()) {
+  private async broadcast(message: string) {
+    const sockets = this.ctx.getWebSockets().map((socket) => ({ socket, identity: liveIdentity(socket.deserializeAttachment()) }));
+    let allowed = new Set<string>();
+    let unavailable = false;
+    try {
+      allowed = await authorizedLiveSessions(this.env.DB, sockets.flatMap(({ identity }) => identity ? [identity] : []));
+    } catch {
+      // Ante una falla de autorización no se envían avisos; el cliente reconecta y vuelve a validar.
+      unavailable = true;
+    }
+    for (const { socket: ws, identity } of sockets) {
       try {
+        if (!identity || !allowed.has(identity.sessionId)) {
+          ws.close(unavailable ? 1013 : 1008, unavailable ? "authorization unavailable" : "authorization required");
+          continue;
+        }
         ws.send(message);
       } catch {
         // Conexión que se estaba cerrando: el dispositivo se pone al día al reconectar.

@@ -1200,7 +1200,12 @@ async function live(request: Request, env: Env, householdId: string) {
   const session = await createAuth(env).api.getSession({ headers: request.headers });
   if (!session) return json("unauthorized", 401);
   if (!uuid.safeParse(householdId).success || !(await membership(env, householdId, session.user.id))) return json("not-found", 404);
-  return householdLog(env, householdId).fetch(request);
+  // Sobrescribir también encabezados que pudiera enviar un cliente: solo vale la sesión verificada.
+  const headers = new Headers(request.headers);
+  headers.set("X-OpenDomus-Household", householdId);
+  headers.set("X-OpenDomus-User", session.user.id);
+  headers.set("X-OpenDomus-Session", session.session.id);
+  return householdLog(env, householdId).fetch(new Request(request, { headers }));
 }
 
 export default {

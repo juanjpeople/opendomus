@@ -10,6 +10,11 @@ export const en: Messages = {
     updated: "Retrieved on {date} · UTC",
     source: "View the source on GitHub",
   },
+  localOnly: {
+    title: "This installation works without a server",
+    description: "You can organize your home on this device. Accounts, invitations and feedback submission need a connection to our services and are unavailable in this installation.",
+    continue: "Continue on this device",
+  },
   common: {
     appName: "OpenDomus",
     cancel: "Cancel",
