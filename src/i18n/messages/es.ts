@@ -6,6 +6,15 @@
  * - Plurales: un objeto `{ one, other }` se elige con `Intl.PluralRules` según `count`.
  */
 export const es = {
+  projectStats: {
+    title: "Un proyecto abierto, con cifras claras",
+    description: "Compartimos datos públicos de GitHub para mostrar cómo crece el proyecto. Son una foto de la fecha indicada, no un contador en tiempo real.",
+    metrics: { stars: "Estrellas en GitHub", forks: "Forks del código", releases: "Versiones publicadas", downloads: "Descargas de archivos" },
+    noReleases: "Todavía no publicamos archivos descargables en GitHub. Podés usar la versión web y consultar el código.",
+    scope: "Las descargas incluyen archivos de releases. No representan personas ni instalaciones de la PWA. Esta sección no mide tu actividad dentro de la app.",
+    updated: "Consultado el {date} · UTC",
+    source: "Ver la fuente en GitHub",
+  },
   localOnly: {
     title: "Esta instalación funciona sin servidor",
     description: "Podés organizar tu casa en este dispositivo. Las cuentas, las invitaciones y el envío de comentarios necesitan una conexión con nuestros servicios y no están disponibles en esta instalación.",
