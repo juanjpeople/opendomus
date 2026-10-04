@@ -11,6 +11,7 @@ import { usePermission } from "@/lib/auth/hooks";
 import { SPRING } from "@/lib/motion";
 import { getStockStatus, isUnit } from "../domain";
 import { useInventoryActions, useInventoryItems } from "../hooks";
+import { ConsumeButton } from "./ConsumeButton";
 
 interface InventoryListProps {
   containerId: string;
@@ -79,6 +80,9 @@ export function InventoryList({ containerId, onOpen }: InventoryListProps) {
                 </button>
 
                 <Flex align="center" gap={8}>
+                  <Can perform="inventory.consume">
+                    <ConsumeButton item={item} />
+                  </Can>
                   <QuantityStepper
                     value={item.quantity}
                     unit={unitLabel(item.unit, item.quantity)}

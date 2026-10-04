@@ -1,15 +1,17 @@
 "use client";
 
-import { Flex, Skeleton, Tag, Typography, theme } from "antd";
+import { Button, Flex, Skeleton, Tag, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUp, MoveRight, Pencil, Plus, RotateCcwClock, Tag as PriceTag, Trash2, type LucideIcon } from "lucide-react";
+import { ArrowDown, ArrowUp, BellOff, ListPlus, MoveRight, PackageMinus, Pencil, Plus, RotateCcwClock, ShoppingBag, Tag as PriceTag, Trash2, Undo2, type LucideIcon } from "lucide-react";
 import { Fragment } from "react";
 import { EmptyState } from "@/components/ui";
 import { isUnit } from "@/features/inventory/domain";
+import { useInventoryActions } from "@/features/inventory/hooks";
 import { useNow } from "@/hooks/useNow";
 import { useI18n } from "@/i18n";
 import { SPRING } from "@/lib/motion";
-import type { ActivityEntry } from "../domain";
+import { usePermission } from "@/lib/auth/hooks";
+import { isUndoable, type ActivityEntry } from "../domain";
 
 const DAY = 86_400_000;
 
@@ -30,6 +32,8 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
   const { t, format } = useI18n();
   const { token } = theme.useToken();
   const now = useNow();
+  const { undo } = useInventoryActions();
+  const canUndo = usePermission("inventory.adjust");
 
   if (!entries) return <Skeleton active paragraph={{ rows: 4 }} />;
   if (entries.length === 0) {
@@ -60,8 +64,12 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
     if (entry.module === "storage") {
       return t(`activity.storage.${entry.action as "create" | "update" | "move" | "delete"}`, params);
     }
-    if (entry.action === "adjust") {
-      return t("activity.inventory.adjust", { ...params, from: entry.from ?? 0, to: `${entry.to ?? 0} ${unitLabel(entry.unit, entry.to ?? 0)}` });
+    if (entry.module === "shopping") {
+      const quantity = entry.to ? ` (${entry.to} ${unitLabel(entry.unit, entry.to)})` : "";
+      return t(`activity.shopping.${entry.action as "create" | "bought" | "dismiss" | "delete"}`, params) + quantity;
+    }
+    if (entry.action === "adjust" || entry.action === "consume" || entry.action === "restock" || entry.action === "undo") {
+      return t(`activity.inventory.${entry.action}`, { ...params, from: entry.from ?? 0, to: `${entry.to ?? 0} ${unitLabel(entry.unit, entry.to ?? 0)}` });
     }
     return t(`activity.inventory.${entry.action as "create" | "update" | "move" | "delete"}`, params);
   };
@@ -69,7 +77,9 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
   const visual = (entry: ActivityEntry): { Icon: LucideIcon; color: string; bg: string } => {
     switch (entry.action) {
       case "create":
-        return { Icon: Plus, color: token.colorSuccess, bg: token.colorSuccessBg };
+        return entry.module === "shopping"
+          ? { Icon: ListPlus, color: token.colorPrimary, bg: token.colorPrimaryBg }
+          : { Icon: Plus, color: token.colorSuccess, bg: token.colorSuccessBg };
       case "delete":
         return { Icon: Trash2, color: token.colorError, bg: token.colorErrorBg };
       case "price":
@@ -78,6 +88,15 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
         return { Icon: MoveRight, color: token.colorInfo, bg: token.colorInfoBg };
       case "update":
         return { Icon: Pencil, color: token.colorTextSecondary, bg: token.colorFillTertiary };
+      case "consume":
+        return { Icon: PackageMinus, color: token.colorWarning, bg: token.colorWarningBg };
+      case "restock":
+      case "bought":
+        return { Icon: ShoppingBag, color: token.colorSuccess, bg: token.colorSuccessBg };
+      case "undo":
+        return { Icon: Undo2, color: token.colorTextSecondary, bg: token.colorFillTertiary };
+      case "dismiss":
+        return { Icon: BellOff, color: token.colorTextSecondary, bg: token.colorFillTertiary };
       default: {
         const up = (entry.to ?? 0) >= (entry.from ?? 0);
         return { Icon: up ? ArrowUp : ArrowDown, color: token.colorPrimary, bg: token.colorPrimaryBg };
@@ -122,8 +141,10 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
                   >
                     <Icon />
                   </span>
-                  <Flex vertical gap={2} style={{ minWidth: 0 }}>
-                    <Typography.Text>{describe(entry)}</Typography.Text>
+                  <Flex vertical gap={2} style={{ minWidth: 0, flex: 1 }}>
+                    <Typography.Text delete={entry.undoneAt !== undefined} type={entry.undoneAt !== undefined ? "secondary" : undefined}>
+                      {describe(entry)}
+                    </Typography.Text>
                     <Flex gap={8} align="center" wrap>
                       <Typography.Text
                         type="secondary"
@@ -137,8 +158,18 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
                           {entry.place}
                         </Tag>
                       )}
+                      {entry.undoneAt !== undefined && (
+                        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                          {t("activity.undoneBy", { name: entry.undoneBy ?? "" })}
+                        </Typography.Text>
+                      )}
                     </Flex>
                   </Flex>
+                  {canUndo && isUndoable(entry, now) && (
+                    <Button size="small" type="text" icon={<Undo2 />} onClick={() => undo(entry.id)} style={{ flexShrink: 0, color: token.colorTextSecondary }}>
+                      {t("activity.undo")}
+                    </Button>
+                  )}
                 </Flex>
               </motion.div>
             </Fragment>

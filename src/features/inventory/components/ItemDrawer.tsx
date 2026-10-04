@@ -1,15 +1,20 @@
 "use client";
 
-import { Button, Col, Divider, Drawer, Flex, Form, Grid, Input, InputNumber, Row, Select, Typography } from "antd";
-import { Save } from "lucide-react";
+import { App, Button, Col, Divider, Drawer, Flex, Form, Grid, Input, InputNumber, Row, Select, Space, Switch, Typography, theme } from "antd";
+import { ListPlus, PackageMinus, Save } from "lucide-react";
 import { useState } from "react";
+import { Can } from "@/components/auth/Can";
 import { StockTag } from "@/components/ui";
 import { PricePanel } from "@/features/prices/components/PricePanel";
+import { suggestedQuantity } from "@/features/shopping/domain";
+import { useShoppingActions } from "@/features/shopping/hooks";
 import { useContainers } from "@/features/storage/hooks";
-import { useT } from "@/i18n";
+import { useNow } from "@/hooks/useNow";
+import { useI18n, useT } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
-import { getStockStatus, INVENTORY_LIMITS, UNITS, type InventoryItem, type InventoryItemPatch } from "../domain";
-import { useInventoryActions, useInventoryItem } from "../hooks";
+import { getStockStatus, INVENTORY_LIMITS, isUnit, UNITS, type InventoryItem, type InventoryItemPatch } from "../domain";
+import { useConsumption, useInventoryActions, useInventoryItem } from "../hooks";
+import { useConsumeWithUndo } from "./ConsumeButton";
 
 /** Detalle de un producto: datos, lugar (moverlo de contenedor) y precios. */
 export function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose: () => void }) {
@@ -38,6 +43,11 @@ export function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose
             {t("inventory.item.details")}
           </Typography.Title>
           <ItemForm item={item} />
+          <Divider />
+          <Typography.Title level={5} style={{ marginTop: 0 }}>
+            {t("inventory.consume.title")}
+          </Typography.Title>
+          <ConsumptionPanel item={item} />
           <Divider />
           <Typography.Title level={5} style={{ marginTop: 0 }}>
             {t("prices.title")}
@@ -73,7 +83,7 @@ function ItemForm({ item }: { item: InventoryItem }) {
   return (
     <Form
       layout="vertical"
-      initialValues={{ name: item.name, minThreshold: item.minThreshold, unit: item.unit, containerId: item.containerId }}
+      initialValues={{ name: item.name, minThreshold: item.minThreshold, unit: item.unit, containerId: item.containerId, autoSuggest: item.autoSuggest !== false }}
       onFinish={onFinish}
       disabled={!canEdit}
       requiredMark={false}
@@ -103,11 +113,77 @@ function ItemForm({ item }: { item: InventoryItem }) {
           options={[...groups].map(([spaceName, options]) => ({ label: spaceName, options }))}
         />
       </Form.Item>
+      <Form.Item name="autoSuggest" valuePropName="checked" label={t("inventory.item.autoSuggest")} tooltip={t("inventory.item.autoSuggestHint")}>
+        <Switch />
+      </Form.Item>
       {canEdit && (
         <Button type="primary" htmlType="submit" icon={<Save />} loading={saving}>
           {t("inventory.item.save")}
         </Button>
       )}
     </Form>
+  );
+}
+
+/** Consumo: cuánto se usa (sale del historial), registrar un consumo y anotarlo en la lista. */
+function ConsumptionPanel({ item }: { item: InventoryItem }) {
+  const { t, format } = useI18n();
+  const { token } = theme.useToken();
+  const now = useNow();
+  const stats = useConsumption(item.id);
+  const consume = useConsumeWithUndo();
+  const { add } = useShoppingActions();
+  const { message } = App.useApp();
+  const [amount, setAmount] = useState(1);
+  const unit = (count: number) => (isUnit(item.unit) ? t(`inventory.units.${item.unit}`, { count }) : item.unit);
+
+  return (
+    <Flex vertical gap={16}>
+      <div style={{ padding: 12, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
+        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+          {t("inventory.consume.last30")}
+        </Typography.Text>
+        <div style={{ fontSize: token.fontSizeHeading4, fontWeight: 600, letterSpacing: "-0.02em" }}>
+          {stats ? `${format.number(stats.last30)} ${unit(stats.last30)}` : "—"}
+        </div>
+        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+          {stats?.lastAt
+            ? t("inventory.consume.lastTime", { when: format.relative(stats.lastAt, now), count: stats.times })
+            : t("inventory.consume.never")}
+        </Typography.Text>
+      </div>
+
+      <Flex gap={8} wrap>
+        <Can perform="inventory.consume">
+          <Space.Compact>
+            <InputNumber
+              aria-label={t("inventory.consume.amount")}
+              min={1}
+              max={INVENTORY_LIMITS.maxQuantity}
+              precision={0}
+              value={amount}
+              onChange={(value) => setAmount(value ?? 1)}
+              style={{ width: 88 }}
+            />
+            <Button icon={<PackageMinus />} disabled={item.quantity <= 0} onClick={() => consume(item, amount)}>
+              {t("inventory.consume.register")}
+            </Button>
+          </Space.Compact>
+        </Can>
+        <Can perform="shopping.manage">
+          <Button
+            icon={<ListPlus />}
+            onClick={async () => {
+              const quantity = suggestedQuantity(item);
+              if (await add({ name: item.name, quantity, unit: item.unit, inventoryItemId: item.id })) {
+                message.success(t("shopping.toast.added", { name: item.name }));
+              }
+            }}
+          >
+            {t("shopping.addToList")}
+          </Button>
+        </Can>
+      </Flex>
+    </Flex>
   );
 }

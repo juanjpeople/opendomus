@@ -4,9 +4,25 @@
  */
 
 /** Qué tipo de cosa cambió. Cada módulo nuevo suma su valor acá. */
-export type ActivityModule = "inventory" | "storage" | "prices" | "members" | "calendar";
+export type ActivityModule = "inventory" | "storage" | "prices" | "members" | "calendar" | "shopping";
 
-export type ActivityAction = "create" | "adjust" | "update" | "move" | "delete" | "price";
+export type ActivityAction =
+  | "create"
+  | "adjust"
+  | "update"
+  | "move"
+  | "delete"
+  | "price"
+  /** Inventario: se usó o consumió (distinto de corregir la cantidad). */
+  | "consume"
+  /** Inventario: entró por una compra de la lista. */
+  | "restock"
+  /** Inventario: se deshizo un cambio de cantidad anterior. */
+  | "undo"
+  /** Compras: se marcó como comprado. */
+  | "bought"
+  /** Compras: se descartó una sugerencia. */
+  | "dismiss";
 
 export interface ActivityEntry {
   id: string;
@@ -31,6 +47,9 @@ export interface ActivityEntry {
   amountCents?: number;
   currency?: string;
   store?: string;
+  /** Si se deshizo: cuándo y quién (la entrada queda, tachada, para que el historial no mienta). */
+  undoneAt?: number;
+  undoneBy?: string;
 }
 
 export const ACTIVITY_LIMITS = {
@@ -38,4 +57,22 @@ export const ACTIVITY_LIMITS = {
   coalesceMs: 60_000,
   /** Tope de entradas guardadas: al superarlo se borran las más viejas. */
   maxEntries: 5_000,
+  /** Hasta cuándo se puede deshacer un cambio de cantidad. */
+  undoWindowMs: 24 * 60 * 60_000,
 } as const;
+
+/** Cambios de cantidad que se pueden deshacer desde el historial. */
+const UNDOABLE: ReadonlySet<ActivityAction> = new Set(["consume", "adjust", "restock"]);
+
+/** ¿Se puede deshacer? Solo cambios de cantidad recientes y que no se hayan deshecho ya. */
+export function isUndoable(entry: ActivityEntry, now: number): boolean {
+  return (
+    entry.module === "inventory" &&
+    UNDOABLE.has(entry.action) &&
+    entry.undoneAt === undefined &&
+    entry.from !== undefined &&
+    entry.to !== undefined &&
+    entry.from !== entry.to &&
+    now - entry.at < ACTIVITY_LIMITS.undoWindowMs
+  );
+}

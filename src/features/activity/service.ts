@@ -10,7 +10,8 @@ import { ACTIVITY_LIMITS, type ActivityEntry } from "./domain";
 
 type NewActivity = Omit<ActivityEntry, "id" | "at" | "actorId" | "actorName">;
 
-export async function recordActivity(actor: Actor, entry: NewActivity) {
+/** Devuelve el id de la entrada (la nueva o la agrupada), o `null` si el cambio se anuló. */
+export async function recordActivity(actor: Actor, entry: NewActivity): Promise<string | null> {
   const now = Date.now();
 
   // Clics seguidos en +/- sobre el mismo ítem: se actualiza la última entrada en vez de sumar una por clic.
@@ -19,15 +20,20 @@ export async function recordActivity(actor: Actor, entry: NewActivity) {
       .where("[entityId+at]")
       .between([entry.entityId, Dexie.minKey], [entry.entityId, Dexie.maxKey])
       .last();
-    if (last?.action === "adjust" && last.actorId === actor.id && now - last.at < ACTIVITY_LIMITS.coalesceMs) {
+    if (last?.action === "adjust" && last.undoneAt === undefined && last.actorId === actor.id && now - last.at < ACTIVITY_LIMITS.coalesceMs) {
       // Si volvió al valor inicial (sumó y restó), la acción se anula: no queda nada que contar.
-      if (last.from === entry.to) await db.activity.delete(last.id);
-      else await db.activity.update(last.id, { to: entry.to, at: now });
-      return;
+      if (last.from === entry.to) {
+        await db.activity.delete(last.id);
+        return null;
+      }
+      await db.activity.update(last.id, { to: entry.to, at: now });
+      return last.id;
     }
   }
 
-  await db.activity.add({ ...entry, id: createId(), at: now, actorId: actor.id, actorName: actor.name });
+  const id = createId();
+  await db.activity.add({ ...entry, id, at: now, actorId: actor.id, actorName: actor.name });
+  return id;
 }
 
 /** Mantiene el historial acotado borrando lo más viejo. Barato: solo cuenta salvo que haya excedente. */

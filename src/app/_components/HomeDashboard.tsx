@@ -14,6 +14,7 @@ import { useOccurrences } from "@/features/calendar/hooks";
 import { APPEARANCE_ICONS, tint } from "@/lib/appearance";
 import { useActivity } from "@/features/activity/hooks";
 import { useInventoryTotals } from "@/features/inventory/hooks";
+import { useShoppingCounts } from "@/features/shopping/hooks";
 import { spaceAppearance } from "@/features/storage/domain";
 import { useStorageOverview, type SpaceOverview } from "@/features/storage/hooks";
 import { useNow } from "@/hooks/useNow";
@@ -60,14 +61,11 @@ export function HomeDashboard() {
               <SpaceCard space={space} />
             </Col>
           ))}
-          <Col xs={24} sm={12} lg={8}>
-            <DashboardCard href="/compras" icon={ShoppingCart} title={t("home.shoppingTitle")}>
-              <Typography.Text style={{ fontSize: "1.45rem", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.2, hyphens: "auto" }}>
-                {t("home.underConstruction")}
-              </Typography.Text>
-              <Typography.Text type="secondary">{t("home.arrivesPhase")}</Typography.Text>
-            </DashboardCard>
-          </Col>
+          <Can perform="shopping.view">
+            <Col xs={24} sm={12} lg={8}>
+              <ShoppingCard />
+            </Col>
+          </Can>
           <Col xs={24} sm={12} lg={8}>
             <DashboardCard href="/inventario" icon={Boxes} title={t("nav.routes.inventory")}>
               <Typography.Text style={{ fontSize: "1.45rem", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
@@ -76,6 +74,9 @@ export function HomeDashboard() {
               <Typography.Text type="secondary">{t("storage.containerCount", { count: spaces?.reduce((sum, space) => sum + space.containers.length, 0) ?? 0 })}</Typography.Text>
             </DashboardCard>
           </Col>
+        </Row>
+        {/* Fila aparte: la cantidad de recintos varía y no tiene que dejar huecos en la de abajo. */}
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Can perform="calendar.view">
             <Col xs={24} lg={12}>
               <UpcomingCard />
@@ -181,6 +182,31 @@ function SpaceCard({ space }: { space: SpaceOverview }) {
   );
 }
 
+/** Lista de compras: cuánto falta comprar y si hay sugerencias esperando una decisión. */
+function ShoppingCard() {
+  const { token } = theme.useToken();
+  const t = useT();
+  const counts = useShoppingCounts();
+  const pending = counts?.pending ?? 0;
+  const review = counts?.review ?? 0;
+
+  return (
+    <DashboardCard href="/compras" icon={ShoppingCart} title={t("home.shoppingTitle")}>
+      <Flex align="baseline" gap={6}>
+        <Typography.Text style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+          <AnimatedNumber value={pending} />
+        </Typography.Text>
+        <Typography.Text type="secondary">{t("home.shoppingPending", { count: pending })}</Typography.Text>
+      </Flex>
+      {review > 0 ? (
+        <Typography.Text style={{ color: token.colorWarningText }}>{t("home.shoppingReview", { count: review })}</Typography.Text>
+      ) : (
+        <Typography.Text type="secondary">{pending === 0 ? t("home.shoppingEmpty") : t("home.shoppingOpen")}</Typography.Text>
+      )}
+    </DashboardCard>
+  );
+}
+
 function DashboardCard({
   href,
   icon,
@@ -231,8 +257,8 @@ function RecentActivityCard() {
   const entries = useActivity({ limit: 6 });
 
   return (
-    <StaggerItem>
-      <Card title={t("home.recentActivity")} styles={{ body: { paddingBlock: 8 } }}>
+    <StaggerItem style={{ height: "100%" }}>
+      <Card title={t("home.recentActivity")} style={{ height: "100%" }} styles={{ body: { paddingBlock: 8 } }}>
         <ActivityList entries={entries} showPlace />
       </Card>
     </StaggerItem>

@@ -4,6 +4,7 @@ import type { CalendarEvent } from "@/features/calendar/domain";
 import type { InventoryItem } from "@/features/inventory/domain";
 import { DEFAULT_MEMBERS, type Member } from "@/features/members/domain";
 import type { PriceRecord } from "@/features/prices/domain";
+import type { ShoppingCandidate, ShoppingListItem } from "@/features/shopping/domain";
 import type { Container, Space } from "@/features/storage/domain";
 import { buildDefaultStorage } from "@/features/storage/seed";
 
@@ -15,20 +16,10 @@ import { buildDefaultStorage } from "@/features/storage/seed";
  * con el esquema nuevo y, si hace falta, un `.upgrade()` que migre los datos.
  */
 
-export interface ShoppingListItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string;
-  isCompleted: boolean;
-  /** Si vino automáticamente del inventario. */
-  inventoryItemId?: string;
-  createdAt: number;
-}
-
 export const db = new Dexie("OpenDomusDB") as Dexie & {
   inventory: EntityTable<InventoryItem, "id">;
   shoppingList: EntityTable<ShoppingListItem, "id">;
+  shoppingCandidates: EntityTable<ShoppingCandidate, "id">;
   activity: EntityTable<ActivityEntry, "id">;
   spaces: EntityTable<Space, "id">;
   containers: EntityTable<Container, "id">;
@@ -104,6 +95,24 @@ db.version(6)
     if (counts.some((count) => count > 0)) return;
     await seedStorage(tx);
     await seedMembers(tx);
+  });
+
+// v7: lista de compras de verdad. `isCompleted` (booleano, no indexable) pasa a `status`,
+// y nace la bandeja "Para revisar" con las sugerencias automáticas del inventario.
+db.version(7)
+  .stores({
+    shoppingList: "id, status, inventoryItemId, createdAt",
+    shoppingCandidates: "id, itemId, status, createdAt",
+  })
+  .upgrade(async (tx) => {
+    await tx
+      .table("shoppingList")
+      .toCollection()
+      .modify((entry: ShoppingListItem & { isCompleted?: boolean }) => {
+        entry.status = entry.isCompleted ? "bought" : "pending";
+        entry.createdBy ??= "";
+        delete entry.isCompleted;
+      });
   });
 
 /** Casa nueva: arranca con lugares de ejemplo (Cocina con Heladera y Alacena, Taller) y los perfiles base. */

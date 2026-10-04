@@ -21,6 +21,8 @@ export interface InventoryItem {
   /** Por debajo de este valor, el ítem está en "stock bajo" (y a futuro va a la lista de compras). */
   minThreshold: number;
   unit: string;
+  /** Si al quedar poco entra solo en "Para revisar" de la lista de compras. Sin definir = sí. */
+  autoSuggest?: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -28,7 +30,7 @@ export interface InventoryItem {
 export type NewInventoryItem = Pick<InventoryItem, "name" | "quantity" | "unit" | "minThreshold">;
 
 /** Campos editables de un producto. Cambiar `containerId` es moverlo de lugar. */
-export type InventoryItemPatch = Partial<Pick<InventoryItem, "name" | "unit" | "minThreshold" | "containerId">>;
+export type InventoryItemPatch = Partial<Pick<InventoryItem, "name" | "unit" | "minThreshold" | "containerId" | "autoSuggest">>;
 
 export const INVENTORY_LIMITS = {
   nameMaxLength: 80,
@@ -88,5 +90,26 @@ export function parseInventoryPatch(patch: InventoryItemPatch): InventoryItemPat
     out.unit = patch.unit;
   }
   if (patch.containerId !== undefined) out.containerId = patch.containerId;
+  if (patch.autoSuggest !== undefined) out.autoSuggest = !!patch.autoSuggest;
   return out;
+}
+
+// --- Consumo -----------------------------------------------------------------
+
+export interface ConsumptionPlan {
+  /** Cantidad que queda después de consumir. */
+  quantity: number;
+  /** Lo que de verdad se descontó (nunca más de lo que había). */
+  consumed: number;
+  /** Lo que faltó para cubrir el pedido (0 si alcanzó). */
+  missing: number;
+}
+
+/** Cuánto se descuenta al consumir `amount`. Nunca deja negativos: si no alcanza, descuenta hasta 0. */
+export function planConsumption(current: number, amount: number): ConsumptionPlan {
+  if (!Number.isInteger(amount) || amount <= 0 || amount > INVENTORY_LIMITS.maxQuantity) {
+    throw new ValidationError("errors.validation.quantityInvalid");
+  }
+  const consumed = Math.min(current, amount);
+  return { quantity: current - consumed, consumed, missing: amount - consumed };
 }
