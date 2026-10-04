@@ -40,10 +40,11 @@ jobs:
       - run: mkdir -p out
       - name: Secretos de prueba (solo para este job)
         run: |
-          printf 'BETTER_AUTH_SECRET=%s
-APP_ORIGIN=http://localhost:8787
-DEV_ORIGINS=http://localhost:3000
-' "$(openssl rand -base64 32 | tr -d '=+/')" > .dev.vars
+          {
+            echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32 | tr -d '=+/')"
+            echo "APP_ORIGIN=http://localhost:8787"
+            echo "DEV_ORIGINS=http://localhost:3000"
+          } > .dev.vars
       - run: npx wrangler d1 migrations apply opendomus --local
       - name: Recorrido de la API (cuentas, casas, invitaciones, permisos)
         run: |
