@@ -145,7 +145,7 @@ export function ProjectView() {
       )}
 
       <ProjectModal open={dialog === "edit"} project={project} onClose={() => setDialog(null)} />
-      <ListModal open={dialog === "list"} projectId={project.id} onClose={() => setDialog(null)} onSaved={(listId) => router.push(`/compras?lista=${listId}`)} />
+      <ListModal open={dialog === "list"} projectId={project.id} initialPrivacy={project.privacy ?? "family"} onClose={() => setDialog(null)} onSaved={(listId) => router.push(`/compras?lista=${listId}`)} />
     </RequirePermission>
   );
 }
