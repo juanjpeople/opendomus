@@ -18,6 +18,7 @@ test("el diagnóstico no expone secretos ni confunde configuración presente con
   assert(report.includes("validez no comprobada"));
   const missing = operatorDiagnostics({}, false).join("\n");
   assert(missing.includes("Pendiente: configurar OPENDOMUS_API"));
-  assert(missing.includes("Pendiente: instalar cloudflared"));
-  assert(missing.includes("Pendiente: configurar OPENDOMUS_ADMIN_TOKEN"));
+  assert(missing.includes("El panel web no lo necesita"));
+  assert(missing.includes("CLI opcional: configurar OPENDOMUS_ADMIN_TOKEN"));
+  assert(report.includes("Panel privado: https://private.example/admin"));
 });

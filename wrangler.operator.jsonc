@@ -7,6 +7,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "preview_urls": false,
+  "assets": { "directory": "./operator-dist", "binding": "OPERATOR_ASSETS", "run_worker_first": true },
   "services": [{ "binding": "OPENDOMUS", "service": "opendomus" }],
   // Sin issuer, audience y lista de operadores, todas las solicitudes se rechazan.
   "observability": { "enabled": false }

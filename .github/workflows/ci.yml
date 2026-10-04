@@ -25,6 +25,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run build:operator
+      - run: npx wrangler deploy --config wrangler.operator.jsonc --dry-run
 
   api:
     name: API (Worker + D1 local)
@@ -74,6 +76,8 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx playwright install --with-deps chromium
+      - run: npm run build:operator
+      - run: npx playwright test --config playwright.operator.config.ts
       - run: npm run e2e
       - uses: actions/upload-artifact@v7
         if: failure()
