@@ -121,6 +121,11 @@ export class HouseholdLog extends DurableObject<Env> {
     ws.close(code === 1005 ? 1000 : code);
   }
 
+  async purge() {
+    for (const ws of this.ctx.getWebSockets()) ws.close(1001, "household deleted");
+    await this.ctx.storage.deleteAll();
+  }
+
   private broadcast(message: string) {
     for (const ws of this.ctx.getWebSockets()) {
       try {

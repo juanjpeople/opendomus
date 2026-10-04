@@ -615,7 +615,10 @@ function Closing() {
         </motion.div>
         <Flex justify="space-between" wrap gap={8} style={{ marginTop: 48 }}>
           <Typography.Text type="secondary">{t("landing.closing.footerLeft")}</Typography.Text>
-          <Typography.Text type="secondary">{t("landing.closing.footerRight")}</Typography.Text>
+          <Flex gap={16} wrap>
+            <Link href="/feedback">{t("feedbackPage.link")}</Link>
+            <Typography.Text type="secondary">{t("landing.closing.footerRight")}</Typography.Text>
+          </Flex>
         </Flex>
       </Container>
     </section>

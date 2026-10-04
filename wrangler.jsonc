@@ -35,8 +35,11 @@
     "SUPABASE_URL": "https://qaeqyeadwijphhlqcrku.supabase.co",
     "SUPABASE_PHOTOS_BUCKET": "opendomus-photos",
     "PHOTO_STORAGE": "supabase",
+    "PLATFORM_ADMIN_EMAILS": "juanjpeople@gmail.com",
     // Crear una casa en la nube pide una licencia (en desarrollo, `.dev.vars` puede poner `open`).
     "HOUSEHOLD_ACCESS": "codes",
   },
+  // Procesa avisos y pausa casas inactivas una vez por día. Nunca borra automáticamente.
+  "triggers": { "crons": ["17 4 * * *"] },
   "observability": { "enabled": true },
 }

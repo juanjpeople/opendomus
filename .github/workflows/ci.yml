@@ -47,6 +47,7 @@ jobs:
             # Como en producción: crear una casa pide licencia (el test la emite por la API de administración).
             echo "HOUSEHOLD_ACCESS=codes"
             echo "ADMIN_TOKEN=$(openssl rand -hex 32)"
+            echo "PLATFORM_ADMIN_EMAILS=admin@casa.test"
             # Nunca contacta servicios externos: el backend en memoria solo se habilita en localhost.
             echo "PHOTO_STORAGE=memory"
           } > .dev.vars
