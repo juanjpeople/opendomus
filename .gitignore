@@ -35,6 +35,9 @@ yarn-error.log*
 !.env.development
 !.env.production
 
+# Notas privadas (no se publican: el repo es público)
+/docs/privado/
+
 # vercel
 .vercel
 

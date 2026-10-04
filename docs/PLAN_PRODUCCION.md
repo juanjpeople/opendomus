@@ -209,20 +209,10 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
 
 ## Etapa 6: suscripciones automáticas
 
-> Modelo decidido el 2026-10-04:
-> - OpenDomus es **gratis y local por defecto**.
-> - La nube es **opcional**, con **licencia por casa**.
-> - Precio calculado desde el costo real, para que la familia típica entre en el plan básico.
->
-> Costos, comisiones y propuesta de planes en [`PRECIOS.md`](PRECIOS.md).
+> OpenDomus es **gratis y local por defecto**. La nube es **opcional**, con **licencia por casa**. El modelo de cobro está en definición y, por ahora, no se muestra en la app.
 
-- **Licencias y planes por casa** (✅ base en el MVP: `cloud_licenses` y `household_plans`, admin API con token, CLI `npm run admin`, pausa = se baja pero no se sube). La app solo pregunta "¿puede?", como con los permisos.
-- **Planes** (propuesta en `PRECIOS.md`):
-  - en el dispositivo y autoalojada, gratis;
-  - **Nube Familia** ~US$15 por año (en pesos por paridad, mensual con Mercado Pago);
-  - espacio extra al costo;
-  - solidario a pedido.
-- **Cobro web**: *checkout* + portal del cliente + webhooks idempotentes → emiten o extienden la licencia y el `period_end` de la casa. Paddle para lo internacional (*merchant of record*) y Mercado Pago para Argentina.
+- **Licencias y planes por casa** (✅ base técnica en el MVP: `cloud_licenses` y `household_plans`, admin API con token, CLI `npm run admin`, pausa = se baja pero no se sube). La app solo pregunta "¿puede?", como con los permisos.
+- **Cobro web**: *checkout* + portal del cliente + webhooks idempotentes → emiten o extienden la licencia de la casa.
 - **Android**: Google exige **Play Billing** para vender suscripciones digitales dentro de la app. Plan: unificar los dos cobros (por ejemplo, con RevenueCat), o al principio vender solo por web y que la app solo permita entrar (verificar la política vigente).
 - **Hasta que haya clientes**: dejar el modelo, los webhooks y la UI de "Plan" listos en modo prueba.
 
