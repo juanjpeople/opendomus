@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
-import { PageHeader, StockTag } from "@/components/ui";
+import { PageHeader, PrivacySelect, StockTag } from "@/components/ui";
 import { getStockStatus, isUnit, UNITS } from "@/features/inventory/domain";
 import { PhotoGallery } from "@/features/media/components/PhotoGallery";
 import { PHOTO_LIMITS } from "@/features/media/domain";
@@ -16,6 +16,7 @@ import { usePhotoActions } from "@/features/media/hooks";
 import { useInventoryOptions, type ItemPlace } from "@/features/shopping/hooks";
 import { useI18n } from "@/i18n";
 import { SPRING } from "@/lib/motion";
+import type { Privacy } from "@/lib/sync/scope";
 import { usePageCrumbs } from "@/store/useBreadcrumbStore";
 import { RECIPE_LIMITS, RECIPE_TAGS, type Recipe, type RecipeTag } from "../domain";
 import { useRecipe, useRecipeActions } from "../hooks";
@@ -59,6 +60,7 @@ function EditorForm({ recipe }: { recipe: Recipe | null }) {
   const [servings, setServings] = useState<number | null>(recipe?.servings ?? 4);
   const [minutes, setMinutes] = useState<number | null>(recipe?.minutes ?? 30);
   const [tags, setTags] = useState<RecipeTag[]>(recipe?.tags ?? []);
+  const [privacy, setPrivacy] = useState<Privacy>(recipe?.privacy ?? "family");
   const [ingredients, setIngredients] = useState<IngredientDraft[]>(
     recipe?.ingredients.map((ingredient) => ({ ...ingredient, key: nextKey() })) ?? [{ key: nextKey(), name: "", quantity: 1, unit: "unidades" }],
   );
@@ -81,6 +83,7 @@ function EditorForm({ recipe }: { recipe: Recipe | null }) {
     setSaving(true);
     const input = {
       name,
+      privacy,
       servings: servings ?? 0,
       minutes: minutes ?? 0,
       tags,
@@ -132,6 +135,12 @@ function EditorForm({ recipe }: { recipe: Recipe | null }) {
                     </Typography.Text>
                     <Input size="large" value={name} maxLength={RECIPE_LIMITS.nameMaxLength} placeholder={t("recipes.editor.namePlaceholder")} onChange={(event) => setName(event.target.value)} />
                   </label>
+                  <div>
+                    <Typography.Text strong style={{ display: "block", marginBottom: 6 }}>
+                      {t("privacy.label")}
+                    </Typography.Text>
+                    <PrivacySelect value={privacy} onChange={setPrivacy} />
+                  </div>
                   <Flex gap={16} wrap>
                     <label>
                       <Typography.Text strong style={{ display: "block", marginBottom: 6 }}>

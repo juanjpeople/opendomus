@@ -6,7 +6,7 @@ import { CURRENCIES, type Currency } from "@/features/prices/domain";
 import { parseMoney, type ListBudget } from "@/features/shopping/domain";
 import { isAppearanceColor, isAppearanceIcon, type AppearanceColor, type AppearanceIcon } from "@/lib/appearance";
 import { ValidationError } from "@/lib/errors";
-import type { Privacy } from "@/lib/sync/scope";
+import { isPrivacy, type Privacy } from "@/lib/sync/scope";
 
 export type ProjectStatus = "active" | "done";
 
@@ -29,6 +29,7 @@ export interface Project {
 
 export interface ProjectInput {
   name: string;
+  privacy?: Privacy;
   notes?: string;
   budget?: number | null;
   currency: Currency;
@@ -40,13 +41,15 @@ export const PROJECT_LIMITS = { nameMaxLength: 60, notesMaxLength: 1_000 } as co
 
 export function parseProjectInput(input: ProjectInput) {
   const name = input.name?.trim() ?? "";
+  const privacy = input.privacy ?? "family";
   if (!name) throw new ValidationError("errors.validation.nameRequired");
   if (name.length > PROJECT_LIMITS.nameMaxLength) throw new ValidationError("errors.validation.nameTooLong", { max: PROJECT_LIMITS.nameMaxLength });
+  if (!isPrivacy(privacy)) throw new ValidationError("errors.validation.kindInvalid");
   const notes = input.notes?.trim() || undefined;
   if (notes && notes.length > PROJECT_LIMITS.notesMaxLength) throw new ValidationError("errors.validation.nameTooLong", { max: PROJECT_LIMITS.notesMaxLength });
   if (!CURRENCIES.includes(input.currency)) throw new ValidationError("errors.validation.currencyInvalid");
   if (!isAppearanceColor(input.color) || !isAppearanceIcon(input.icon)) throw new ValidationError("errors.validation.appearanceInvalid");
-  return { name, notes, budgetCents: parseMoney(input.budget), currency: input.currency, color: input.color, icon: input.icon };
+  return { name, privacy, notes, budgetCents: parseMoney(input.budget), currency: input.currency, color: input.color, icon: input.icon };
 }
 
 export interface ProjectBudget {

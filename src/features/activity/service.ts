@@ -7,7 +7,8 @@ import type { Actor } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { createId } from "@/lib/id";
 import { untracked } from "@/lib/sync/middleware";
-import { ACTIVITY_LIMITS, type ActivityEntry } from "./domain";
+import type { Privacy } from "@/lib/sync/scope";
+import { ACTIVITY_LIMITS, type ActivityEntry, type ActivityModule } from "./domain";
 
 type NewActivity = Omit<ActivityEntry, "id" | "at" | "actorId" | "actorName">;
 
@@ -27,6 +28,7 @@ export async function recordActivity(actor: Actor, entry: NewActivity): Promise<
         await db.activity.delete(last.id);
         return null;
       }
+
       await db.activity.update(last.id, { to: entry.to, at: now });
       return last.id;
     }
@@ -35,6 +37,17 @@ export async function recordActivity(actor: Actor, entry: NewActivity): Promise<
   const id = createId();
   await db.activity.add({ ...entry, id, at: now, actorId: actor.id, actorName: actor.name });
   return id;
+}
+
+/** Sella o cambia el nivel del historial heredado antes de cambiar o borrar su padre. */
+export async function setActivityPrivacy(module: ActivityModule, entityId: string, privacy: Privacy, createdBy: string) {
+  const changes = { privacy, createdBy };
+  await db.activity
+    .where("[entityId+at]")
+    .between([entityId, Dexie.minKey], [entityId, Dexie.maxKey])
+    .filter((entry) => entry.module === module)
+    .modify(changes);
+  if (module === "lists") await db.activity.where("listId").equals(entityId).modify(changes);
 }
 
 /** Mantiene el historial acotado borrando lo más viejo. Barato: solo cuenta salvo que haya excedente. */

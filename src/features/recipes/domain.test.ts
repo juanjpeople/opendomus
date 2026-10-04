@@ -64,6 +64,8 @@ describe("validación de recetas", () => {
     const recipe = parseRecipe({ ...base, steps: [" Batir ", "", "  "], tags: ["quick", "quick", "inventada" as never] });
     assert.deepEqual(recipe.steps, ["Batir"]);
     assert.deepEqual(recipe.tags, ["quick"]);
+    assert.equal(recipe.privacy, "family");
+    assert.equal(parseRecipe({ ...base, privacy: "adults" }).privacy, "adults");
   });
 
   test("lo vinculado va en enteros y con una unidad del inventario; lo suelto, libre", () => {
@@ -76,6 +78,7 @@ describe("validación de recetas", () => {
     assert.throws(() => parseRecipe({ ...base, name: " " }), ValidationError);
     assert.throws(() => parseRecipe({ ...base, servings: 0 }), ValidationError);
     assert.throws(() => parseRecipe({ ...base, minutes: -5 }), ValidationError);
+    assert.throws(() => parseRecipe({ ...base, privacy: "inventada" as never }), ValidationError);
   });
 });
 

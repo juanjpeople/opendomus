@@ -10,6 +10,7 @@ import type { Translator } from "@/i18n/translate";
 import { useCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
+import { canSee, type Viewer } from "@/lib/sync/scope";
 import {
   HOME_LIST_ID,
   SHOPPING_LIMITS,
@@ -99,11 +100,12 @@ async function priceSummaries(itemIds: string[]) {
 
 const linkedIds = (entries: { inventoryItemId?: string }[]) => [...new Set(entries.flatMap((entry) => (entry.inventoryItemId ? [entry.inventoryItemId] : [])))];
 
-/** Todas las listas (activas primero, la de la casa arriba) con su presupuesto. Las usa el selector y los proyectos. */
-export async function loadListSummaries(): Promise<ListSummary[]> {
-  const [lists, entries, projects] = await Promise.all([db.shoppingLists.toArray(), db.shoppingList.toArray(), db.projects.toArray()]);
+/** Las listas que este perfil puede ver (activas primero, la de la casa arriba) con su presupuesto. Las usa el selector y los proyectos. */
+export async function loadListSummaries(viewer: Viewer | null): Promise<ListSummary[]> {
+  const [allLists, entries, projects] = await Promise.all([db.shoppingLists.toArray(), db.shoppingList.toArray(), db.projects.toArray()]);
+  const lists = allLists.filter((list) => canSee(viewer, list));
   const prices = await priceSummaries(linkedIds(entries));
-  const projectById = new Map(projects.map((project) => [project.id, project]));
+  const projectById = new Map(projects.filter((project) => canSee(viewer, project)).map((project) => [project.id, project]));
   return lists
     .map((list) => {
       const items = entries.filter((entry) => entry.listId === list.id);
@@ -119,7 +121,8 @@ export async function loadListSummaries(): Promise<ListSummary[]> {
 }
 
 export function useListSummaries() {
-  return useLiveQuery(loadListSummaries);
+  const viewer = useCurrentUser();
+  return useLiveQuery(() => loadListSummaries(viewer), [viewer?.id, viewer?.role]);
 }
 
 export interface ShoppingData {
@@ -133,9 +136,11 @@ export interface ShoppingData {
 
 /** Todo lo de una lista, reactivo a cualquier cambio de stock, ítems o precios. `null` si la lista no existe. */
 export function useShoppingData(listId: string): ShoppingData | null | undefined {
+  const viewer = useCurrentUser();
   return useLiveQuery(async () => {
     const list = await db.shoppingLists.get(listId);
-    if (!list) return null;
+    // Una lista que este perfil no puede ver es, para él, una lista que no existe.
+    if (!list || !canSee(viewer, list)) return null;
     const home = list.id === HOME_LIST_ID;
     const [entries, candidates] = await Promise.all([
       db.shoppingList.where("listId").equals(listId).sortBy("createdAt"),
@@ -168,20 +173,21 @@ export function useShoppingData(listId: string): ShoppingData | null | undefined
         // Más urgente primero: lo agotado antes que lo que está bajo.
         .sort((a, b) => (a.reason === b.reason ? 0 : a.reason === "empty" ? -1 : 1)),
     };
-  }, [listId]);
+  }, [listId, viewer?.id, viewer?.role]);
 }
 
 /** Contadores para el inicio y el menú: lo pendiente de todas las listas activas y las sugerencias. */
 export function useShoppingCounts() {
+  const viewer = useCurrentUser();
   return useLiveQuery(async () => {
     const [lists, pending, review] = await Promise.all([
       db.shoppingLists.toArray(),
       db.shoppingList.where("status").equals("pending").toArray(),
       db.shoppingCandidates.where("status").equals("pending").count(),
     ]);
-    const active = new Set(lists.filter((list) => !list.archivedAt).map((list) => list.id));
+    const active = new Set(lists.filter((list) => !list.archivedAt && canSee(viewer, list)).map((list) => list.id));
     return { pending: pending.filter((entry) => active.has(entry.listId)).length, review };
-  });
+  }, [viewer?.id, viewer?.role]);
 }
 
 /** Productos del inventario para autocompletar al anotar algo (y vincularlo). */

@@ -3,7 +3,7 @@
  * con las reglas del inventario, y "Agregar lo que falta" anota con las de la lista de compras,
  * cada uno en una sola transacción (todo o nada).
  */
-import { pruneActivity, recordActivity } from "@/features/activity/service";
+import { pruneActivity, recordActivity, setActivityPrivacy } from "@/features/activity/service";
 import { deleteCommentsOfWithin } from "@/features/comments/service";
 import { consumeWithin, QUANTITY_TABLES } from "@/features/inventory/service";
 import { deletePhotosOfWithin } from "@/features/media/service";
@@ -27,7 +27,7 @@ export async function createRecipe(actor: Actor | null, input: RecipeInput) {
   const now = Date.now();
   await db.transaction("rw", db.recipes, db.activity, async () => {
     await db.recipes.add({ ...data, id, createdBy: actor.id, createdAt: now, updatedAt: now });
-    await recordActivity(actor, { module: "recipes", action: "create", entityId: id, entityName: data.name });
+    await recordActivity(actor, { module: "recipes", action: "create", entityId: id, entityName: data.name, privacy: data.privacy, createdBy: actor.id });
   });
   await pruneActivity();
   return id;
@@ -37,9 +37,10 @@ export async function updateRecipe(actor: Actor | null, id: string, input: Recip
   assertCan(actor, "recipes.manage");
   const data = parseRecipe(input);
   await db.transaction("rw", db.recipes, db.activity, async () => {
-    await getRecipe(id);
+    const recipe = await getRecipe(id);
+    await setActivityPrivacy("recipes", id, data.privacy, recipe.createdBy);
     await db.recipes.update(id, { ...data, updatedAt: Date.now() });
-    await recordActivity(actor, { module: "recipes", action: "update", entityId: id, entityName: data.name });
+    await recordActivity(actor, { module: "recipes", action: "update", entityId: id, entityName: data.name, privacy: data.privacy, createdBy: recipe.createdBy });
   });
 }
 
@@ -62,10 +63,11 @@ export async function deleteRecipe(actor: Actor | null, id: string) {
   await db.transaction("rw", db.recipes, db.photos, db.comments, db.activity, async () => {
     const recipe = await db.recipes.get(id);
     if (!recipe) return;
+    await setActivityPrivacy("recipes", id, recipe.privacy ?? "family", recipe.createdBy);
     await db.recipes.delete(id);
     await deletePhotosOfWithin("recipe", id);
     await deleteCommentsOfWithin("recipe", id);
-    await recordActivity(actor, { module: "recipes", action: "delete", entityId: id, entityName: recipe.name });
+    await recordActivity(actor, { module: "recipes", action: "delete", entityId: id, entityName: recipe.name, privacy: recipe.privacy ?? "family", createdBy: recipe.createdBy });
   });
 }
 
@@ -90,7 +92,7 @@ export async function cookRecipe(actor: Actor | null, id: string, servings: numb
       const plan = await consumeWithin(actor, itemId, amount);
       if (plan && plan.missing > 0) short.push({ itemId, missing: plan.missing });
     }
-    await recordActivity(actor, { module: "recipes", action: "cooked", entityId: id, entityName: recipe.name, to: servings });
+    await recordActivity(actor, { module: "recipes", action: "cooked", entityId: id, entityName: recipe.name, to: servings, privacy: recipe.privacy ?? "family", createdBy: recipe.createdBy });
   });
   await pruneActivity();
   return short;

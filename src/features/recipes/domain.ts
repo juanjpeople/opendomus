@@ -4,7 +4,7 @@
  */
 import { INVENTORY_LIMITS, isUnit, type InventoryItem } from "@/features/inventory/domain";
 import { ValidationError } from "@/lib/errors";
-import type { Privacy } from "@/lib/sync/scope";
+import { isPrivacy, type Privacy } from "@/lib/sync/scope";
 
 /** Etiquetas fijas (se traducen con `recipes.tags.<id>`): así se filtran igual en cualquier idioma. */
 export const RECIPE_TAGS = ["quick", "vegetarian", "vegan", "kids", "healthy", "dessert", "budget", "batch", "party"] as const;
@@ -39,7 +39,7 @@ export interface Recipe {
   updatedAt: number;
 }
 
-export type RecipeInput = Pick<Recipe, "name" | "servings" | "minutes" | "ingredients" | "steps" | "tags">;
+export type RecipeInput = Pick<Recipe, "name" | "servings" | "minutes" | "ingredients" | "steps" | "tags"> & { privacy?: Privacy };
 
 export const RECIPE_LIMITS = {
   nameMaxLength: 80,
@@ -68,10 +68,12 @@ function parseIngredient(input: RecipeIngredient): RecipeIngredient {
 }
 
 /** Normaliza y valida. Los formularios validan para UX; esto es lo que vale. */
-export function parseRecipe(input: RecipeInput): RecipeInput {
+export function parseRecipe(input: RecipeInput): RecipeInput & { privacy: Privacy } {
   const name = input.name?.trim() ?? "";
+  const privacy = input.privacy ?? "family";
   if (!name) throw new ValidationError("errors.validation.nameRequired");
   if (name.length > RECIPE_LIMITS.nameMaxLength) throw new ValidationError("errors.validation.nameTooLong", { max: RECIPE_LIMITS.nameMaxLength });
+  if (!isPrivacy(privacy)) throw new ValidationError("errors.validation.kindInvalid");
   if (!Number.isInteger(input.servings) || input.servings < 1 || input.servings > RECIPE_LIMITS.maxServings) {
     throw new ValidationError("errors.validation.servingsInvalid");
   }
@@ -86,7 +88,7 @@ export function parseRecipe(input: RecipeInput): RecipeInput {
     throw new ValidationError("errors.validation.nameTooLong", { max: RECIPE_LIMITS.stepMaxLength });
   }
   const tags = [...new Set((input.tags ?? []).filter(isTag))];
-  return { name, servings: input.servings, minutes: input.minutes, ingredients, steps, tags };
+  return { name, privacy, servings: input.servings, minutes: input.minutes, ingredients, steps, tags };
 }
 
 // --- Porciones y disponibilidad -------------------------------------------------

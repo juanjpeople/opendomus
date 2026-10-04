@@ -7,7 +7,7 @@ import { getStockStatus, INVENTORY_LIMITS, isUnit, type InventoryItem, type Stoc
 import { CURRENCIES, type Currency, type PriceSummary } from "@/features/prices/domain";
 import { isAppearanceColor, isAppearanceIcon, type AppearanceColor, type AppearanceIcon } from "@/lib/appearance";
 import { ValidationError } from "@/lib/errors";
-import type { Privacy } from "@/lib/sync/scope";
+import { isPrivacy, type Privacy } from "@/lib/sync/scope";
 
 // --- Listas ---------------------------------------------------------------------
 
@@ -36,6 +36,7 @@ export interface ShoppingList {
 
 export interface ShoppingListInput {
   name: string;
+  privacy?: Privacy;
   projectId?: string;
   /** Presupuesto en unidades de la moneda (no centavos). Vacío = sin presupuesto. */
   budget?: number | null;
@@ -57,11 +58,13 @@ export function parseMoney(amount: number | null | undefined): number | undefine
 
 export function parseListInput(input: ShoppingListInput) {
   const name = input.name?.trim() ?? "";
+  const privacy = input.privacy ?? "family";
   if (!name) throw new ValidationError("errors.validation.nameRequired");
   if (name.length > LIST_LIMITS.nameMaxLength) throw new ValidationError("errors.validation.nameTooLong", { max: LIST_LIMITS.nameMaxLength });
+  if (!isPrivacy(privacy)) throw new ValidationError("errors.validation.kindInvalid");
   if (!CURRENCIES.includes(input.currency)) throw new ValidationError("errors.validation.currencyInvalid");
   if (!isAppearanceColor(input.color) || !isAppearanceIcon(input.icon)) throw new ValidationError("errors.validation.appearanceInvalid");
-  return { name, projectId: input.projectId || undefined, budgetCents: parseMoney(input.budget), currency: input.currency, color: input.color, icon: input.icon };
+  return { name, privacy, projectId: input.projectId || undefined, budgetCents: parseMoney(input.budget), currency: input.currency, color: input.color, icon: input.icon };
 }
 
 export type ShoppingStatus = "pending" | "bought";

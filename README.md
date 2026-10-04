@@ -29,6 +29,8 @@ require HTTPS (or localhost); do not weaken their cryptography for HTTP.
 
 Profiles and household data are stored locally in each browser's IndexedDB.
 Different devices, browsers, and origins do not share data automatically.
+Lists, projects, recipes and events can be shared with the whole family, adults
+only, or kept private to their creator; `/privacidad` summarizes those choices.
 Schema v6 recovers completely empty databases left by an interrupted initial setup,
 without replacing existing household data. Database loading errors show a reload
 action instead of an empty profile picker. Schema changes are declared in

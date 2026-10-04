@@ -8,6 +8,7 @@ import { useT } from "@/i18n";
 import { useCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
+import { canSee } from "@/lib/sync/scope";
 import { birthdayOccurrences, compareOccurrences, expandEvents, type EventInput, type Occurrence } from "./domain";
 import { createEvent, deleteEvent, updateEvent } from "./service";
 
@@ -17,14 +18,15 @@ import { createEvent, deleteEvent, updateEvent } from "./service";
  */
 export function useOccurrences(from: number, to: number): Occurrence[] | undefined {
   const members = useMembers();
+  const viewer = useCurrentUser();
   const events = useLiveQuery(async () => {
     const [single, repeating] = await Promise.all([
       // Un evento de varios días que empezó antes del rango también cuenta: margen de 60 días.
       db.events.where("start").between(from - 60 * 86_400_000, to).filter((event) => event.repeat === "none").toArray(),
       db.events.where("repeat").notEqual("none").toArray(),
     ]);
-    return [...single, ...repeating];
-  }, [from, to]);
+    return [...single, ...repeating].filter((event) => canSee(viewer, event));
+  }, [from, to, viewer?.id, viewer?.role]);
 
   return useMemo(() => {
     if (!events || !members) return undefined;

@@ -130,6 +130,26 @@ export const es = {
     dark: "Oscuro",
     system: "Sistema",
   },
+  privacy: {
+    label: "Quién puede verlo",
+    levels: {
+      family: { label: "Familia", description: "Todos los perfiles de la casa pueden verlo." },
+      adults: { label: "Adultos", description: "Solo los perfiles adultos y administradores pueden verlo." },
+      private: { label: "Privado", description: "Solo lo ve el perfil que lo creó." },
+    },
+    page: {
+      eyebrow: "Tu casa, tus reglas",
+      title: "Privacidad",
+      description: "Revisá qué listas, proyectos, recetas y eventos compartís con cada grupo.",
+      empty: "No hay nada en este nivel.",
+      types: {
+        list: "Lista",
+        project: "Proyecto",
+        recipe: "Receta",
+        event: "Evento",
+      },
+    },
+  },
   nav: {
     primary: "Principal",
     breadcrumb: "Ubicación",
@@ -157,6 +177,7 @@ export const es = {
       recipeEdit: "Editar receta",
       projects: "Proyectos",
       project: "Proyecto",
+      privacy: "Privacidad",
       settings: "Ajustes",
       design: "Sistema de diseño",
       values: "Nuestros valores",

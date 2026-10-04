@@ -125,6 +125,26 @@ export const en: Messages = {
     dark: "Dark",
     system: "System",
   },
+  privacy: {
+    label: "Who can see it",
+    levels: {
+      family: { label: "Family", description: "Every profile in the household can see it." },
+      adults: { label: "Adults", description: "Only adult and administrator profiles can see it." },
+      private: { label: "Private", description: "Only the profile that created it can see it." },
+    },
+    page: {
+      eyebrow: "Your home, your rules",
+      title: "Privacy",
+      description: "Review which lists, projects, recipes and events you share with each group.",
+      empty: "Nothing uses this level.",
+      types: {
+        list: "List",
+        project: "Project",
+        recipe: "Recipe",
+        event: "Event",
+      },
+    },
+  },
   nav: {
     primary: "Main",
     breadcrumb: "Breadcrumb",
@@ -152,6 +172,7 @@ export const en: Messages = {
       recipeEdit: "Edit recipe",
       projects: "Projects",
       project: "Project",
+      privacy: "Privacy",
       settings: "Settings",
       design: "Design system",
       values: "Our values",

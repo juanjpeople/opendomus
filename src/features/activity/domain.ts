@@ -2,6 +2,7 @@
  * Historial de acciones: quién hizo qué, cuándo y sobre qué. Lo escriben los servicios
  * (nunca la UI), dentro de la misma transacción que el cambio, así no hay cambios sin registro.
  */
+import type { Privacy } from "@/lib/sync/scope";
 
 /** Qué tipo de cosa cambió. Cada módulo nuevo suma su valor acá. */
 export type ActivityModule = "inventory" | "storage" | "prices" | "members" | "calendar" | "shopping" | "recipes" | "lists" | "projects";
@@ -34,6 +35,10 @@ export interface ActivityEntry {
   /** Se guarda el nombre además del id: el historial tiene que leerse aunque el perfil cambie. */
   actorId: string;
   actorName: string;
+  /** Nivel sellado al registrar: protege el historial aunque después se borre su padre. */
+  privacy?: Privacy;
+  /** Dueño del nivel Privado; no necesariamente es quien realizó esta acción. */
+  createdBy?: string;
   entityId: string;
   /** Nombre al momento de la acción (lo afectado puede haberse renombrado o borrado después). */
   entityName: string;
