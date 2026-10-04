@@ -3,6 +3,8 @@ package io.github.juanjpeople.opendomus;
 import static androidx.test.espresso.intent.Intents.intended;
 import static androidx.test.espresso.intent.Intents.intending;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasAction;
+import static androidx.test.espresso.intent.matcher.IntentMatchers.hasType;
+import static org.hamcrest.Matchers.allOf;
 import static org.junit.Assert.*;
 
 import android.app.Activity;
@@ -13,6 +15,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.SystemClock;
+import android.view.MotionEvent;
 import androidx.core.content.FileProvider;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
@@ -28,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 @RunWith(AndroidJUnit4.class)
 public class NativeFlowTest {
@@ -69,6 +74,96 @@ public class NativeFlowTest {
         await(scenario, "window.Capacitor && window.Capacitor.isNativePlatform() && document.body.innerText.length > 20");
     }
 
+    /** A real touch supplies the user activation required by the WebView file picker. */
+    private void tap(ActivityScenario<MainActivity> scenario, String element) throws Exception {
+        evaluate(scenario, "window.__tap = null; (() => {const e=" + element + "; e.scrollIntoView({block:'center'}); requestAnimationFrame(() => {const r=e.getBoundingClientRect(); window.__tap={x:r.x+r.width/2,y:r.y+r.height/2};});})()");
+        await(scenario, "window.__tap !== null");
+        JSONObject point = new JSONObject(evaluate(scenario, "window.__tap"));
+        float[] screen = new float[2];
+        float x = (float) point.getDouble("x"), y = (float) point.getDouble("y");
+        scenario.onActivity(activity -> {
+            int[] offset = new int[2];
+            activity.getBridge().getWebView().getLocationOnScreen(offset);
+            float scale = activity.getBridge().getWebView().getScale();
+            screen[0] = offset[0] + x * scale;
+            screen[1] = offset[1] + y * scale;
+        });
+        long time = SystemClock.uptimeMillis();
+        MotionEvent down = MotionEvent.obtain(time, time, MotionEvent.ACTION_DOWN, screen[0], screen[1], 0);
+        MotionEvent up = MotionEvent.obtain(time, time + 60, MotionEvent.ACTION_UP, screen[0], screen[1], 0);
+        try {
+            assertTrue(InstrumentationRegistry.getInstrumentation().getUiAutomation().injectInputEvent(down, true));
+            SystemClock.sleep(60);
+            assertTrue(InstrumentationRegistry.getInstrumentation().getUiAutomation().injectInputEvent(up, true));
+        } finally {
+            down.recycle();
+            up.recycle();
+        }
+    }
+
+    private void verifySettingsRoundTrip(ActivityScenario<MainActivity> scenario) throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        File photo = new File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "fixture.png");
+        File backup = new File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "house.json");
+        Bitmap fixture = Bitmap.createBitmap(32, 24, Bitmap.Config.ARGB_8888);
+        fixture.eraseColor(0xff1677ff);
+        try (FileOutputStream output = new FileOutputStream(photo)) {
+            fixture.compress(Bitmap.CompressFormat.PNG, 100, output);
+        } finally { fixture.recycle(); }
+        Uri photoUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", photo);
+        Uri backupUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", backup);
+        Intents.init();
+        try {
+            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/"));
+            await(scenario, "[...document.querySelectorAll('h5')].some(e => e.textContent === 'Administrador')");
+            evaluate(scenario, "[...document.querySelectorAll('h5')].find(e => e.textContent === 'Administrador').click()");
+            await(scenario, "JSON.parse(localStorage.getItem('opendomus-session') || '{}').state?.currentProfileId");
+            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario"));
+            await(scenario, "document.body.innerText.includes('Estantería')");
+            evaluate(scenario, "[...document.querySelectorAll('span,h3,h4,h5')].find(e => e.textContent === 'Estantería').click()");
+            await(scenario, "location.pathname === '/inventario/ver' && document.querySelector('input[aria-label=\"Stored contents\"],input[aria-label=\"Contenido guardado\"]')");
+            evaluate(scenario, "(() => {const e=document.querySelector('input[aria-label=\"Stored contents\"],input[aria-label=\"Contenido guardado\"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'Cables Android'); e.dispatchEvent(new Event('input',{bubbles:true}));})()");
+            evaluate(scenario, "[...document.querySelectorAll('button')].find(b => /^(Anotar|Add note)$/.test(b.textContent.trim())).click()");
+            await(scenario, "document.body.innerText.includes('Cables Android')");
+            intending(allOf(hasAction(Intent.ACTION_GET_CONTENT), hasType("image/*"))).respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(photoUri)));
+            tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Agregar fotos|Add photos)$/.test(b.textContent.trim()))");
+            await(scenario, "document.querySelector('.od-photo-tile img')?.naturalWidth === 32");
+            screenshot("container-with-photo");
+            intending(hasAction(Intent.ACTION_CREATE_DOCUMENT)).respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(backupUri)));
+            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/ajustes"));
+            await(scenario, "[...document.querySelectorAll('button')].some(b => /^(Exportar|Export)$/.test(b.textContent.trim()) && !b.disabled)");
+            tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Exportar|Export)$/.test(b.textContent.trim()))");
+            await(scenario, "/Exportación lista|Export ready/.test(document.body.innerText)");
+            JSONObject data = new JSONObject(new String(Files.readAllBytes(backup.toPath()), StandardCharsets.UTF_8));
+            assertEquals("OpenDomus", data.getString("app"));
+            JSONObject tables = data.getJSONObject("tables");
+            assertTrue(tables.getJSONArray("photos").length() > 0);
+            assertTrue(tables.getJSONArray("containerContents").toString().contains("Cables Android"));
+            String containerId = tables.getJSONArray("photos").getJSONObject(0).getString("ownerId");
+            JSONArray containers = tables.getJSONArray("containers");
+            for (int i = 0; i < containers.length(); i++) {
+                JSONObject container = containers.getJSONObject(i);
+                if (container.getString("id").equals(containerId)) container.put("name", "Android importado");
+            }
+            Files.write(backup.toPath(), data.toString().getBytes(StandardCharsets.UTF_8));
+            intending(allOf(hasAction(Intent.ACTION_GET_CONTENT), hasType("application/json"))).respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(backupUri)));
+            tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Importar|Import)$/.test(b.textContent.trim()))");
+            await(scenario, "document.querySelector('[role=dialog]') && /Reemplazar e importar|Replace and import/.test(document.querySelector('[role=dialog]').textContent)");
+            tap(scenario, "[...document.querySelectorAll('[role=dialog] button')].find(b => /Reemplazar e importar|Replace and import/.test(b.textContent))");
+            await(scenario, "/Datos importados|Data imported/.test(document.body.innerText)");
+            scenario.recreate();
+            ready(scenario);
+            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario/ver?id=" + containerId));
+            await(scenario, "document.body.innerText.includes('Android importado') && document.body.innerText.includes('Cables Android') && document.querySelector('.od-photo-tile img')?.naturalWidth === 32");
+            screenshot("restored-container");
+            System.out.println("ANDROID_WEBVIEW_CAPABILITIES " + evaluate(scenario, "({userAgent:navigator.userAgent,barcodeDetector:typeof window.BarcodeDetector,camera:!!navigator.mediaDevices?.getUserMedia})"));
+        } finally {
+            Intents.release();
+            Files.deleteIfExists(photo.toPath());
+            Files.deleteIfExists(backup.toPath());
+        }
+    }
+
     @Test
     public void offlineOnboardingAndReloadKeepTheHouse() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
@@ -86,6 +181,7 @@ public class NativeFlowTest {
             await(scenario, "location.pathname === '/cuenta' && /Esta instalación funciona sin servidor|This installation works without a server/.test(document.body.innerText)");
             evaluate(scenario, "window.__swCount = -1; navigator.serviceWorker.getRegistrations().then(r => window.__swCount = r.length)");
             await(scenario, "window.__swCount === 0");
+            verifySettingsRoundTrip(scenario);
         }
     }
 
