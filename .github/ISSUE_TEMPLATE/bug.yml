@@ -1,0 +1,26 @@
+name: Algo no funciona
+description: Reportá un error
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Qué pasó
+      description: Qué hiciste, qué esperabas y qué pasó en cambio.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducirlo
+      placeholder: "1. Entré a Compras\n2. Toqué…"
+  - type: input
+    id: device
+    attributes:
+      label: Dispositivo y navegador
+      placeholder: "Ej. Android 15, Chrome"
+  - type: input
+    id: version
+    attributes:
+      label: Versión de OpenDomus
+      description: Está en Ajustes → Acerca de.

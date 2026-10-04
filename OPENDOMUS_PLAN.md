@@ -1,6 +1,6 @@
 # 🏠 OpenDomus: Plan de Implementación y Estado Actual
 
-Este documento consolida el plan de trabajo, el estado del proyecto y el diseño de las próximas funcionalidades, para poder retomarlo en cualquier momento. Los principios que guían cada decisión están en [VALORES.md](VALORES.md); las convenciones de código, en la página **`/design`** de la app.
+Este documento consolida el plan de trabajo, el estado del proyecto y el diseño de las próximas funcionalidades, para poder retomarlo en cualquier momento. Los principios que guían cada decisión están en [VALORES.md](VALORES.md); las convenciones de código, en la página **`/design`** de la app y en [CONTRIBUTING.md](CONTRIBUTING.md). El camino a producción (cuentas, sincronización, deploy, Android, suscripciones) está en [docs/PLAN_PRODUCCION.md](docs/PLAN_PRODUCCION.md).
 
 ---
 
@@ -9,7 +9,7 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 - **Cliente:** Next.js 16 + React 19, Ant Design 6 (tokens, sin Tailwind), framer-motion, lucide-react. Se instala como **PWA** y funciona sin conexión.
 - **Datos locales:** **Dexie.js** (IndexedDB). Cada cambio de esquema es una versión nueva con migración (`declareSchema` en `src/lib/db.ts`); hoy vamos por la **v9**. La misma cadena de migraciones actualiza los exports viejos al importarlos.
 - **Servidor / sincronización:** a definir (Node.js o Go + SQLite/PostgreSQL). Hasta que exista, los datos viven en cada dispositivo.
-- **Despliegue:** Docker en una NAS o servidor de la casa.
+- **Despliegue:** sitio estático (`out/`, sin servidor de Next): Cloudflare Pages en la nube o cualquier servidor web en la NAS. Más adelante, el servidor de sincronización en Docker (ver el plan de producción).
 
 ---
 

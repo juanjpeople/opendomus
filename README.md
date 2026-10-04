@@ -39,22 +39,42 @@ action instead of an empty profile picker. Schema changes are declared in
 
 Unit tests cover the pure logic (permissions, domain rules, translator). Node.js runs
 the TypeScript directly; `scripts/test-hooks.mjs` resolves the `@/` alias and
-extensionless imports. Requires Node.js 24+.
+extensionless imports. End-to-end tests (Playwright) run against the static build.
+Requires Node.js 24+. CI (`.github/workflows/ci.yml`) runs all of this on every PR.
 
 ```bash
-npm test          # node:test, src/**/*.test.ts
-npm run typecheck # tsc --noEmit
-npm run lint
+npm run check     # typecheck + lint + unit tests
+npm run build     # static site in out/
+npm run e2e       # Playwright on out/ (desktop + phone); uses the installed Chrome locally
 ```
 
-### Offline and installable (PWA)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions.
 
-`next build && next start` serves a manifest (`/manifest.webmanifest`), generated icons
-(`/icons/*`) and a service worker (`/sw.js`, generated per build). The service worker is
-only registered in production builds, so `next dev` never caches stale files. Once a page
-has been opened (or pre-cached on install), it loads without a connection; data already
-lives in IndexedDB. New versions wait for the user to click "Update". Installing requires
-HTTPS (or `localhost`).
+### Static site, offline and installable (PWA)
+
+`npm run build` produces a fully static site in `out/` (`output: "export"`): no Next.js
+server is needed. Pages that show one record take the id in the query string
+(`/inventario/ver?id=…`, `/recetas/ver?id=…`); printed QR labels keep pointing to
+`/c/<code>`, which `public/_redirects` (Cloudflare Pages/Netlify) and, on any other host,
+`src/app/not-found.tsx` translate to `/c?code=…`.
+
+The build also emits the manifest (`/manifest.webmanifest`), generated icons (`/icons/*`)
+and a service worker (`/sw.js`, versioned per build). The service worker is only
+registered in production builds, so `next dev` never caches stale files. Once installed,
+every page works without a connection; data already lives in IndexedDB. New versions wait
+for the user to click "Update". Installing requires HTTPS (or `localhost`).
+
+Preview the build locally with `npx serve out`.
+
+### Deploy (Cloudflare Pages)
+
+1. Push the repo to GitHub and create a Cloudflare Pages project from it.
+2. Build command: `npm run build` · Output directory: `out` · Environment variable
+   `NODE_VERSION=24`.
+3. Every push to `main` deploys; PRs get preview URLs.
+
+Any static host works the same way (Netlify, GitHub Pages, nginx/Caddy on a NAS): serve
+`out/`. Household data stays on each device until sync exists (see `OPENDOMUS_PLAN.md`).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

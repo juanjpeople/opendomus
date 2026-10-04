@@ -42,3 +42,8 @@ next-env.d.ts
 
 # playwright mcp (capturas y logs locales)
 /.playwright-mcp/
+
+# build estático y pruebas de punta a punta
+/out/
+/playwright-report/
+/test-results/

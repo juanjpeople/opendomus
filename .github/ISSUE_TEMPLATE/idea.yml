@@ -1,0 +1,23 @@
+name: Una idea
+description: Proponé una funcionalidad o una mejora
+labels: [idea]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qué problema resuelve
+      description: Contalo desde la casa, no desde la solución ("cuando se acaba algo, nadie se entera…").
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Cómo te lo imaginás
+  - type: checkboxes
+    id: values
+    attributes:
+      label: Valores (ver VALORES.md)
+      options:
+        - label: Funciona sin internet
+        - label: No manda nada fuera de la casa sin permiso
+        - label: No pide atención que no hace falta
