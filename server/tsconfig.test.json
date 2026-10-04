@@ -17,6 +17,7 @@
     "isolatedModules": true
   },
   "include": [
-    "test/**/*.ts"
+    "test/**/*.ts",
+    "scripts/node-sqlite.d.ts"
   ]
 }
