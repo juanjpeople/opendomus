@@ -398,7 +398,7 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal((await adminCall("POST", `/households/${householdId}/resume`)).status, 200);
   assert.equal((await push(anaSigner, [await op(anaSigner, "family", opened2.key, { changes: [] }, { keyVersion: 2 })])).status, 200);
 
-  // --- Fotos (R2): bytes cifrados en el dispositivo; solo adultos administran, todos descargan ---
+  // --- Fotos: bytes cifrados en el dispositivo; solo adultos administran, todos descargan ---
   const bytes = async (client: Client | null, method: string, path: string, body?: Uint8Array, origin: string | null = ORIGIN) => {
     const headers: Record<string, string> = { "Content-Type": "application/octet-stream" };
     if (origin) headers.Origin = origin;

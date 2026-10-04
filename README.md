@@ -82,6 +82,14 @@ Every push to `main` deploys. `public/_redirects` sends printed QR links (`/c/<c
 `/c?code=…`, and unknown paths get `404.html`. Check the config locally with
 `npm run build && npx wrangler dev`.
 
+Cloud photo sync stores only client-encrypted bytes in the private Supabase Storage bucket
+`opendomus-photos`. Production needs `SUPABASE_SERVICE_ROLE_KEY` as a Cloudflare secret
+(`npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY`); never expose that key to the browser
+or commit it. The Free plan is $0, blocks further usage instead of charging overages, and
+currently includes 1 GB of file storage plus 5 GB each of direct and cached egress. The
+bucket independently limits every encrypted object to 4 MB and accepts only
+`application/octet-stream`.
+
 Any static host works the same way (Netlify, GitHub Pages, nginx/Caddy on a NAS): serve
 `out/`. Household data stays on each device until sync exists (see `OPENDOMUS_PLAN.md`).
 
