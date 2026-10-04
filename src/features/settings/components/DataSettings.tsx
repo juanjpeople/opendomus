@@ -49,8 +49,8 @@ export function DataSettings() {
   const onExport = () =>
     run("export", async () => {
       const data = await exportAllData(user);
-      downloadJson(data, `opendomus-${new Date().toISOString().slice(0, 10)}.json`);
-      message.success(t("settings.data.export.done"));
+      const saved = await downloadJson(data, `opendomus-${new Date().toISOString().slice(0, 10)}.json`);
+      if (saved) message.success(t("settings.data.export.done"));
     });
 
   /** Lee el archivo, muestra qué trae y recién con la confirmación reemplaza los datos. */

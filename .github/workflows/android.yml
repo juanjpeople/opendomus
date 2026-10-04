@@ -1,0 +1,46 @@
+name: Android
+
+on:
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'package*.json'
+      - 'capacitor.config.ts'
+      - 'next.config.ts'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: APK local de prueba
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - run: npm run android:sync
+      - name: Compilar y revisar Android
+        working-directory: android
+        run: bash gradlew --no-daemon assembleDebug lintDebug testDebugUnitTest
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-debug-no-production
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
