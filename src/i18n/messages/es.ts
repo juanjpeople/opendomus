@@ -709,7 +709,7 @@ export const es = {
       name: "Nombre",
       namePlaceholder: "Ej. Sanitarios, Herramientas de jardín",
       project: "Proyecto",
-      projectHint: "Agrupá listas de una misma obra o tema y mirá el presupuesto total.",
+      projectHint: "Agrupá listas de una misma obra o tema y mirá el presupuesto total. Cada lista conserva su propia privacidad: cambiar el proyecto no cambia quién puede verla.",
       noProject: "Sin proyecto",
       budget: "Presupuesto",
       budgetHint: "Opcional. Se compara con lo gastado más lo que falta comprar.",

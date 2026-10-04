@@ -704,7 +704,7 @@ export const en: Messages = {
       name: "Name",
       namePlaceholder: "E.g. Plumbing fixtures, Garden tools",
       project: "Project",
-      projectHint: "Group lists for the same job or topic and see the total budget.",
+      projectHint: "Group lists for the same job or topic and see the total budget. Each list keeps its own privacy: changing the project does not change who can see it.",
       noProject: "No project",
       budget: "Budget",
       budgetHint: "Optional. Compared against what's spent plus what's left to buy.",
