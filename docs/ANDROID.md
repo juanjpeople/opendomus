@@ -99,3 +99,20 @@ Pendiente antes de distribuir:
 
 Hasta completar esas pruebas, el APK es experimental y el PR debe permanecer
 en borrador. No se configura firma de producción ni publicación en Play Store.
+
+## Advertencias de dependencias
+
+Dependency Review en `37243268874` informó cero paquetes vulnerables y cero licencias
+incompatibles, junto con cuatro licencias no clasificadas y 14 alertas de Scorecard.
+El diff de dependencias devuelve licencia nula para acciones de CI, aunque sus
+archivos oficiales sí la especifican: `actions/checkout@v7`, `actions/setup-node@v7`,
+`actions/setup-java@v5` y `actions/upload-artifact@v7` usan MIT; el commit fijado de
+`ReactiveCircus/android-emulator-runner` contiene Apache-2.0. Se comprobaron los
+archivos LICENSE de esas referencias, sin agregar excepciones al control.
+
+Scorecard evalúa prácticas del repositorio de origen; un resultado bajo requiere
+revisión y no equivale por sí solo a una vulnerabilidad detectada. Incluye `jsqr`
+(2.3 sobre 10, por debajo del umbral 3): está fijado en 1.4.0, no agrega dependencias
+transitivas y procesa las imágenes localmente. Esto limita el alcance del componente,
+pero no demuestra ausencia de fallas. Conservar las advertencias y revisar cambios
+antes de actualizar; el audit de producción sin alertas tampoco es una garantía.
