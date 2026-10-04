@@ -25,6 +25,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run build:operator
+      - run: npx wrangler deploy --config wrangler.operator.jsonc --dry-run
 
   api:
     name: API (Worker + D1 local)
