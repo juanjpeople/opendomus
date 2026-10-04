@@ -438,6 +438,15 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal(publicFeedback.status, 201, JSON.stringify(publicFeedback.body));
   assert.equal((await flor.client.call("GET", "/api/platform-admin/overview")).status, 403);
 
+  // Ni siquiera un correo permitido autodeclarado puede administrar sin habilitación explícita.
+  assert.equal((await anaAgain.call("GET", "/api/platform-admin/overview")).status, 403);
+  const lookup = await adminCall("GET", `/accounts?email=${encodeURIComponent(anaEmail)}`);
+  assert.equal(lookup.status, 200);
+  const adminUserId = lookup.body.accounts[0].id as string;
+  const grant = { userId: adminUserId, email: anaEmail, enabled: true };
+  assert.equal((await anaAgain.call("POST", "/api/admin/administrators", grant)).status, 401);
+  assert.equal((await adminCall("POST", "/administrators", { ...grant, email: "otra@casa.test" })).status, 404);
+  assert.equal((await adminCall("POST", "/administrators", grant)).status, 200);
   const overview = await anaAgain.call("GET", "/api/platform-admin/overview");
   assert.equal(overview.status, 200, JSON.stringify(overview.body));
   assert.ok(overview.body.metrics.users >= 3);
@@ -462,4 +471,6 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal((await anaAgain.call("DELETE", `/api/platform-admin/households/${householdId}`, { confirm: householdId })).status, 409);
   assert.equal((await anaAgain.call("POST", `/api/platform-admin/households/${householdId}/resume`)).status, 200);
   assert.equal((await anaAgain.call("GET", "/api/platform-admin/notices")).status, 200);
+  assert.equal((await adminCall("POST", "/administrators", { ...grant, enabled: false })).status, 200);
+  assert.equal((await anaAgain.call("GET", "/api/platform-admin/overview")).status, 403);
 });

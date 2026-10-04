@@ -29,6 +29,7 @@ import {
   inactivityNoticeStatusInput,
   inviteTokenInput,
   licenseCheckInput,
+  platformAdminGrantInput,
   pullQuery,
   pushInput,
   recoveryCompleteInput,
@@ -905,6 +906,30 @@ admin.use("*", async (c, next) => {
 
 const LICENSE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin I, O, 0, 1: no se confunden al dictarlo
 
+/** Solo el operador con el token maestro puede vincular una cuenta a la administración. */
+admin.get("/accounts", async (c) => {
+  const email = c.req.query("email")?.trim().toLowerCase();
+  if (!email || email.length > 254) return c.json({ error: "invalid" }, 400);
+  const result = await c.env.DB.prepare('select id, email, name, "createdAt" from "user" where lower(email) = ?').bind(email).all();
+  return c.json({ accounts: result.results });
+});
+
+admin.post("/administrators", async (c) => {
+  const input = await parse(c, platformAdminGrantInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+  const account = await c.env.DB.prepare('select id from "user" where id = ? and lower(email) = ?')
+    .bind(input.userId, input.email.toLowerCase()).first();
+  if (!account) return c.json({ error: "not-found" }, 404);
+  await c.env.DB.batch([
+    input.enabled
+      ? c.env.DB.prepare("insert into platform_admin_grants (user_id, granted_at) values (?, ?) on conflict (user_id) do nothing").bind(input.userId, Date.now())
+      : c.env.DB.prepare("delete from platform_admin_grants where user_id = ?").bind(input.userId),
+    c.env.DB.prepare("insert into admin_audit (id, actor_user_id, action, target_type, target_id, details, created_at) values (?, null, ?, 'user', ?, ?, ?)")
+      .bind(crypto.randomUUID(), input.enabled ? "admin.grant" : "admin.revoke", input.userId, JSON.stringify({ via: "operator-token" }), Date.now()),
+  ]);
+  return c.json({ ok: true });
+});
+
 /** Código nuevo: "OD-XXXX-XXXX-XXXX-XXXX" (80 bits al azar). */
 function newLicenseCode() {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -1009,6 +1034,8 @@ platformAdmin.use("*", async (c, next) => {
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
   if (!allowed.includes(user.email.toLowerCase())) return c.json({ error: "forbidden" }, 403);
+  const grant = await c.env.DB.prepare("select user_id from platform_admin_grants where user_id = ?").bind(user.id).first();
+  if (!grant) return c.json({ error: "forbidden" }, 403);
   return next();
 });
 
