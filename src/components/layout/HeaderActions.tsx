@@ -1,10 +1,10 @@
 "use client";
 
 import { Button, Dropdown, Flex, Grid, Segmented, Tooltip, Typography, theme } from "antd";
-import { ChevronDown, Lock, LogOut, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
+import { Check, ChevronDown, Languages, Lock, LogOut, Monitor, Moon, Search, Settings, Sun } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePreferences, useSetPreference } from "@/hooks/usePreferences";
-import { LOCALE_META, LOCALES, useI18n, useT, type Locale } from "@/i18n";
+import { detectBrowserLocale, LOCALE_META, LOCALES, useI18n, useT, type Locale } from "@/i18n";
 import { MemberAvatar } from "@/components/ui/MemberAvatar";
 import { OfflineBadge } from "@/components/pwa/OfflineBadge";
 import { isSecured } from "@/features/members/domain";
@@ -53,6 +53,44 @@ export function LanguageSwitch() {
   );
 }
 
+/** Opciones de idioma para los menús: los idiomas y "según el dispositivo". */
+function useLanguageItems() {
+  const t = useT();
+  const { locale: preference } = usePreferences();
+  const setPreference = useSetPreference();
+  const mark = (selected: boolean) => <span style={{ display: "inline-flex", width: 14 }}>{selected && <Check />}</span>;
+  return [
+    ...LOCALES.map((code) => ({
+      key: `locale:${code}`,
+      icon: mark(preference === code),
+      // Cada idioma se nombra en su propio idioma: se encuentra aunque la app esté en otro.
+      label: LOCALE_META[code].label,
+      onClick: () => setPreference("locale", code),
+    })),
+    {
+      key: "locale:system",
+      icon: mark(preference === "system"),
+      label: t("settings.language.system", { language: LOCALE_META[detectBrowserLocale()].label }),
+      onClick: () => setPreference("locale", "system"),
+    },
+  ];
+}
+
+/** Idioma, siempre a mano en el header (ES / EN). */
+export function LanguageMenu() {
+  const t = useT();
+  const { locale } = useI18n();
+  const items = useLanguageItems();
+
+  return (
+    <Dropdown menu={{ items }} trigger={["click"]} placement="bottomRight">
+      <Button type="text" icon={<Languages />} aria-label={t("settings.sections.language")} title={t("settings.sections.language")} style={{ paddingInline: 8 }}>
+        {locale.toUpperCase()}
+      </Button>
+    </Dropdown>
+  );
+}
+
 /** Abre la búsqueda global. En pantallas chicas queda solo el ícono. */
 export function SearchTrigger() {
   const { token } = theme.useToken();
@@ -85,6 +123,7 @@ export function UserMenu({ labeled = false, onSelect }: { labeled?: boolean; onS
   const lock = useLockStore((s) => s.lock);
   const members = useMembersStore((s) => s.members);
   const screens = Grid.useBreakpoint();
+  const languageItems = useLanguageItems();
 
   if (!user) return null;
 
@@ -104,6 +143,8 @@ export function UserMenu({ labeled = false, onSelect }: { labeled?: boolean; onS
     },
     { type: "divider" as const },
     ...(isSecured(user) ? [{ key: "lock", icon: <Lock />, label: t("shell.lockNow"), onClick: lock }] : []),
+    // En pantallas chicas el selector del header no entra: el idioma va acá.
+    ...(!screens.md ? [{ type: "group" as const, label: t("settings.sections.language"), children: languageItems }, { type: "divider" as const }] : []),
     { key: "settings", icon: <Settings />, label: t("nav.routes.settings"), onClick: () => router.push("/ajustes") },
     { key: "sign-out", icon: <LogOut />, label: t("shell.signOut"), danger: true, onClick: signOut },
   ];
@@ -142,6 +183,7 @@ export function HeaderActions({ search = false }: { search?: boolean }) {
     <Flex align="center" gap={screens.md ? 12 : 4} style={{ flexShrink: 0 }}>
       <OfflineBadge />
       {search && <SearchTrigger />}
+      {screens.md && <LanguageMenu />}
       {screens.lg && <ThemeModeSwitch />}
       <UserMenu />
     </Flex>
