@@ -1,6 +1,15 @@
 import type { Messages } from "./es";
 
 export const en: Messages = {
+  projectStats: {
+    title: "An open project, with transparent numbers",
+    description: "We share public GitHub data to show how the project grows. These numbers are a snapshot from the date shown, not a live counter.",
+    metrics: { stars: "GitHub stars", forks: "Code forks", releases: "Published releases", downloads: "File downloads" },
+    noReleases: "We have not published downloadable files on GitHub yet. You can use the web app and explore the source code.",
+    scope: "Downloads include release files. They do not represent people or PWA installations. This section does not measure your activity inside the app.",
+    updated: "Retrieved on {date} · UTC",
+    source: "View the source on GitHub",
+  },
   localOnly: {
     title: "This installation works without a server",
     description: "You can organize your home on this device. Accounts, invitations and feedback submission need a connection to our services and are unavailable in this installation.",
@@ -695,7 +704,7 @@ export const en: Messages = {
       name: "Name",
       namePlaceholder: "E.g. Plumbing fixtures, Garden tools",
       project: "Project",
-      projectHint: "Group lists for the same job or topic and see the total budget.",
+      projectHint: "Group lists for the same job or topic and see the total budget. Each list keeps its own privacy: changing the project does not change who can see it.",
       noProject: "No project",
       budget: "Budget",
       budgetHint: "Optional. Compared against what's spent plus what's left to buy.",

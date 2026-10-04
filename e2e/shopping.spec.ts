@@ -1,5 +1,37 @@
 import { addItem, expect, test } from "./fixtures";
 
+for (const privacy of ["Privado", "Adultos"]) {
+  test(`crear una lista desde un proyecto ${privacy} conserva la privacidad inicial`, async ({ home: page }) => {
+    await page.goto("/proyectos");
+    await page.getByRole("button", { name: "Nuevo proyecto" }).first().click();
+    await page.getByPlaceholder("Ej. Renovación del baño").fill(`Proyecto ${privacy}`);
+    await page.getByRole("dialog").getByText(privacy, { exact: true }).click();
+    await page.getByRole("button", { name: "Crear proyecto" }).click();
+    await page.waitForURL(/proyectos\/ver/);
+    const projectUrl = page.url();
+    await page.getByRole("button", { name: "Nueva lista" }).click();
+    await expect(page.getByRole("radio", { name: privacy, exact: true })).toBeChecked();
+    await page.getByPlaceholder("Ej. Sanitarios, Herramientas de jardín").fill(`Lista ${privacy}`);
+    await page.getByRole("button", { name: "Crear lista" }).click();
+    await page.waitForURL(/compras\?lista=/);
+    await page.reload();
+    await page.getByRole("button", { name: "Editar lista", exact: true }).click();
+    await expect(page.getByRole("radio", { name: privacy, exact: true })).toBeChecked();
+    await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+
+    // La persona puede elegir compartir otra lista sin cambiar el proyecto.
+    await page.goto(projectUrl);
+    await page.getByRole("button", { name: "Nueva lista" }).click();
+    await expect(page.getByRole("radio", { name: privacy, exact: true })).toBeChecked();
+    await page.getByRole("dialog").getByText("Familia", { exact: true }).click();
+    await page.getByPlaceholder("Ej. Sanitarios, Herramientas de jardín").fill("Lista compartida");
+    await page.getByRole("button", { name: "Crear lista" }).click();
+    await page.waitForURL(/compras\?lista=/);
+    await page.getByRole("button", { name: "Editar lista", exact: true }).click();
+    await expect(page.getByRole("radio", { name: "Familia", exact: true })).toBeChecked();
+  });
+}
+
 test("lo que se consume entra en 'Para revisar', se suma a la lista y al comprarlo se repone", async ({ home: page }) => {
   await addItem(page, "Heladera", "Leche", 3, 2);
   // Usé dos veces: 3 → 1, cruza el mínimo.

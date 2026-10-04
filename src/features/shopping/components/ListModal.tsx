@@ -27,6 +27,8 @@ interface ListModalProps {
   list?: ShoppingList;
   /** Al crear desde un proyecto, ya viene elegido. */
   projectId?: string;
+  /** Privacidad inicial del proyecto al crear desde su ficha; nunca pisa una lista existente. */
+  initialPrivacy?: Privacy;
   onClose: () => void;
   onSaved?: (id: string) => void;
 }
@@ -34,7 +36,7 @@ interface ListModalProps {
 const DEFAULTS = { color: "green" as AppearanceColor, icon: "cart" as AppearanceIcon };
 
 /** Crear o editar una lista: nombre, proyecto, presupuesto y cómo se ve. */
-export function ListModal({ open, list, projectId, onClose, onSaved }: ListModalProps) {
+export function ListModal({ open, list, projectId, initialPrivacy = "family", onClose, onSaved }: ListModalProps) {
   const { t, locale } = useI18n();
   const { token } = theme.useToken();
   const [form] = Form.useForm<ListFormValues>();
@@ -79,7 +81,7 @@ export function ListModal({ open, list, projectId, onClose, onSaved }: ListModal
         initialValues={
           list
             ? { name: list.id === HOME_LIST_ID ? listName(list, t) : list.name, privacy: list.privacy ?? "family", projectId: list.projectId, budget: list.budgetCents === undefined ? null : list.budgetCents / 100, currency: list.currency, color: list.color, icon: list.icon }
-            : { name: "", privacy: "family", projectId, budget: null, currency: projects?.find((summary) => summary.project.id === projectId)?.project.currency ?? defaultCurrencyFor(locale), color: DEFAULTS.color, icon: DEFAULTS.icon }
+            : { name: "", privacy: initialPrivacy, projectId, budget: null, currency: projects?.find((summary) => summary.project.id === projectId)?.project.currency ?? defaultCurrencyFor(locale), color: DEFAULTS.color, icon: DEFAULTS.icon }
         }
       >
         <Flex align="center" gap={12} style={{ padding: 12, marginBottom: 16, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>

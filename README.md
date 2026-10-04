@@ -56,6 +56,13 @@ npm run e2e       # Playwright on out/ (desktop + phone); uses the installed Chr
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions.
 
+### Métricas sin rastreo dentro de la app
+
+`npm run metrics` consulta por CLI los contadores de archivos publicados y el tráfico
+privado del repositorio. `npm run metrics -- --write-public` actualiza únicamente
+las cifras públicas que aparecen en la bienvenida, con fecha visible y sin requests
+a GitHub desde el navegador. Ver [alcance, permisos y límites](docs/METRICAS.md).
+
 ### Static site, offline and installable (PWA)
 
 `npm run build` produces a fully static site in `out/` (`output: "export"`): no Next.js
@@ -117,6 +124,14 @@ Si la API confirma que terminó la sesión o la membresía, el cliente detiene s
 reintentos hasta volver a entrar o reiniciar el motor con una sesión válida.
 
 ### Administración privada (CLI + Cloudflare Access)
+
+Para saber qué falta configurar, ejecutar `npm run admin -- diagnostico`. Funciona
+sin cuenta doméstica ni tokens: revisa el formato del origen, presencia de variables
+y disponibilidad de `cloudflared`, sin contactar la red ni mostrar sus valores.
+No valida credenciales, políticas, OTP o MFA. No hay que registrarse en la app pública
+para convertirse en operador; el acceso depende de la configuración privada siguiente.
+`OPENDOMUS_API` debe ser solo el origen del gateway (`https://HOST`), sin rutas,
+credenciales, parámetros ni fragmentos; HTTP se reserva a localhost para pruebas.
 
 La app pública **no compila ni publica `/admin`**. Sus cuentas domésticas no otorgan
 permisos globales. El antiguo `/api/platform-admin/*` deja de existir, y las operaciones

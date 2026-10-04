@@ -1,0 +1,23 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { operatorDiagnostics, operatorOrigin } from "../scripts/operator-config.ts";
+
+test("el origen administrativo rechaza credenciales, rutas y protocolos inseguros sin filtrar el valor", () => {
+  for (const value of ["invalid-secret", "http://remote.example", "https://user:secret@example.com", "https://example.com/api", "https://example.com?token=secret", "https://example.com#secret"]) {
+    assert.throws(() => operatorOrigin(value), (error: unknown) => error instanceof Error && !error.message.includes("secret"));
+  }
+  assert.equal(operatorOrigin("https://private.example/").origin, "https://private.example");
+  assert.equal(operatorOrigin("http://127.0.0.1:8787").port, "8787");
+});
+
+test("el diagnóstico no expone secretos ni confunde configuración presente con autenticación verificada", () => {
+  const report = operatorDiagnostics({ OPENDOMUS_API: "https://private.example", OPENDOMUS_ADMIN_TOKEN: "master-secret", OPENDOMUS_ACCESS_TOKEN: "access-secret" }, true).join("\n");
+  assert(!report.includes("master-secret"));
+  assert(!report.includes("access-secret"));
+  assert(report.includes("NO verificados"));
+  assert(report.includes("validez no comprobada"));
+  const missing = operatorDiagnostics({}, false).join("\n");
+  assert(missing.includes("Pendiente: configurar OPENDOMUS_API"));
+  assert(missing.includes("Pendiente: instalar cloudflared"));
+  assert(missing.includes("Pendiente: configurar OPENDOMUS_ADMIN_TOKEN"));
+});

@@ -136,6 +136,9 @@ automáticamente al almacenamiento de una app nativa.
 
 Dentro de una casa, listas y otros registros usan permisos propios; una asociación
 con un proyecto no crea otra base de datos. Revisá la visibilidad de cada registro.
+Al crear una lista desde la ficha de un proyecto, el formulario propone la privacidad
+de ese proyecto. Podés cambiarla antes de guardar. La lista conserva después su propia
+privacidad: editar el proyecto o mover la lista a otro no cambia quién puede verla.
 Entre dispositivos, la opción implementada es la casa cloud y sus invitaciones, con
 sincronización cifrada y permisos. Requiere la API configurada; servir la versión
 estática desde una Raspberry no la reemplaza.
