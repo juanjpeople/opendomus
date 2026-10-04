@@ -1,6 +1,7 @@
 # OpenDomus: plan para llevarla a producción
 
-> Estado: ✅ Etapa 0 terminada · 🔄 Etapa 1 en curso (sitio estático, CI, pruebas de punta a punta y guía de contribución hechos; faltan GitHub, licencia, Cloudflare y monorepo). Mantener este archivo al día al cerrar cada paso.
+> Estado: ✅ Etapa 0 · ✅ Etapa 1 (falta solo el monorepo, que se hace al arrancar la Etapa 2). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
+> Mantener este archivo al día al cerrar cada paso.
 
 ## Contexto
 
@@ -74,10 +75,10 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
    - todo en escritorio, celular y modo oscuro, en es y en.
    - Después: actualizar `OPENDOMUS_PLAN.md`, commit, merge a `main`.
 
-## 🔄 Etapa 1: profesionalizar la base
+## ✅ Etapa 1: profesionalizar la base
 
-1. **GitHub**: repo (privado o público), push de `main`, protección de rama, PRs.
-2. **Licencia**: decidir (ver abajo). ✅ `CONTRIBUTING.md` y plantillas de issues y PRs.
+1. ✅ **GitHub**: repo público `juanjpeople/opendomus`, CI en verde en cada push.
+2. ✅ **Licencia** GNU AGPL v3 o posterior, `CONTRIBUTING.md` y plantillas de issues y PRs.
 3. ✅ **CI** (GitHub Actions): typecheck, lint, tests unitarios, build y Playwright de punta a punta en cada PR. Los scripts de prueba que hoy están en el scratchpad pasan a `e2e/` en el repo.
 4. **Tests de integración de los servicios** con `fake-indexeddb`: compras + inventario + recetas en transacciones reales.
 5. **Versionado**: Conventional Commits + `CHANGELOG.md` (changesets). La versión de la app se muestra en Ajustes (ya existe `APP_VERSION`).
@@ -85,7 +86,7 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
    - `/inventario/[containerId]` pasa a `/inventario/ver?id=`.
    - `/c/[code]` lee el código desde la URL; el hosting reescribe `/c/*` (los QR impresos siguen andando).
    - Las redirecciones de `next.config.ts` pasan a `public/_redirects`.
-7. **Deploy** de la web a **Cloudflare Pages** (sigue siendo local-first; sirve para probar en el celular por HTTPS).
+7. ✅ **Deploy** en **Cloudflare** (Workers con archivos estáticos, `wrangler.jsonc`) (sigue siendo local-first; sirve para probar en el celular por HTTPS).
 8. **Monorepo**: mover a `apps/web` y extraer `packages/core` (dominio, permisos, i18n). Sin cambiar comportamiento.
 
 ## Etapa 2: servidor, cuentas, casas e invitaciones
@@ -167,7 +168,7 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
    - Mercado Pago (suscripciones en ARS, ideal para el mercado local);
    - Stripe (requiere una empresa en EE.UU., por ejemplo con Stripe Atlas).
    - Se puede combinar: Mercado Pago para Argentina + un *merchant of record* para el resto.
-2. **Licencia**: AGPL-3.0 (código abierto que obliga a publicar los cambios si alguien lo ofrece como servicio; protege el SaaS) o MIT (más permisiva).
+2. ✅ **Licencia**: AGPL-3.0 o posterior (decidido).
 3. **Hosting de la API en la nube**: VPS barato (por ejemplo Hetzner) o una plataforma administrada (Fly.io, Railway). Se decide en la Etapa 4.
 
 ## Verificación por etapa
