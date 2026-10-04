@@ -3,16 +3,38 @@
 > Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: cuentas, casas e invitaciones cifradas · ✅ hito 2: sincronización cifrada y privacidad · ✅ hito 3a: recuperación con el kit, contraseña, dispositivos y rotación de claves · 🔄 MVP: beta por invitación con licencias, fotos cifradas y prueba con la familia; después el 3b). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
 > Mantener este archivo al día al cerrar cada paso.
 
+## Próximas entregas y evidencia necesaria
+
+Esta lista conserva los objetivos pendientes; los controles en CI no prueban por sí
+solos una configuración real de producción. El despliegue queda manual.
+
+| Entrega | Estado y condición para darla por terminada |
+|---|---|
+| Administración privada | Gateway y CLI implementados, sin página `/admin`. Falta verificar en la instalación real identidad permitida + MFA, rechazo de identidad ajena, token vencido y acceso directo al Worker público. Los correos exactos y proveedores se configuran fuera del código público. |
+| Google y GitHub para cuentas domésticas | Pendientes. Requieren apps OAuth y un flujo de creación/desbloqueo de identidad cifrada. Probar cuenta nueva y existente, rechazo de vinculación por email no verificado, callback inválido, recuperación y revocación. No conceder permisos de operador por login social. |
+| Correos y OTP domésticos | Pendientes de proveedor/remitente verificado. Probar entrega real, expiración, uso único, límites de reenvío/intentos y respuestas sin enumeración de cuentas. OTP no sustituye al kit para descifrar datos. El OTP administrativo pertenece a Access y tiene configuración separada. |
+| Métricas | PR #26 prepara estadísticas públicas estáticas y consulta CLI del tráfico privado de GitHub. Contadores propios privados de descargas siguen pendientes de decisión; los contadores de assets de GitHub son públicos y no miden instalaciones. |
+| Android | PWA disponible; APK/AAB nativos pendientes. Reutilizar el export web y agregar solo integración nativa necesaria. Verificar instalación, QR, fotos, almacenamiento, actualización y funcionamiento offline en Android real; evaluar el origen y las cookies antes de habilitar nube en un contenedor nativo. |
+| Raspberry, notebook y servidor | Paquete estático local implementado en PR #24; no incluye backend multiusuario. Backend autoalojado pendiente: adaptadores, migraciones, backup/restauración y prueba en arm64/amd64. Especificaciones y comandos actuales en `PLATAFORMAS.md`. |
+| ESP32 | Firmware y protocolo pendientes. Requiere identidad de dispositivo con permisos mínimos y revocación; no poner credenciales de operador ni claves generales de la casa en el firmware. |
+| Compartir información y proyectos | Sincronización por casa, permisos y listas asociadas a proyectos existentes. Falta concretar y probar el intercambio entre proyectos/casas: qué se comparte, quién lo recibe, copia o vínculo, permisos, revocación y conflictos offline. No asumir que exportar toda la casa resuelve este caso. |
+| Taller e inventario | Contenedores con QR, fotos y anotaciones libres implementados en PR #23; revocación reforzada en PR #25. Validar el uso real del taller y mantener herramientas, consumibles e insumos inventariados sin obligar a convertir cada anotación libre en producto. |
+| Seguridad y costos | Mantener revisión de permisos, límites de recursos e intentos, auditoría de dependencias y pruebas de aislamiento. Probar cuotas y fallos de proveedores antes de activar nuevas funciones; no prometer inmunidad a ataques ni gasto nulo. |
+| Suscripciones, multimedia y soporte | Continúan como entregas futuras detalladas abajo. Proveedores, políticas vigentes y pruebas reales pendientes; las propuestas históricas no son capacidades habilitadas. |
+
+Los PRs se revisan e integran gradualmente. Una integración no publica automáticamente
+la app: distinguir siempre código disponible, pruebas aprobadas y función operativa.
+
 ## Contexto
 
-Hoy OpenDomus es una app 100 % cliente (Next 16 + Dexie/IndexedDB): cada dispositivo tiene su propia casa, no hay cuentas, ni invitaciones, ni sincronización, ni deploy. Querés:
+OpenDomus tiene un cliente estático (Next + Dexie/IndexedDB), modo local y un backend opcional en Workers con D1 y Durable Objects. El código incluye cuentas, invitaciones, sincronización cifrada, recuperación con kit y revocación de sesiones. Que una función esté en `main` no prueba que esté desplegada ni configurada en producción. Querés:
 
 - que un admin **invite** a la familia y que las apps **se sincronicen** entre sí;
 - tenerla **deployada**: en la nube con **suscripción automática** y también **autoalojada** en una Raspberry/NAS (el ESP32, como dispositivo satélite);
 - una **app Android en Play Store**;
 - **profesionalizar** el proyecto (CI, tests, licencia, releases), sabiendo que va a llevar tiempo y que todavía nadie se suscribe.
 
-Además, hay trabajo **a medio hacer** en la rama `feat/fase-1`: las listas múltiples con presupuesto y los proyectos. El modelo, los servicios y los hooks ya están escritos; no compila solo porque faltan ~65 claves de traducción y la página de proyectos.
+Las listas múltiples, presupuestos y proyectos ya están implementados. Las etapas completadas de abajo conservan el detalle histórico; no son instrucciones para volver a implementar esos cambios.
 
 Lo que juega a favor:
 
@@ -25,7 +47,7 @@ Lo que juega a favor:
 
 ## Decisiones de arquitectura
 
-> Actualizadas el 2026-10-04: cifrado de extremo a extremo, todo en Cloudflare, tres niveles de privacidad. El servidor local (Raspberry) y el ESP32 quedan para más adelante.
+> Actualizadas el 2026-10-04: Workers/D1/Durable Objects, fotos cifradas en Supabase Storage y tres niveles de privacidad. La distribución estática local existe; el backend autoalojado y el ESP32 siguen pendientes. Ver [plataformas](PLATAFORMAS.md) y [límites de seguridad](../SECURITY.md).
 
 ### Cómo entra cada persona (✅ hecho: landing + `/empezar`)
 
@@ -36,18 +58,18 @@ Lo que juega a favor:
 
 ### Seguridad: cifrado de extremo a extremo (E2EE)
 
-La nube guarda solo datos cifrados. Ni el servidor, ni Cloudflare, ni quien los comprometa pueden leer una casa.
+El contenido sincronizado y las fotos se cifran en el cliente. Cuentas, membresías y metadatos operativos no son todos cifrados. Un servidor que distribuya JavaScript malicioso, un XSS o un dispositivo comprometido pueden exponer datos durante el uso: E2EE no protege frente a todos esos escenarios.
 
 - **Claves por alcance**: cada casa tiene una clave para **Familia**, otra para **Adultos** y cada persona una para **Privado** (simétricas, AES-256-GCM).
 - **Claves de cada persona**: un par de claves por usuario (X25519 para recibir claves, Ed25519 para firmar cambios). Las claves de alcance se le entregan cifradas con su clave pública.
-- **Login sin que el servidor vea la contraseña**: de la contraseña se derivan, en el dispositivo, dos claves distintas (PBKDF2/Argon2 + HKDF). Una sirve para autenticarse ante el servidor; la otra, para abrir las claves de la persona. El servidor nunca recibe la contraseña ni la segunda clave.
-- **Varios dispositivos por persona**: un dispositivo nuevo se habilita con la contraseña, con la passkey/huella (extensión PRF de WebAuthn) o aprobándolo desde otro dispositivo (QR). Hay lista de dispositivos y se pueden revocar.
+- **Login con contraseña derivada**: el cliente usa PBKDF2-SHA256 (600.000 iteraciones) y HKDF para separar autenticación y cifrado (`src/lib/crypto`). Envía la clave de autenticación a Better Auth; no envía la contraseña humana ni la clave que abre la identidad. Argon2 no está implementado.
+- **Varios dispositivos por persona**: hoy se entra con contraseña y existe recuperación con kit. Hay lista de sesiones y revocación. Passkeys PRF y aprobación desde otro dispositivo por QR siguen pendientes; la huella de un perfil local no equivale a ese mecanismo.
 - **Sacar a alguien de la casa** rota las claves de los alcances que tenía: no lee nada nuevo.
 - **Recuperación**:
   - un **kit de recuperación** (código para imprimir) abre lo privado;
   - lo compartido, otro miembro (el admin) te lo vuelve a entregar;
   - sin kit ni otro dispositivo, lo privado no se puede recuperar (es el precio de que nadie más pueda leerlo, y se explica antes de crear la cuenta).
-- Login con Google, GitHub o enlace mágico prueba **quién sos**; para abrir los datos hace falta además la passkey, la clave de cifrado o la aprobación desde otro dispositivo.
+- **Pendiente**: Google, GitHub y enlace mágico deben autenticar identidad sin saltarse el desbloqueo de las claves. Todavía no están habilitados para cuentas domésticas.
 
 ### Privacidad: tres niveles para cada cosa
 
@@ -60,10 +82,10 @@ La nube guarda solo datos cifrados. Ni el servidor, ni Cloudflare, ni quien los 
 | **Workers** (Hono + Better Auth) | API: cuentas, casas, invitaciones, dispositivos, sincronización. |
 | **D1** (SQLite) | Usuarios, casas, membresías, claves cifradas, registro de cambios cifrados. |
 | **Durable Objects** (uno por casa) | Orden de los cambios y aviso en tiempo real (WebSocket). Más adelante, el modo party. |
-| **R2** | Fotos cifradas. |
+| **Supabase Storage** | Fotos cifradas por el cliente, bucket privado; credencial de servicio solo en el Worker. |
 | **Workers con archivos estáticos** | La app (ya publicada). |
 
-El servidor es TypeScript y comparte `packages/core` (dominio, permisos, protocolo) con la app. Más adelante el mismo código corre en una Raspberry (Node + SQLite).
+El servidor TypeScript está en `server/` y la web en `src/`, con workspaces npm. `packages/core` y un backend Node + SQLite son propuestas futuras, no rutas ni capacidades actuales.
 
 ### Sincronización con E2EE
 
@@ -75,7 +97,7 @@ El servidor no puede ejecutar el dominio sobre datos que no lee. Por eso la regl
 - **Cada dispositivo** verifica la firma con la clave del autor (fijada la primera vez que se vio: si el servidor diera otra, la sincronización se frena), abre la operación y revisa con `permissions.ts` que el autor tenga permiso. Lo que no pasa, se descarta y se cuenta.
 - **Fusión**: el orden lo da el servidor (no el reloj de cada equipo). Ediciones: gana la última, campo por campo; lo que este dispositivo no subió todavía no se pisa. Cantidades: diferencias que se suman. Borrar gana sobre editar. Cambiar el nivel de algo lo borra del nivel anterior y lo publica entero en el nuevo (con lo que hereda: ítems de la lista, comentarios, historial).
 - **Robustez**: el lote se guarda antes de mandarlo y se reintenta idéntico (mismos ids): el servidor no lo duplica y una cantidad no se resta dos veces. Una sola pestaña sincroniza a la vez (Web Locks).
-- **No viajan**: el PIN y las huellas de cada perfil (protegen el perfil en ese dispositivo). Las fotos, más adelante (R2, cifradas).
+- **No viajan**: el PIN y las huellas de cada perfil (protegen el perfil en ese dispositivo). Las fotos se sincronizan por separado como bytes cifrados en Supabase Storage.
 - Local primero: se escribe en IndexedDB al instante y se sube cuando hay conexión.
 
 ### Resto (sin cambios)
@@ -85,7 +107,7 @@ El servidor no puede ejecutar el dominio sobre datos que no lee. Por eso la regl
 | Web | Sitio estático (`output: "export"`), ✅ publicado en Cloudflare. |
 | Android | **Capacitor** sobre el build estático. |
 | Suscripciones | Entitlements por casa + proveedor intercambiable (ver "Decisiones abiertas"). |
-| Repositorio | Monorepo npm workspaces: `apps/web`, `apps/server`, `packages/core`. |
+| Repositorio | Web en `src/`, backend en `server/`; extracción de un core compartido pendiente si aporta valor. |
 | Autoalojado y ESP32 | Más adelante (Etapa 4): el mismo servidor en Docker; el ESP32 como cliente con token de dispositivo. |
 | Multimedia y modo party | Fase 6: contenido desde Jellyfin (en casa) o desde la nube propia (R2); el modo party usa el canal en tiempo real de la casa (play/pausa/salto sincronizados). |
 
@@ -174,7 +196,9 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
   - pantallas de entrar, registrarse, recuperar contraseña, invitaciones pendientes y "Mi cuenta";
   - el selector de perfiles queda para dispositivos compartidos (la tablet de la cocina).
 
-## Etapa 3: sincronización offline-first
+## Etapa 3: propuesta histórica sustituida por la sincronización E2EE
+
+El diseño de comandos, dominio en servidor y SSE que sigue **no es el protocolo actual**. La implementación vigente es la descrita en «Sincronización con E2EE»: captura Dexie, operaciones cifradas y firmadas, Durable Objects y WebSocket. No migrar a este diseño histórico como si fuera trabajo pendiente.
 
 - **Protocolo** en `packages/core/sync`:
   - `push(commands[])` → el servidor aplica en orden, con permisos y dominio, y asigna `rev`;
@@ -192,7 +216,7 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
 
 ## Etapa 4: despliegue en la nube y autoalojado, más dispositivos
 
-- **Nube**: web en Cloudflare Pages + API en un VPS chico o Fly.io + Postgres administrado + almacenamiento de objetos. Multi-tenant por casa.
+- **Nube actual**: Worker con assets estáticos, D1, Durable Objects y Supabase Storage. La propuesta anterior Pages + VPS + Postgres quedó sustituida; no requiere migración a esa arquitectura.
 - **Autoalojado**: una imagen Docker multi-arquitectura (amd64/arm64) que sirve API y web, con SQLite y un `docker-compose.yml`. Guía para Raspberry Pi. Backups automáticos (copia de SQLite y de las fotos).
 - **ESP32**: tokens de dispositivo por casa (alcance limitado, revocables desde Ajustes), endpoints simples (`POST /devices/shopping`, `GET /devices/list`) y un ejemplo de firmware (Arduino) en `examples/esp32`.
 
@@ -238,7 +262,7 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
    - Stripe (requiere una empresa en EE.UU., por ejemplo con Stripe Atlas).
    - Se puede combinar: Mercado Pago para Argentina + un *merchant of record* para el resto.
 2. ✅ **Licencia**: AGPL-3.0 o posterior (decidido).
-3. **Hosting de la API en la nube**: VPS barato (por ejemplo Hetzner) o una plataforma administrada (Fly.io, Railway). Se decide en la Etapa 4.
+3. **Backend autoalojado**: decidir cómo abstraer D1/Durable Objects y almacenamiento sin duplicar el dominio. El hosting actual de la API en la nube ya está definido; no confundirlo con esta decisión.
 
 ## Verificación por etapa
 
