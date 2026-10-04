@@ -4,7 +4,7 @@ import { Button, Flex, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { Archive, Plus } from "lucide-react";
 import { useState } from "react";
-import { IconTile } from "@/components/ui";
+import { IconTile, PrivacyBadge } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { APPEARANCE_ICONS, tint } from "@/lib/appearance";
 import { SPRING } from "@/lib/motion";
@@ -106,9 +106,12 @@ function ListTab({ summary, selected, onSelect }: { summary: ListSummary; select
       <Flex align="center" gap={10}>
         <IconTile icon={APPEARANCE_ICONS[list.icon]} color={list.color} size={36} solid={selected} />
         <Flex vertical style={{ minWidth: 0, flex: 1 }}>
-          <Typography.Text strong ellipsis>
-            {listName(list, t)}
-          </Typography.Text>
+          <Flex align="center" gap={5} style={{ minWidth: 0 }}>
+            <Typography.Text strong ellipsis style={{ minWidth: 0 }}>
+              {listName(list, t)}
+            </Typography.Text>
+            <PrivacyBadge privacy={list.privacy} size={13} />
+          </Flex>
           <Typography.Text type="secondary" ellipsis style={{ fontSize: token.fontSizeSM }}>
             {project ? project.name : t("shopping.lists.pendingCount", { count: pending })}
           </Typography.Text>

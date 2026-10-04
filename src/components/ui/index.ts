@@ -3,6 +3,6 @@ export { ChoiceCards, type ChoiceOption } from "./ChoiceCards";
 export { EmptyState } from "./EmptyState";
 export { IconTile } from "./IconTile";
 export { PageHeader } from "./PageHeader";
-export { PrivacySelect } from "./PrivacySelect";
+export { PRIVACY_META, PrivacyBadge, PrivacySelect } from "./PrivacySelect";
 export { QuantityStepper } from "./QuantityStepper";
 export { StockTag } from "./StockTag";

@@ -222,14 +222,17 @@ export async function createList(actor: Actor | null, input: ShoppingListInput) 
 
 export async function updateList(actor: Actor | null, id: string, input: ShoppingListInput) {
   assertCan(actor, "shopping.manage");
-  const data = parseListInput(input);
+  const parsed = parseListInput(input);
+  // La lista de la casa es de todos los días: no va a un proyecto ni deja de ser de la familia
+  // (ahí llegan las sugerencias; además no tiene dueño, así que como Privada no la vería nadie).
+  const home = id === HOME_LIST_ID;
+  const data = home ? { ...parsed, privacy: "family" as const, projectId: undefined } : parsed;
   await db.transaction("rw", db.shoppingLists, db.projects, db.activity, async () => {
     const list = await db.shoppingLists.get(id);
     if (!list) throw new NotFoundError("errors.notFound.list");
     if (data.projectId && !(await db.projects.get(data.projectId))) throw new NotFoundError("errors.notFound.project");
     await setActivityPrivacy("lists", id, data.privacy, list.createdBy);
-    // La lista de la casa no se mueve a un proyecto: es la de todos los días.
-    await db.shoppingLists.update(id, { ...data, projectId: id === HOME_LIST_ID ? undefined : data.projectId, updatedAt: Date.now() });
+    await db.shoppingLists.update(id, { ...data, updatedAt: Date.now() });
     await recordActivity(actor, { module: "lists", action: "update", entityId: id, entityName: data.name, privacy: data.privacy, createdBy: list.createdBy });
   });
 }

@@ -91,9 +91,12 @@ export function ListModal({ open, list, projectId, onClose, onSaved }: ListModal
         <Form.Item name="name" label={t("shopping.lists.name")} rules={[{ required: true, whitespace: true, message: t("inventory.form.nameRequired") }]}>
           <Input maxLength={LIST_LIMITS.nameMaxLength} placeholder={t("shopping.lists.namePlaceholder")} autoFocus={!home} disabled={home} />
         </Form.Item>
-        <Form.Item name="privacy" label={t("privacy.label")}>
-          <PrivacySelect />
-        </Form.Item>
+        {/* La lista de la casa es de todos: ahí llegan las sugerencias del inventario. */}
+        {!home && (
+          <Form.Item name="privacy" label={t("privacy.label")}>
+            <PrivacySelect />
+          </Form.Item>
+        )}
         {!home && (
           <Form.Item name="projectId" label={t("shopping.lists.project")} tooltip={t("shopping.lists.projectHint")}>
             <Select

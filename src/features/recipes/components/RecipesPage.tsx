@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
-import { EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader, PrivacyBadge } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { SPRING } from "@/lib/motion";
 import { RECIPE_TAGS, type RecipeTag } from "../domain";
@@ -160,9 +160,14 @@ function RecipeCard({ recipe, index }: { recipe: RecipeSummary; index: number })
             </div>
           }>
             <Flex vertical gap={6}>
-              <Typography.Title level={5} style={{ margin: 0 }} ellipsis={{ rows: 2 }}>
-                {recipe.name}
-              </Typography.Title>
+              <Flex align="flex-start" gap={6}>
+                <Typography.Title level={5} style={{ margin: 0, minWidth: 0, flex: 1 }} ellipsis={{ rows: 2 }}>
+                  {recipe.name}
+                </Typography.Title>
+                <span style={{ paddingTop: 3 }}>
+                  <PrivacyBadge privacy={recipe.privacy} />
+                </span>
+              </Flex>
               <Flex gap={12} align="center" wrap style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
                 {recipe.minutes > 0 && (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
