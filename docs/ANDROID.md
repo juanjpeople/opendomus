@@ -57,6 +57,9 @@ cambiar y no sirve para una línea de actualizaciones distribuida.
 Los assets se actualizan junto al APK, sin service worker dentro de Android.
 Las claves de firma no se versionan. El build release no habilita depuración web
 ni tráfico HTTP. La captura de cámara pide permiso cuando se utiliza.
+El lector QR usa `jsqr` empaquetado con la pantalla, compartido con la PWA;
+no descarga modelos ni envía imágenes. Lee cuatro veces por segundo y reduce
+cada cuadro a un máximo de 640 px por lado.
 Se deshabilitan los logs del puente nativo, incluso en debug, porque sus argumentos
 pueden contener respaldos completos. Las reglas de backup excluyen explícitamente
 los datos de copias cloud y transferencias entre dispositivos; el traslado previsto
@@ -77,12 +80,19 @@ Android 15 sin Wi-Fi ni datos móviles y una prueba posterior de actualización:
 Los resultados de los selectores se simulan con Espresso; el puente, la escritura,
 la interfaz y la base local son reales. No prueba todos los proveedores de documentos
 ni una actualización desde cada versión histórica. Las capturas usan datos sintéticos.
-Las regresiones de navegador también cubren cancelar una detección y salir antes de
-recibir el permiso de cámara; no reemplazan una prueba de cámara física en Android.
+La ejecución posterior `37241186473` confirmó captura y cierre de un stream de cámara
+real del emulador y falla de escritura con mensaje genérico y reintento exitoso.
+También detectó que el `BarcodeDetector` de ese WebView no leía el QR de prueba.
+Se reemplazó por el lector local compartido: seis regresiones de navegador pasan,
+incluida la primera lectura sin conexión tras instalar la PWA, sin visitar antes
+el escáner y con `BarcodeDetector` deshabilitado. El video de esa prueba es sintético;
+la decodificación, navegación y cierre del stream son reales. La regresión Android
+usa el mismo QR y la pantalla real con Wi-Fi y datos apagados; su nueva ejecución
+sigue pendiente. Estas comprobaciones no reemplazan una cámara física en Android.
 
 Pendiente antes de distribuir:
 
-- Falla de escritura nativa y proveedores de documentos diferentes al usado por el test.
+- Proveedores de documentos diferentes al usado por el test.
 - Cámara/QR real, incluyendo permiso denegado.
 - Apariencia con teclado, barras del sistema y ambos temas en dispositivos físicos.
 - Revisar exclusión de datos de backup y transferencia entre dispositivos según versión Android.

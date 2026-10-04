@@ -598,6 +598,7 @@ export const es = {
     preview: "Vista previa",
   },
   scan: {
+    failed: "No pudimos leer la cámara. Intentá de nuevo o escribí el código de la etiqueta.",
     title: "Escanear QR",
     description: "Apuntá a la etiqueta de un contenedor para ver qué hay adentro.",
     start: "Activar cámara",

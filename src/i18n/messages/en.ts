@@ -593,6 +593,7 @@ export const en: Messages = {
     preview: "Preview",
   },
   scan: {
+    failed: "We could not read the camera. Try again or enter the label code.",
     title: "Scan QR",
     description: "Point at a container's label to see what's inside.",
     start: "Turn on camera",

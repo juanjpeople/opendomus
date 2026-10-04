@@ -8,22 +8,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
 import { PageHeader } from "@/components/ui";
+import { useHydrated } from "@/hooks/useHydrated";
 import { useT } from "@/i18n";
 import { isValidContainerCode, normalizeContainerCode, STORAGE_LIMITS } from "../domain";
 import { codeFromScan } from "../scan";
+import { createQrDetector } from "../qr-reader";
 import { qrHref } from "@/lib/navigation/routes";
 
-/** API nativa de lectura de códigos (Chromium/Android). No está en los tipos de TypeScript. */
-interface BarcodeDetectorLike {
-  detect(source: HTMLVideoElement): Promise<{ rawValue: string }[]>;
-}
-type BarcodeDetectorCtor = new (options: { formats: string[] }) => BarcodeDetectorLike;
-
-function getDetector(): BarcodeDetectorCtor | undefined {
-  return typeof window !== "undefined" ? (window as Window & { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector : undefined;
-}
-
-type Status = "idle" | "starting" | "scanning" | "denied" | "invalid";
+type Status = "idle" | "starting" | "scanning" | "denied" | "invalid" | "failed";
 
 export function ScanPage() {
   const t = useT();
@@ -33,7 +25,8 @@ export function ScanPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [manual, setManual] = useState("");
-  const supported = !!getDetector() && !!navigator.mediaDevices?.getUserMedia;
+  const hydrated = useHydrated();
+  const supported = hydrated && !!navigator.mediaDevices?.getUserMedia;
 
   const generationRef = useRef(0);
   const pendingRef = useRef(false);
@@ -54,8 +47,7 @@ export function ScanPage() {
   }
 
   async function start() {
-    const Detector = getDetector();
-    if (!Detector || pendingRef.current || streamRef.current) return;
+    if (!supported || pendingRef.current || streamRef.current) return;
     const generation = ++generationRef.current;
     const active = () => generation === generationRef.current;
     pendingRef.current = true;
@@ -75,10 +67,14 @@ export function ScanPage() {
       if (!active()) return;
       pendingRef.current = false;
       setStatus("scanning");
-      const detector = new Detector({ formats: ["qr_code"] });
+      const detector = createQrDetector();
       const tick = async () => {
         if (!active()) return;
-        const [result] = await detector.detect(video).catch(() => []);
+        let result: { rawValue: string } | undefined;
+        try { [result] = await detector.detect(video); } catch {
+          if (active()) { release(); setStatus("failed"); }
+          return;
+        }
         if (!active()) return;
         if (result) {
           const code = codeFromScan(result.rawValue);
@@ -92,10 +88,10 @@ export function ScanPage() {
         timerRef.current = setTimeout(tick, 250);
       };
       void tick();
-    } catch {
+    } catch (error) {
       if (!active()) return;
       release();
-      setStatus("denied");
+      setStatus(error instanceof DOMException && ["NotAllowedError", "SecurityError"].includes(error.name) ? "denied" : "failed");
     }
   }
 
@@ -110,7 +106,8 @@ export function ScanPage() {
       <PageHeader eyebrow={t("storage.eyebrow")} title={t("scan.title")} description={t("scan.description")} />
       <Reveal delay={0.1}>
         <Card style={{ maxWidth: 560 }}>
-          {!supported && <Alert type="info" showIcon title={t("scan.unsupported")} style={{ marginBottom: 16 }} />}
+          {hydrated && !supported && <Alert type="info" showIcon title={t("scan.unsupported")} style={{ marginBottom: 16 }} />}
+          {status === "failed" && <Alert type="error" showIcon title={t("scan.failed")} style={{ marginBottom: 16 }} />}
           {status === "denied" && <Alert type="error" showIcon title={t("scan.denied")} style={{ marginBottom: 16 }} />}
           {status === "invalid" && <Alert type="warning" showIcon title={t("scan.invalid")} style={{ marginBottom: 16 }} />}
 

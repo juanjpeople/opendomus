@@ -193,6 +193,7 @@ public class NativeFlowTest {
             evaluate(scenario, "window.__swCount = -1; navigator.serviceWorker.getRegistrations().then(r => window.__swCount = r.length)");
             await(scenario, "window.__swCount === 0");
             verifySettingsRoundTrip(scenario);
+            verifyOfflineQrThroughScanner(scenario);
         }
     }
 
@@ -228,18 +229,23 @@ public class NativeFlowTest {
         }
     }
 
-    @Test
-    public void barcodeDetectorReadsQrWithoutNetwork() throws Exception {
+    private void verifyOfflineQrThroughScanner(ActivityScenario<MainActivity> scenario) throws Exception {
         byte[] fixture;
         try (java.io.InputStream input = InstrumentationRegistry.getInstrumentation().getContext().getAssets().open("offline-qr.png")) {
             fixture = input.readAllBytes();
         }
         String dataUrl = "data:image/png;base64," + android.util.Base64.encodeToString(fixture, android.util.Base64.NO_WRAP);
-        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
-            ready(scenario);
-            evaluate(scenario, "window.__qr=null;(() => {const image=new Image();image.onload=async()=>{try{const codes=await new BarcodeDetector({formats:['qr_code']}).detect(image);window.__qr=codes[0]?.rawValue??'not-found'}catch(e){window.__qr='error:'+e.message}};image.onerror=()=>window.__qr='image-error';image.src=" + JSONObject.quote(dataUrl) + ";})()");
-            await(scenario, "window.__qr !== null");
-            assertEquals(JSONObject.quote("https://localhost/c?code=K7QM"), evaluate(scenario, "window.__qr"));
+        scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario/escanear"));
+        await(scenario, "location.pathname === '/inventario/escanear' && [...document.querySelectorAll('button')].some(b=>/Activar cámara|Turn on camera/.test(b.textContent))");
+        // A synthetic camera stream tests the actual shared decoder and route, not a mocked decode result.
+        evaluate(scenario, "Object.defineProperty(window,'BarcodeDetector',{value:undefined,configurable:true});navigator.mediaDevices.getUserMedia=async()=>{const image=new Image();image.src=" + JSONObject.quote(dataUrl) + ";await image.decode();const canvas=document.createElement('canvas');canvas.width=canvas.height=320;const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);const stream=canvas.captureStream(10);window.__qrStream=stream;sessionStorage.removeItem('qrTestStopped');for(const track of stream.getTracks()){const stop=track.stop.bind(track);track.stop=()=>{stop();sessionStorage.setItem('qrTestStopped',String(stream.getTracks().every(t=>t.readyState==='ended')))}}window.__qrTimer=setInterval(()=>ctx.drawImage(image,0,0),100);return stream}");
+        try {
+            tap(scenario, "[...document.querySelectorAll('button')].find(b=>/Activar cámara|Turn on camera/.test(b.textContent))");
+            await(scenario, "location.pathname === '/c' && new URL(location.href).searchParams.get('code') === 'K7QM'");
+            await(scenario, "sessionStorage.getItem('qrTestStopped') === 'true'");
+            screenshot("qr-decoded-offline");
+        } finally {
+            evaluate(scenario, "clearInterval(window.__qrTimer);window.__qrStream?.getTracks().forEach(t=>t.stop())");
         }
     }
 
