@@ -9,6 +9,8 @@
 import type { BetterAuthOptions } from "better-auth";
 
 export interface AuthEnv {
+  google?: { clientId: string; clientSecret: string };
+  github?: { clientId: string; clientSecret: string };
   /** Secreto para firmar sesiones (wrangler secret / .dev.vars). */
   secret: string;
   /** Origen público de la app (https://…): cookies y redirecciones. */
@@ -28,6 +30,19 @@ export function authOptions(database: BetterAuthOptions["database"], env: AuthEn
     baseURL: env.baseURL,
     basePath: "/api/auth",
     trustedOrigins: env.trustedOrigins,
+    socialProviders: {
+      ...(env.google ? { google: { ...env.google, disableSignUp: true, requireEmailVerification: true } } : {}),
+      ...(env.github ? { github: { ...env.github, disableSignUp: true, requireEmailVerification: true } } : {}),
+    },
+    account: {
+      encryptOAuthTokens: true,
+      accountLinking: {
+        enabled: true,
+        disableImplicitLinking: true,
+        allowDifferentEmails: false,
+        trustedProviders: [],
+      },
+    },
     emailAndPassword: {
       enabled: true,
       minPasswordLength: DERIVED_AUTH_KEY_LENGTH,

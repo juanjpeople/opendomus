@@ -102,6 +102,14 @@ export async function signIn(input: { email: string; password: string }): Promis
   return sessionFrom(me, await unlockIdentity(me.keys, keys.encKey));
 }
 
+/** Una sesión OAuth prueba identidad; la contraseña abre las claves localmente, sin reenviarla. */
+export async function unlockAuthenticatedSession(password: string): Promise<CloudSession> {
+  const me = await api<MeResponse>("GET", "/me");
+  if (!me.user || !me.keys) throw new Error("no-encrypted-identity");
+  const keys = await derivePasswordKeys(me.user.email, password);
+  return sessionFrom(me, await unlockIdentity(me.keys, keys.encKey));
+}
+
 /**
  * Al abrir la app: si hay sesión y este dispositivo tiene la identidad, entra sin pedir nada.
  * `null` = no hay sesión. Sin conexión (o con el servidor caído) lanza: no es lo mismo que no tener sesión.

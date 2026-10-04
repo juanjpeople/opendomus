@@ -2,5 +2,7 @@
 declare module "node:sqlite" {
   export class DatabaseSync {
     constructor(path: string);
+    close(): void;
+    prepare(sql: string): { get(...parameters: (string | number)[]): Record<string, unknown> | undefined };
   }
 }
