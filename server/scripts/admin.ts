@@ -7,6 +7,8 @@
  *   npm run admin -- casas
  *   npm run admin -- pausar <id-de-casa>
  *   npm run admin -- reanudar <id-de-casa>
+ *   npm run admin -- cuenta <email>
+ *   npm run admin -- administrador <id-de-cuenta> --email <email> --accion habilitar|revocar
  *
  * Necesita OPENDOMUS_ADMIN_TOKEN (y OPENDOMUS_API si no es producción), en el entorno o en un
  * archivo `.env.admin` en la raíz del repo (ignorado por git: el token nunca va al repo).
@@ -46,6 +48,20 @@ const date = (value: number | null | undefined) => (value ? new Date(value).toIS
 async function main(args: string[]) {
   if (!TOKEN) throw new Error("Falta OPENDOMUS_ADMIN_TOKEN (en el entorno o en .env.admin).");
   const [command, sub] = args;
+
+  if (command === "cuenta" && sub) {
+    const { accounts } = await call<{ accounts: Record<string, unknown>[] }>("GET", `/accounts?email=${encodeURIComponent(sub)}`);
+    console.table(accounts);
+    return;
+  }
+  if (command === "administrador" && sub) {
+    const email = flag(args, "email");
+    const action = flag(args, "accion");
+    if (!email || !["habilitar", "revocar"].includes(action ?? "")) throw new Error("Indicá --email y --accion habilitar|revocar.");
+    await call("POST", "/administrators", { userId: sub, email, enabled: action === "habilitar" });
+    console.log(action === "habilitar" ? "Cuenta habilitada; también debe figurar en PLATFORM_ADMIN_EMAILS." : "Permiso administrativo revocado.");
+    return;
+  }
 
   if (command === "licencia" && sub === "nueva") {
     const { licenses } = await call<{ licenses: { id: string; code: string; plan: string; expiresAt: number | null }[] }>("POST", "/licenses", {

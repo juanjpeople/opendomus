@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
 import { House } from "@/components/illustrations/House";
 import { HouseMark } from "@/components/illustrations/HouseMark";
+import { AccountLinks } from "@/features/cloud/components/AccountLinks";
 import { LanguageSwitch, ThemeModeSwitch } from "@/components/layout/HeaderActions";
 import { IconTile } from "@/components/ui";
 import { useT } from "@/i18n";
@@ -30,6 +31,7 @@ export function Landing() {
     <div style={{ background: token.colorBgLayout, color: token.colorText, minHeight: "100vh" }}>
       <LandingHeader />
       <Hero />
+      <AccountLinks />
       <ValuesSection />
       <TransparencySection />
       <GuidelinesSection />

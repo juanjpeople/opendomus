@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Check, HardDrive, House, ShieldCheck, UserPlus, 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PublicLayout } from "@/components/layout/PublicLayout";
+import { AccountLinks } from "@/features/cloud/components/AccountLinks";
 import { Reveal } from "@/components/motion";
 import { IconTile } from "@/components/ui";
 import { useT, type MessageKey } from "@/i18n";
@@ -62,6 +63,7 @@ export function Onboarding() {
           </Typography.Paragraph>
         </Reveal>
 
+        <AccountLinks />
         <Row gutter={[20, 20]} align="stretch">
           {CHOICES.map((choice, index) => (
             <Col key={choice.id} xs={24} md={8}>

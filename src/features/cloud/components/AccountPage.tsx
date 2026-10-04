@@ -54,6 +54,7 @@ export function AccountPage() {
 
   /** Cuenta sin casa en la nube: la casa sigue en este dispositivo. */
   const finishLocal = () => {
+    if (returnTo) return router.push(returnTo);
     if (useDeviceStore.getState().mode === "unset") setDeviceMode("local");
     router.push("/familia");
   };

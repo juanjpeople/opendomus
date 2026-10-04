@@ -2,7 +2,6 @@
 
 import { App, Alert, Button, Card, Col, Descriptions, Flex, Form, Input, InputNumber, Modal, Row, Segmented, Skeleton, Statistic, Table, Tabs, Tag, Typography } from "antd";
 import { CircleAlert, Gauge, KeyRound, MessageSquare, RefreshCw, ShieldCheck, Users } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { IconTile } from "@/components/ui";
@@ -10,6 +9,7 @@ import { useT } from "@/i18n";
 import { api, CloudError } from "@/lib/cloud/api";
 import { getErrorMessage } from "@/lib/errors";
 import { useCloudSession } from "@/features/cloud/hooks";
+import { AccountLinks } from "@/features/cloud/components/AccountLinks";
 
 interface Overview {
   metrics: {
@@ -200,9 +200,7 @@ export function PlatformAdminPage() {
             <Typography.Text type="secondary" style={{ textAlign: "center" }}>
               {t("platformAdmin.signIn")}
             </Typography.Text>
-            <Link href="/cuenta?modo=entrar&volver=/admin">
-              <Button type="primary">{t("cloud.auth.signInTab")}</Button>
-            </Link>
+            <AccountLinks admin />
           </Flex>
         </Card>
       </PublicLayout>
@@ -211,7 +209,13 @@ export function PlatformAdminPage() {
   if (forbidden) {
     return (
       <PublicLayout width={620}>
-        <Alert type="error" showIcon title={t("platformAdmin.forbidden")} description={session.user.email} />
+        <Alert type="warning" showIcon title={t("platformAdmin.forbidden")} description={
+          <Flex vertical gap={8}>
+            <Typography.Text>{session.user.email}</Typography.Text>
+            <Typography.Text>{t("platformAdmin.activation")}</Typography.Text>
+            <Typography.Text copyable code>{session.user.id}</Typography.Text>
+          </Flex>
+        } />
       </PublicLayout>
     );
   }

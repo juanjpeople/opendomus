@@ -1,5 +1,29 @@
 import { expect, test } from "@playwright/test";
 
+test("cuenta accesible sin invitación desde bienvenida, empezar y administración", async ({ page }, testInfo) => {
+  for (const route of ["/bienvenida", "/empezar", "/admin"]) {
+    await page.goto(route);
+    const suffix = route === "/admin" ? "&volver=/admin" : "";
+    await expect(page.getByRole("link", { name: "Ya tengo cuenta", exact: true })).toHaveAttribute("href", `/cuenta?modo=entrar${suffix}`);
+    await page.getByRole("link", { name: "Crear cuenta", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Creá tu cuenta" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Código de acceso" })).toHaveCount(0);
+    await page.goBack();
+    await page.locator('a[href*="modo=recuperar"]').click();
+    await expect(page.locator('textarea[placeholder="ODK1-XXXX-XXXX-…"]')).toBeVisible();
+    if (route === "/admin") await expect(page).toHaveURL(/volver=\/admin/);
+  }
+  await page.goto("/empezar");
+  await expect(page.getByRole("link", { name: "Crear cuenta", exact: true })).toBeVisible();
+  // La captura también debe incluir las tarjetas tras su animación de entrada.
+  await expect(page.getByRole("heading", { name: "Crear mi casa", exact: true }).locator("../../..")).toHaveCSS("opacity", "1");
+  await page.getByRole("link", { name: "Nuestros valores" }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole("link", { name: "Nuestros valores" }).locator("../../..")).toHaveCSS("opacity", "1");
+  await page.screenshot({ path: testInfo.outputPath("cuenta-claro.png"), fullPage: true });
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+  await page.screenshot({ path: testInfo.outputPath("cuenta-oscuro.png"), fullPage: true });
+});
+
 test("la primera vez arranca por la landing y la bienvenida; después, directo a la casa", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/bienvenida/);

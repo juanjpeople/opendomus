@@ -28,7 +28,7 @@ export interface Env {
   HOUSEHOLD_ACCESS?: string;
   /** Token de la API de administración (licencias, planes). Sin él, la API de administración no existe. */
   ADMIN_TOKEN?: string;
-  /** Correos, separados por coma, autorizados para el panel global con su sesión normal. */
+  /** Correos elegibles para el panel; además requieren una habilitación por ID de cuenta. */
   PLATFORM_ADMIN_EMAILS?: string;
 }
 

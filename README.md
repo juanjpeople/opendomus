@@ -92,8 +92,29 @@ bucket independently limits every encrypted object to 4 MB and accepts only
 
 ### Platform administration
 
+Register at `/cuenta?modo=crear&volver=/admin` (no invitation is needed for an account),
+choose your own password and save the recovery kit. Sign in at
+`/cuenta?modo=entrar&volver=/admin`; password recovery is at
+`/cuenta?modo=recuperar&volver=/admin` and requires that kit. The allowed email setting
+does not create an account, set a password or prove ownership of an email address.
+
+Apply migration `0006_platform_admin_grants.sql` before deploying this version. Existing
+administrators also need an explicit grant. With `OPENDOMUS_ADMIN_TOKEN` configured only
+in the terminal environment or the ignored `.env.admin`, the operator runs:
+
+```bash
+npm run admin -- cuenta juanjpeople@gmail.com
+npm run admin -- administrador ACCOUNT_ID --email juanjpeople@gmail.com --accion habilitar
+```
+
+Confirm the returned account ID belongs to the person being authorized before granting
+access; email alone is not verified. To revoke, use the same command with
+`--accion revocar`. Grants and revocations are audited and take effect on the next API
+request. Without a grant the panel denies access, including for allowed emails.
+
 `/admin` uses the normal cloud-account session and authorizes only the comma-separated
-emails in `PLATFORM_ADMIN_EMAILS`; it never sends `ADMIN_TOKEN` or storage credentials to
+emails in `PLATFORM_ADMIN_EMAILS` whose specific account ID has also been explicitly
+granted access by the operator; it never sends `ADMIN_TOKEN` or storage credentials to
 the browser. The panel shows application metrics, users, active sessions, homes,
 licenses, feedback, inactivity notices, risk signals and an audit trail. It can pause or
 resume a home, generate or revoke invitation licenses, resolve feedback and manually

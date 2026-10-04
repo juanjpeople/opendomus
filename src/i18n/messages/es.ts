@@ -966,6 +966,9 @@ export const es = {
     toCloudButton: "Crear mi casa en la nube",
   },
   cloud: {
+    entry: {
+      description: "Tu cuenta es independiente de tu casa. Registrarte no requiere un código de invitación.",
+    },
     steps: {
       access: "Acceso",
       account: "Cuenta",
@@ -1415,6 +1418,7 @@ export const es = {
     title: "Administración de OpenDomus",
     signIn: "Entrá con la cuenta autorizada para gestionar la plataforma.",
     forbidden: "Esta cuenta no está autorizada para administrar la plataforma.",
+    activation: "El operador debe habilitar este ID de cuenta desde la herramienta administrativa. Registrarte con un correo permitido no otorga acceso por sí solo.",
     runtime: "Estado de la plataforma",
     credentials: "Credenciales del servidor",
     configured: "Configurado",

@@ -961,6 +961,9 @@ export const en: Messages = {
     toCloudButton: "Create my home in the cloud",
   },
   cloud: {
+    entry: {
+      description: "Your account is separate from your home. Signing up does not require an invitation code.",
+    },
     steps: {
       access: "Access",
       account: "Account",
@@ -1410,6 +1413,7 @@ export const en: Messages = {
     title: "OpenDomus administration",
     signIn: "Sign in with the authorized account to manage the platform.",
     forbidden: "This account is not authorized to administer the platform.",
+    activation: "The operator must enable this account ID using the administration tool. Registering an allowed email does not grant access by itself.",
     runtime: "Platform status",
     credentials: "Server credentials",
     configured: "Configured",
