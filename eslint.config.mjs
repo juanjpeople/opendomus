@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generados: Wrangler (Cloudflare local) y los reportes de Playwright.
+    ".wrangler/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 
