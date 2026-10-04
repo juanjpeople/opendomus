@@ -1429,6 +1429,55 @@ export const en: Messages = {
         },
       },
     },
+    transparency: {
+      eyebrow: "Transparency",
+      title: "Your data takes this path. No other.",
+      description: "OpenDomus runs on your device first. The cloud only comes into play if you choose it for sharing, and receives content after it has been encrypted.",
+      stages: {
+        device: {
+          title: "Created on your device",
+          text: "Your home works and stores its data locally, even offline and without creating an account.",
+        },
+        encryption: {
+          title: "Encrypted before leaving",
+          text: "Content is sealed on your device with your home's keys. It never travels in plain text.",
+        },
+        cloud: {
+          title: "The cloud stores sealed boxes",
+          text: "If you enable sync, it coordinates encrypted changes. It never receives the keys to read them.",
+        },
+        family: {
+          title: "Opened by the right people",
+          text: "Only authorized family devices receive the keys for the privacy level they are allowed to see.",
+        },
+      },
+      diagramNote: "Local mode needs no cloud. Enabling it is an explicit and reversible choice.",
+      proofTitle: "You don't have to take our word for it",
+      proofDescription: "The design, code and controls are out in the open. Anyone can review this evidence.",
+      proofs: {
+        source: {
+          title: "Public source code",
+          text: "The full implementation can be read, studied and run independently.",
+          link: "View repository",
+        },
+        checks: {
+          title: "Every change is tested",
+          text: "Types, tests, API, browser and automated security analysis run on every change.",
+          link: "View checks",
+        },
+        exit: {
+          title: "The exit stays open",
+          text: "You can export your data and keep your recovery kit. Your home is never locked into the service.",
+          link: "",
+        },
+        report: {
+          title: "Responsible disclosure",
+          text: "A private channel is available to report vulnerabilities without exposing families.",
+          link: "How to report",
+        },
+      },
+      auditNote: "Automated controls reduce risk and leave public evidence; they do not replace an independent security audit.",
+    },
     guidelines: {
       eyebrow: "Guidelines",
       title: "How we build",

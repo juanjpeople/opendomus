@@ -1,15 +1,20 @@
 import {
   Accessibility,
   BellOff,
+  Bug,
+  Cloud,
+  Code2,
   DoorOpen,
   Download,
   KeyRound,
   Leaf,
   Lock,
+  LockKeyhole,
   Puzzle,
   Scale,
   Server,
   ShieldCheck,
+  Smartphone,
   Users,
   WifiOff,
   type LucideIcon,
@@ -32,6 +37,25 @@ export const VALUES: { key: ValueKey; icon: LucideIcon }[] = [
   { key: "familia", icon: Users },
   { key: "abierto", icon: DoorOpen },
   { key: "calma", icon: Leaf },
+];
+
+export type TransparencyStageKey = keyof Messages["landing"]["transparency"]["stages"];
+
+/** Recorrido conceptual: explica límites de confianza sin publicar detalles operativos. */
+export const TRANSPARENCY_STAGES: { key: TransparencyStageKey; icon: LucideIcon }[] = [
+  { key: "device", icon: Smartphone },
+  { key: "encryption", icon: LockKeyhole },
+  { key: "cloud", icon: Cloud },
+  { key: "family", icon: KeyRound },
+];
+
+export type TrustProofKey = keyof Messages["landing"]["transparency"]["proofs"];
+
+export const TRUST_PROOFS: { key: TrustProofKey; icon: LucideIcon; href?: string }[] = [
+  { key: "source", icon: Code2, href: "https://github.com/juanjpeople/opendomus" },
+  { key: "checks", icon: ShieldCheck, href: "https://github.com/juanjpeople/opendomus/actions" },
+  { key: "exit", icon: Download },
+  { key: "report", icon: Bug, href: "https://github.com/juanjpeople/opendomus/security" },
 ];
 
 export type GuidelineKey = keyof Messages["landing"]["guidelines"]["items"];
