@@ -576,6 +576,21 @@ export const es = {
       cleared: "Lista limpia",
     },
   },
+  pwa: {
+    offline: {
+      label: "Sin conexión",
+      hint: "Todo sigue funcionando: los datos viven en este dispositivo.",
+    },
+    update: {
+      text: "Hay una versión nueva de OpenDomus.",
+      apply: "Actualizar",
+    },
+    install: {
+      title: "Instalar OpenDomus",
+      text: "Abrila como una app, desde el escritorio o la pantalla de inicio. Funciona sin internet.",
+      button: "Instalar",
+    },
+  },
   forbidden: {
     title: "Sin acceso",
     text: "Tu perfil no tiene permiso para ver esta sección.",

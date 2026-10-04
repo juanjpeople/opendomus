@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { usePreferences, useSetPreference } from "@/hooks/usePreferences";
 import { LOCALE_META, LOCALES, useI18n, useT, type Locale } from "@/i18n";
 import { MemberAvatar } from "@/components/ui/MemberAvatar";
+import { OfflineBadge } from "@/components/pwa/OfflineBadge";
 import { isSecured } from "@/features/members/domain";
 import { useCurrentUser, useLockStore, useMembersStore, useSessionStore } from "@/lib/auth/session";
 import { useUiStore } from "@/store/useNavigationStore";
@@ -139,6 +140,7 @@ export function HeaderActions({ search = false }: { search?: boolean }) {
 
   return (
     <Flex align="center" gap={screens.md ? 12 : 4} style={{ flexShrink: 0 }}>
+      <OfflineBadge />
       {search && <SearchTrigger />}
       {screens.lg && <ThemeModeSwitch />}
       <UserMenu />

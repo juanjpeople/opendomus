@@ -2,7 +2,7 @@
 
 import { Anchor, Button, Card, Col, ColorPicker, Flex, Grid, Row, Segmented, Slider, Typography, theme } from "antd";
 import { motion } from "framer-motion";
-import { Check, Database, Info, Keyboard, Languages, Paintbrush, PanelLeft, Sparkles, type LucideIcon } from "lucide-react";
+import { Check, Database, Info, Keyboard, Languages, MonitorDown, Paintbrush, PanelLeft, Sparkles, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Stagger, StaggerItem } from "@/components/motion";
@@ -26,6 +26,7 @@ import { APP_VERSION } from "../service";
 import { DataSettings } from "./DataSettings";
 import { SidebarPreview, ThemePreview } from "./Previews";
 import { SettingRow } from "./SettingRow";
+import { usePwaStore } from "@/store/usePwaStore";
 
 const SECTIONS = [
   { id: "apariencia", key: "appearance", icon: Paintbrush },
@@ -286,12 +287,32 @@ function ShortcutsSettings() {
 
 function AboutSettings() {
   const { t } = useI18n();
+  const installPrompt = usePwaStore((s) => s.installPrompt);
+  const setPwa = usePwaStore((s) => s.set);
+
+  async function install() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    // El evento sirve una sola vez.
+    setPwa({ installPrompt: null });
+  }
 
   return (
-    <SettingRow label={t("settings.about.version", { version: APP_VERSION })} description={t("settings.about.text")} last>
-      <Link href="/bienvenida">
-        <Button icon={<Sparkles />}>{t("settings.about.values")}</Button>
-      </Link>
-    </SettingRow>
+    <>
+      {/* Solo cuando el navegador lo permite (y la app no está instalada). Nunca como aviso insistente. */}
+      {installPrompt && (
+        <SettingRow label={t("pwa.install.title")} description={t("pwa.install.text")}>
+          <Button type="primary" icon={<MonitorDown />} onClick={install}>
+            {t("pwa.install.button")}
+          </Button>
+        </SettingRow>
+      )}
+      <SettingRow label={t("settings.about.version", { version: APP_VERSION })} description={t("settings.about.text")} last>
+        <Link href="/bienvenida">
+          <Button icon={<Sparkles />}>{t("settings.about.values")}</Button>
+        </Link>
+      </SettingRow>
+    </>
   );
 }

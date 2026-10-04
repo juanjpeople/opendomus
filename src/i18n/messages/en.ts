@@ -571,6 +571,21 @@ export const en: Messages = {
       cleared: "List cleared",
     },
   },
+  pwa: {
+    offline: {
+      label: "Offline",
+      hint: "Everything keeps working: your data lives on this device.",
+    },
+    update: {
+      text: "A new version of OpenDomus is available.",
+      apply: "Update",
+    },
+    install: {
+      title: "Install OpenDomus",
+      text: "Open it like an app, from your desktop or home screen. Works without internet.",
+      button: "Install",
+    },
+  },
   forbidden: {
     title: "No access",
     text: "Your profile doesn't have permission to see this section.",
