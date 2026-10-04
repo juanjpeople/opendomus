@@ -9,6 +9,7 @@ import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { PageHeader } from "@/components/ui";
 import { MemberAvatar } from "@/components/ui/MemberAvatar";
+import { useElementWidth } from "@/hooks/useElementWidth";
 import { useMembers } from "@/features/members/hooks";
 import { useI18n } from "@/i18n";
 import { APPEARANCE_ICONS, tint } from "@/lib/appearance";
@@ -19,6 +20,11 @@ import { useOccurrences } from "../hooks";
 import { EventModal } from "./EventModal";
 
 type View = "week" | "month";
+
+/** Ancho mínimo del área para mostrar la semana en 7 columnas (si no, una fila por día). */
+const WEEK_COLUMNS_MIN = 840;
+/** Por debajo de esto, el mes usa iniciales para los días ("L M M J V S D"). */
+const MONTH_COMPACT_MAX = 560;
 
 /** Inicio de semana según el idioma: lunes en español, domingo en inglés. */
 function startOfWeek(date: Dayjs, locale: string) {
@@ -43,6 +49,9 @@ export function CalendarPage() {
   const [direction, setDirection] = useState(1);
   const [filter, setFilter] = useState<string | null>(null);
   const [modal, setModal] = useState<{ event?: CalendarEvent; day?: Dayjs } | null>(null);
+  // Se mide el área real (no la pantalla): con el menú abierto, el contenido es más angosto.
+  const [areaRef, areaWidth] = useElementWidth<HTMLDivElement>();
+  const columns = (areaWidth ?? 0) >= WEEK_COLUMNS_MIN;
 
   const days = useMemo(() => {
     const first = view === "week" ? startOfWeek(cursor, locale) : startOfWeek(cursor.startOf("month"), locale);
@@ -123,7 +132,8 @@ export function CalendarPage() {
         </Flex>
       </Flex>
 
-      {!occurrences ? (
+      <div ref={areaRef}>
+      {!occurrences || areaWidth === null ? (
         <Skeleton active />
       ) : (
         <AnimatePresence mode="wait" custom={direction} initial={false}>
@@ -136,12 +146,13 @@ export function CalendarPage() {
             transition={{ duration: DURATION.fast, ease: EASE_OUT }}
           >
             {view === "week" ? (
-              <WeekView days={days} occurrences={visible} stacked={!screens.md} onOpen={openOccurrence} onAdd={canManage ? addOn : undefined} />
+              <WeekView days={days} occurrences={visible} stacked={!columns} onOpen={openOccurrence} onAdd={canManage ? addOn : undefined} />
             ) : (
               <MonthView
                 days={days}
                 month={cursor.month()}
                 occurrences={visible}
+                compact={areaWidth < MONTH_COMPACT_MAX}
                 onOpen={openOccurrence}
                 onAdd={canManage ? addOn : undefined}
                 onShowDay={(day) => {
@@ -154,31 +165,40 @@ export function CalendarPage() {
         </AnimatePresence>
       )}
 
+      </div>
+
       <EventModal open={!!modal} event={modal?.event} day={modal?.day} onClose={() => setModal(null)} />
     </RequirePermission>
   );
 }
 
-function DayHeader({ day }: { day: Dayjs }) {
+/** Día de la semana y número. En columnas, uno arriba del otro (nunca se parte la palabra). */
+function DayHeader({ day, vertical = false }: { day: Dayjs; vertical?: boolean }) {
   const { token } = theme.useToken();
   const { format } = useI18n();
   const today = day.isSame(dayjs(), "day");
   return (
-    <Flex align="center" gap={8}>
-      <Typography.Text type="secondary" style={{ textTransform: "uppercase", fontSize: token.fontSizeSM, letterSpacing: "0.06em" }}>
-        {format.date(day.valueOf(), { weekday: "short" })}
+    <Flex vertical={vertical} align={vertical ? "flex-start" : "center"} gap={vertical ? 2 : 8} style={{ minWidth: 0 }}>
+      <Typography.Text
+        type="secondary"
+        style={{ textTransform: "uppercase", fontSize: token.fontSizeSM, letterSpacing: "0.06em", whiteSpace: "nowrap", lineHeight: 1.2 }}
+      >
+        {format.date(day.valueOf(), { weekday: "short" }).replace(".", "")}
       </Typography.Text>
       <span
         style={{
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          minWidth: 28,
-          height: 28,
-          borderRadius: 14,
+          minWidth: 30,
+          height: 30,
+          paddingInline: 4,
+          borderRadius: 15,
           fontWeight: 600,
+          fontSize: vertical ? token.fontSizeLG : token.fontSize,
           background: today ? token.colorPrimary : "transparent",
           color: today ? token.colorTextLightSolid : token.colorText,
+          marginInlineStart: vertical ? -4 : 0,
         }}
       >
         {day.date()}
@@ -204,7 +224,7 @@ function WeekView({
   const { t } = useI18n();
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: stacked ? "1fr" : "repeat(7, minmax(0, 1fr))", gap: 10 }}>
+    <div style={{ display: "grid", gridTemplateColumns: stacked ? "1fr" : "repeat(7, minmax(0, 1fr))", gap: stacked ? 8 : 10 }}>
       {days.map((day) => {
         const items = occurrences.filter((occurrence) => onDay(occurrence, day));
         const today = day.isSame(dayjs(), "day");
@@ -213,27 +233,44 @@ function WeekView({
             key={day.valueOf()}
             style={{
               minHeight: stacked ? undefined : 360,
-              padding: 10,
+              padding: stacked ? "10px 12px" : 10,
               borderRadius: token.borderRadiusLG,
               border: `1px solid ${today ? token.colorPrimaryBorder : token.colorBorderSecondary}`,
               background: today ? token.colorPrimaryBg : token.colorBgContainer,
-              display: "flex",
+              // En fila: el día a la izquierda y sus eventos a la derecha (se lee como una agenda).
+              display: stacked ? "grid" : "flex",
+              gridTemplateColumns: stacked ? "88px minmax(0, 1fr) auto" : undefined,
+              alignItems: stacked ? "center" : undefined,
               flexDirection: "column",
-              gap: 8,
+              gap: stacked ? 12 : 8,
             }}
           >
-            <Flex justify="space-between" align="center">
-              <DayHeader day={day} />
-              {onAdd && <Button type="text" size="small" icon={<Plus />} aria-label={t("calendar.newEvent")} onClick={() => onAdd(day)} />}
-            </Flex>
-            {items.length === 0 && stacked && (
-              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                {t("calendar.empty")}
-              </Typography.Text>
+            {stacked ? (
+              <>
+                <DayHeader day={day} />
+                <Flex vertical gap={6} style={{ minWidth: 0 }}>
+                  {items.length === 0 && (
+                    <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                      {t("calendar.empty")}
+                    </Typography.Text>
+                  )}
+                  {items.map((occurrence) => (
+                    <EventChip key={occurrence.key} occurrence={occurrence} onOpen={onOpen} detailed />
+                  ))}
+                </Flex>
+                {onAdd ? <Button type="text" icon={<Plus />} aria-label={t("calendar.newEvent")} onClick={() => onAdd(day)} style={{ width: 40, height: 40 }} /> : <span />}
+              </>
+            ) : (
+              <>
+                <Flex justify="space-between" align="flex-start" gap={4}>
+                  <DayHeader day={day} vertical />
+                  {onAdd && <Button type="text" size="small" icon={<Plus />} aria-label={t("calendar.newEvent")} onClick={() => onAdd(day)} />}
+                </Flex>
+                {items.map((occurrence) => (
+                  <EventChip key={occurrence.key} occurrence={occurrence} onOpen={onOpen} detailed />
+                ))}
+              </>
             )}
-            {items.map((occurrence) => (
-              <EventChip key={occurrence.key} occurrence={occurrence} onOpen={onOpen} detailed />
-            ))}
           </div>
         );
       })}
@@ -245,6 +282,7 @@ function MonthView({
   days,
   month,
   occurrences,
+  compact,
   onOpen,
   onAdd,
   onShowDay,
@@ -252,6 +290,7 @@ function MonthView({
   days: Dayjs[];
   month: number;
   occurrences: Occurrence[];
+  compact: boolean;
   onOpen: (occurrence: Occurrence) => void;
   onAdd?: (day: Dayjs) => void;
   onShowDay: (day: Dayjs) => void;
@@ -264,8 +303,12 @@ function MonthView({
     <div style={{ borderRadius: token.borderRadiusLG, border: `1px solid ${token.colorBorderSecondary}`, overflow: "hidden", background: token.colorBgContainer }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
         {days.slice(0, 7).map((day) => (
-          <Typography.Text key={day.valueOf()} type="secondary" style={{ padding: "8px 10px", textTransform: "uppercase", fontSize: token.fontSizeSM, letterSpacing: "0.06em" }}>
-            {format.date(day.valueOf(), { weekday: "short" })}
+          <Typography.Text
+            key={day.valueOf()}
+            type="secondary"
+            style={{ padding: compact ? "8px 0" : "8px 10px", textAlign: compact ? "center" : undefined, textTransform: "uppercase", fontSize: token.fontSizeSM, letterSpacing: "0.06em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+          >
+            {format.date(day.valueOf(), { weekday: compact ? "narrow" : "short" }).replace(".", "")}
           </Typography.Text>
         ))}
       </div>
@@ -281,8 +324,8 @@ function MonthView({
               tabIndex={onAdd ? 0 : undefined}
               onClick={(event) => event.target === event.currentTarget && onAdd?.(day)}
               style={{
-                minHeight: 112,
-                padding: 6,
+                minHeight: compact ? 72 : 112,
+                padding: compact ? 3 : 6,
                 display: "flex",
                 flexDirection: "column",
                 gap: 4,
@@ -311,10 +354,24 @@ function MonthView({
               >
                 {day.date()}
               </span>
-              {items.slice(0, MAX).map((occurrence) => (
-                <EventChip key={occurrence.key} occurrence={occurrence} onOpen={onOpen} />
-              ))}
-              {items.length > MAX && (
+              {compact ? (
+                // Sin lugar para títulos: un punto por evento; tocar el día abre su semana.
+                items.length > 0 && (
+                  <button
+                    type="button"
+                    aria-label={t("calendar.more", { count: items.length })}
+                    onClick={() => onShowDay(day)}
+                    style={{ all: "unset", cursor: "pointer", display: "flex", flexWrap: "wrap", gap: 3, padding: "2px 3px" }}
+                  >
+                    {items.slice(0, 6).map((occurrence) => (
+                      <span key={occurrence.key} style={{ width: 7, height: 7, borderRadius: "50%", background: tint(token, occurrence.color).solid }} />
+                    ))}
+                  </button>
+                )
+              ) : (
+                items.slice(0, MAX).map((occurrence) => <EventChip key={occurrence.key} occurrence={occurrence} onOpen={onOpen} />)
+              )}
+              {!compact && items.length > MAX && (
                 <Button type="link" size="small" style={{ padding: 0, height: "auto", alignSelf: "flex-start" }} onClick={() => onShowDay(day)}>
                   {t("calendar.more", { count: items.length - MAX })}
                 </Button>
@@ -372,7 +429,7 @@ function EventChip({ occurrence, onOpen, detailed = false }: { occurrence: Occur
       </Flex>
       {detailed && (
         <Flex align="center" justify="space-between" gap={6} style={{ marginTop: 2 }}>
-          <span style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{time}</span>
+          <span style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{time}</span>
           {participants.length > 0 && (
             <Flex style={{ marginInlineEnd: 4 }}>
               {participants.slice(0, 3).map((member, index) => (
