@@ -53,7 +53,7 @@ export async function addToListWithin(actor: Actor, raw: NewShoppingItem) {
     await db.shoppingList.update(existing.id, { quantity: Math.min(existing.quantity + input.quantity, SHOPPING_LIMITS.maxQuantity) });
   } else {
     await db.shoppingList.add({ ...input, listId, estimateCents: parseMoney(estimate), id: createId(), status: "pending", createdBy: actor.id, createdAt: Date.now() });
-    await recordActivity(actor, { module: "shopping", action: "create", entityId: input.inventoryItemId ?? input.name, entityName: input.name });
+    await recordActivity(actor, { module: "shopping", action: "create", entityId: input.inventoryItemId ?? input.name, entityName: input.name, listId });
   }
 
   // Si estaba esperando revisión, anotarlo a mano es confirmarlo.
@@ -104,7 +104,7 @@ export async function dismissSuggestion(actor: Actor | null, candidateId: string
     if (!item) return;
     // Preferencia del producto, no su stock: no pasa por el servicio de inventario.
     if (never) await db.inventory.update(item.id, { autoSuggest: false, updatedAt: Date.now() });
-    await recordActivity(actor, { module: "shopping", action: "dismiss", entityId: item.id, entityName: item.name, containerId: item.containerId });
+    await recordActivity(actor, { module: "shopping", action: "dismiss", entityId: item.id, entityName: item.name, containerId: item.containerId, listId: HOME_LIST_ID });
   });
 }
 
@@ -141,7 +141,7 @@ export async function markBought(actor: Actor | null, id: string) {
     await db.shoppingList.update(id, { status: "bought", boughtAt: Date.now(), boughtBy: actor.id, restocked });
     // Lo que repone el inventario ya queda en su historial ("repuso"); lo suelto se registra acá.
     if (!entry.inventoryItemId) {
-      await recordActivity(actor, { module: "shopping", action: "bought", entityId: entry.id, entityName: entry.name, to: entry.quantity, unit: entry.unit });
+      await recordActivity(actor, { module: "shopping", action: "bought", entityId: entry.id, entityName: entry.name, to: entry.quantity, unit: entry.unit, listId: entry.listId });
     }
   });
   await pruneActivity();
@@ -191,7 +191,7 @@ export async function removeShoppingItem(actor: Actor | null, id: string) {
     if (!entry) return;
     await db.shoppingList.delete(id);
     if (entry.status === "pending") {
-      await recordActivity(actor, { module: "shopping", action: "delete", entityId: entry.inventoryItemId ?? entry.id, entityName: entry.name });
+      await recordActivity(actor, { module: "shopping", action: "delete", entityId: entry.inventoryItemId ?? entry.id, entityName: entry.name, listId: entry.listId });
     }
   });
 }

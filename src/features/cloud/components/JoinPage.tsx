@@ -10,14 +10,26 @@ import { IconTile } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getErrorMessage } from "@/lib/errors";
-import { useDeviceStore } from "@/store/useDeviceStore";
-import type { InvitePreview } from "../domain";
-import { useCloudActions, useCloudSession } from "../hooks";
+import type { Member } from "@/features/members/domain";
+import type { CloudHousehold, InvitePreview } from "../domain";
+import { useCloudActions, useCloudSession, useCloudStore } from "../hooks";
 import { parseInviteLink, previewInvite } from "../service";
+import { chooseProfile, claimableMembers, downloadHouse, hasLocalHouse } from "../sync";
 import { AuthForm } from "./AuthForm";
+import { ChooseProfile } from "./ChooseProfile";
+import { HouseTransfer } from "./HouseTransfer";
 import { RecoveryKit } from "./RecoveryKit";
+import { useTransfer } from "./useTransfer";
 
-type View = { kind: "paste" } | { kind: "loading" } | { kind: "error"; message: string } | { kind: "preview"; preview: InvitePreview } | { kind: "kit"; preview: InvitePreview; code: string } | { kind: "joined"; preview: InvitePreview };
+type View =
+  | { kind: "paste" }
+  | { kind: "loading" }
+  | { kind: "error"; message: string }
+  | { kind: "preview"; preview: InvitePreview }
+  | { kind: "kit"; preview: InvitePreview; code: string }
+  | { kind: "download"; preview: InvitePreview; household: CloudHousehold }
+  | { kind: "profile"; preview: InvitePreview; household: CloudHousehold; candidates: Member[] }
+  | { kind: "joined"; preview: InvitePreview };
 
 /**
  * `/unirme#<id>.<secreto>`: abrir una invitación. El secreto está después del #, así que nunca
@@ -36,7 +48,9 @@ export function JoinPage() {
   const [mode, setMode] = useState<"create" | "signin">("create");
   const [pasted, setPasted] = useState("");
   const [joining, setJoining] = useState(false);
-  const setDeviceMode = useDeviceStore((s) => s.setMode);
+  // Se decide una vez: después de bajar la casa, este dispositivo ya no es "local".
+  const [replacesLocal] = useState(hasLocalHouse);
+  const transfer = useTransfer();
 
   // Se borra el secreto de la barra de direcciones (y del historial) apenas se lee.
   useEffect(() => {
@@ -67,7 +81,21 @@ export function JoinPage() {
     setJoining(true);
     const householdId = await acceptInvite(link.id, link.secret);
     setJoining(false);
-    if (householdId) setView({ kind: "joined", preview });
+    const household = useCloudStore.getState().session?.households.find((entry) => entry.id === householdId);
+    if (household) await download(preview, household);
+  }
+
+  /** Baja la casa (descifrándola acá) y, si hay perfiles libres de su rol, deja elegir uno. */
+  async function download(preview: InvitePreview, household: CloudHousehold) {
+    setView({ kind: "download", preview, household });
+    const current = useCloudStore.getState().session!;
+    let member: Member | null = null;
+    if (!(await transfer.run(async (progress) => (member = await downloadHouse(current, household, progress))))) return;
+    if (member) return setView({ kind: "joined", preview });
+    const candidates = await claimableMembers(household.role);
+    if (candidates.length > 0) return setView({ kind: "profile", preview, household, candidates });
+    await chooseProfile(current, household, null);
+    setView({ kind: "joined", preview });
   }
 
   const roleLabel = (role: InvitePreview["role"]) => t(`roles.${role}`);
@@ -128,6 +156,7 @@ export function JoinPage() {
                   <Tag>{t("cloud.join.expires", { date: format.date(view.preview.expiresAt, { day: "numeric", month: "long" }) })}</Tag>
                 </Flex>
               </div>
+              {replacesLocal && <Alert type="warning" showIcon title={t("cloud.transfer.replaceTitle")} description={t("cloud.transfer.replaceText", { name: view.preview.householdName })} />}
               {status === "ready" && session ? (
                 <>
                   <Typography.Text type="secondary" style={{ textAlign: "center" }}>
@@ -158,6 +187,21 @@ export function JoinPage() {
 
           {view.kind === "kit" && session && <RecoveryKit code={view.code} email={session.user.email} onDone={() => join(view.preview)} />}
 
+          {view.kind === "download" && (
+            <HouseTransfer direction="down" name={view.preview.householdName} state={transfer.state} onRetry={() => void download(view.preview, view.household)} />
+          )}
+
+          {view.kind === "profile" && session && (
+            <ChooseProfile
+              candidates={view.candidates}
+              accountName={session.user.name}
+              onChoose={async (memberId) => {
+                await chooseProfile(session, view.household, memberId);
+                setView({ kind: "joined", preview: view.preview });
+              }}
+            />
+          )}
+
           {view.kind === "joined" && (
             <Flex vertical align="center" gap={16} style={{ textAlign: "center" }}>
               <IconTile icon={CircleCheck} color="green" size={64} />
@@ -165,14 +209,7 @@ export function JoinPage() {
                 {t("cloud.join.joinedTitle", { name: view.preview.householdName })}
               </Typography.Title>
               <Typography.Text type="secondary">{t("cloud.join.joinedText")}</Typography.Text>
-              <Button
-                type="primary"
-                size="large"
-                onClick={() => {
-                  if (useDeviceStore.getState().mode === "unset") setDeviceMode("local");
-                  router.push("/familia");
-                }}
-              >
+              <Button type="primary" size="large" onClick={() => router.push("/")}>
                 {t("cloud.join.go")}
               </Button>
             </Flex>

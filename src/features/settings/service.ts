@@ -6,6 +6,14 @@ import Dexie from "dexie";
 import { assertCan, type Actor } from "@/lib/auth/permissions";
 import { db, declareSchema } from "@/lib/db";
 import { AppError, ValidationError } from "@/lib/errors";
+import { clearVault } from "@/lib/cloud/vault";
+import { getSyncLink } from "@/lib/sync/middleware";
+import { SYNC_META_TABLES } from "@/lib/sync/tables";
+
+/** Los datos de la casa (sin el estado interno de la sincronización, que es de cada dispositivo). */
+function dataTables() {
+  return db.tables.filter((table) => !(SYNC_META_TABLES as readonly string[]).includes(table.name));
+}
 
 export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 
@@ -61,7 +69,7 @@ export async function exportAllData(actor: Actor | null): Promise<DataExport> {
   assertCan(actor, "settings.data");
   const raw: Record<string, unknown[]> = {};
   await db.transaction("r", db.tables, async () => {
-    for (const table of db.tables) raw[table.name] = await table.toArray();
+    for (const table of dataTables()) raw[table.name] = await table.toArray();
   });
   // Fuera de la transacción: leer un Blob no es una operación de IndexedDB y la cerraría antes de tiempo.
   const tables: Record<string, unknown[]> = {};
@@ -100,6 +108,8 @@ const IMPORT_DB = "OpenDomusImport";
  */
 export async function importAllData(actor: Actor | null, preview: ImportPreview) {
   assertCan(actor, "settings.data");
+  // Con la casa en la nube, importar reemplazaría la casa de toda la familia.
+  if (getSyncLink()) throw new ValidationError("errors.import.cloud");
   const { data } = preview;
   try {
     await Dexie.delete(IMPORT_DB);
@@ -122,7 +132,7 @@ export async function importAllData(actor: Actor | null, preview: ImportPreview)
     upgraded.close();
 
     await db.transaction("rw", db.tables, async () => {
-      for (const table of db.tables) {
+      for (const table of dataTables()) {
         await table.clear();
         if (tables[table.name]?.length) await table.bulkAdd(tables[table.name] as never[]);
       }
@@ -139,6 +149,8 @@ export async function importAllData(actor: Actor | null, preview: ImportPreview)
 export async function deleteAllData(actor: Actor | null) {
   assertCan(actor, "settings.data");
   await db.delete();
+  // También las claves de la cuenta de la nube guardadas en este dispositivo.
+  await clearVault().catch(() => {});
   for (const key of Object.keys(localStorage)) {
     if (key.startsWith(STORAGE_PREFIX)) localStorage.removeItem(key);
   }

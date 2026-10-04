@@ -7,11 +7,16 @@ import QRCode from "qrcode";
 import { useCallback, useEffect, useState } from "react";
 import { IconTile } from "@/components/ui";
 import { useI18n } from "@/i18n";
+import { setAccountRole } from "@/features/members/service";
+import { useCurrentUser } from "@/lib/auth/session";
 import { CLOUD_ENABLED } from "@/lib/cloud/api";
 import { getErrorMessage } from "@/lib/errors";
+import { getSyncLink } from "@/lib/sync/middleware";
+import { useDeviceStore } from "@/store/useDeviceStore";
 import type { CloudHousehold, CloudInvite, CloudMember, CloudRole } from "../domain";
 import { useCloudActions, useCloudSession, useCloudStore } from "../hooks";
 import * as service from "../service";
+import { LeaveCloudButton } from "./CloudDataPanel";
 
 /**
  * La casa en la nube dentro de "Familia": quiénes tienen cuenta, con qué rol, e invitar por link
@@ -21,6 +26,7 @@ export function CloudHouseholdPanel() {
   const { t } = useI18n();
   const { status, session } = useCloudSession();
   const { signOut } = useCloudActions();
+  const cloudDevice = useDeviceStore((s) => s.mode) === "cloud";
   if (!CLOUD_ENABLED) return null;
 
   return (
@@ -38,9 +44,14 @@ export function CloudHouseholdPanel() {
         {session && (
           <Flex align="center" gap={8}>
             <Typography.Text type="secondary">{session.user.email}</Typography.Text>
-            <Button icon={<LogOut />} onClick={signOut}>
-              {t("cloud.panel.signOut")}
-            </Button>
+            {/* Con la casa sincronizada acá, salir es dejar la nube en este dispositivo (con su aviso). */}
+            {cloudDevice ? (
+              <LeaveCloudButton />
+            ) : (
+              <Button icon={<LogOut />} onClick={signOut}>
+                {t("cloud.panel.signOut")}
+              </Button>
+            )}
           </Flex>
         )}
       </Flex>
@@ -82,6 +93,7 @@ function HouseholdCard({ household }: { household: CloudHousehold }) {
   const { token } = theme.useToken();
   const { message, modal } = App.useApp();
   const session = useCloudStore((s) => s.session)!;
+  const currentUser = useCurrentUser();
   const [members, setMembers] = useState<CloudMember[] | null>(null);
   const [invites, setInvites] = useState<CloudInvite[]>([]);
   const [inviting, setInviting] = useState(false);
@@ -107,6 +119,8 @@ function HouseholdCard({ household }: { household: CloudHousehold }) {
   async function changeRole(member: CloudMember, role: CloudRole) {
     try {
       await service.changeRole(session, household, member, role);
+      // Su perfil en la casa refleja el rol nuevo (y le llega a todos con la sincronización).
+      if (getSyncLink()?.householdId === household.id) await setAccountRole(currentUser, member.userId, role);
       message.success(t("cloud.panel.roleChanged", { name: member.name, role: t(`roles.${role}`) }));
       load();
     } catch (error) {

@@ -31,6 +31,8 @@ export interface Member {
   name: string;
   role: Role;
   color: AppearanceColor;
+  /** Cuenta de la nube de esta persona. Sin cuenta: perfil de un dispositivo compartido (ej. un chico con PIN). */
+  userId?: string;
   /** Un emoji como avatar (opcional; si no, la inicial). */
   emoji?: string;
   /** "YYYY-MM-DD" (el año puede faltar: "--MM-DD"). Alimenta los cumpleaños del calendario. */

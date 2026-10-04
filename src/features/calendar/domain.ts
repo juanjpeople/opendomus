@@ -4,6 +4,7 @@
  */
 import { isAppearanceColor, isAppearanceIcon, type AppearanceColor, type AppearanceIcon } from "@/lib/appearance";
 import { ValidationError } from "@/lib/errors";
+import type { Privacy } from "@/lib/sync/scope";
 
 export const REPEATS = ["none", "daily", "weekly", "monthly", "yearly"] as const;
 export type Repeat = (typeof REPEATS)[number];
@@ -11,6 +12,8 @@ export type Repeat = (typeof REPEATS)[number];
 export interface CalendarEvent {
   id: string;
   title: string;
+  /** Quién lo ve con la casa en la nube (por defecto, Familia). */
+  privacy?: Privacy;
   /** Inicio (ms). En eventos de todo el día, la medianoche local del primer día. */
   start: number;
   /** Fin (ms). En eventos de todo el día, la medianoche del último día. */

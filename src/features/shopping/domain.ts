@@ -7,6 +7,7 @@ import { getStockStatus, INVENTORY_LIMITS, isUnit, type InventoryItem, type Stoc
 import { CURRENCIES, type Currency, type PriceSummary } from "@/features/prices/domain";
 import { isAppearanceColor, isAppearanceIcon, type AppearanceColor, type AppearanceIcon } from "@/lib/appearance";
 import { ValidationError } from "@/lib/errors";
+import type { Privacy } from "@/lib/sync/scope";
 
 // --- Listas ---------------------------------------------------------------------
 
@@ -17,6 +18,8 @@ export const HOME_LIST_ID = "list-home";
 export interface ShoppingList {
   id: string;
   name: string;
+  /** Quién la ve con la casa en la nube (por defecto, Familia). Sus ítems heredan el nivel. */
+  privacy?: Privacy;
   /** Proyecto al que pertenece (opcional). */
   projectId?: string;
   /** Presupuesto en centavos, en `currency`. */
