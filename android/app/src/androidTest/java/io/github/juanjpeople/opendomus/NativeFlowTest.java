@@ -4,6 +4,7 @@ import static androidx.test.espresso.intent.Intents.intended;
 import static androidx.test.espresso.intent.Intents.intending;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasAction;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasType;
+import static androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra;
 import static org.hamcrest.Matchers.allOf;
 import static org.junit.Assert.*;
 
@@ -208,6 +209,48 @@ public class NativeFlowTest {
             await(scenario, "window.__saved === true");
             intended(hasAction(Intent.ACTION_CREATE_DOCUMENT));
             assertEquals("{\"nombre\":\"Taller • café\"}", new String(Files.readAllBytes(destination.toPath()), StandardCharsets.UTF_8));
+        } finally {
+            Intents.release();
+            Files.deleteIfExists(destination.toPath());
+        }
+    }
+
+    @Test
+    public void barcodeDetectorReadsQrWithoutNetwork() throws Exception {
+        byte[] fixture;
+        try (java.io.InputStream input = InstrumentationRegistry.getInstrumentation().getContext().getAssets().open("offline-qr.png")) {
+            fixture = input.readAllBytes();
+        }
+        String dataUrl = "data:image/png;base64," + android.util.Base64.encodeToString(fixture, android.util.Base64.NO_WRAP);
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            ready(scenario);
+            evaluate(scenario, "window.__qr=null;(() => {const image=new Image();image.onload=async()=>{try{const codes=await new BarcodeDetector({formats:['qr_code']}).detect(image);window.__qr=codes[0]?.rawValue??'not-found'}catch(e){window.__qr='error:'+e.message}};image.onerror=()=>window.__qr='image-error';image.src=" + JSONObject.quote(dataUrl) + ";})()");
+            await(scenario, "window.__qr !== null");
+            assertEquals(JSONObject.quote("https://localhost/c?code=K7QM"), evaluate(scenario, "window.__qr"));
+        }
+    }
+
+    @Test
+    public void failedBackupRejectsWithoutSecretsAndAllowsRetry() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        File destination = new File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "retry-test.json");
+        Uri valid = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", destination);
+        Uri missing = Uri.parse("content://io.github.juanjpeople.opendomus.missing/private-destination");
+        Intents.init();
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            ready(scenario);
+            intending(allOf(hasAction(Intent.ACTION_CREATE_DOCUMENT), hasExtra(Intent.EXTRA_TITLE, "failed.json")))
+                .respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(missing)));
+            intending(allOf(hasAction(Intent.ACTION_CREATE_DOCUMENT), hasExtra(Intent.EXTRA_TITLE, "retry.json")))
+                .respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(valid)));
+            evaluate(scenario, "window.__failed=null;window.Capacitor.nativePromise('Backup','save',{filename:'failed.json',data:'private-fixture'}).then(()=>window.__failed='unexpected-success').catch(e=>window.__failed=e.message)");
+            await(scenario, "window.__failed === 'Could not save the backup'");
+            assertFalse(destination.exists());
+            evaluate(scenario, "window.__retried=null;window.Capacitor.nativePromise('Backup','save',{filename:'retry.json',data:'{}'}).then(r=>window.__retried=r.saved).catch(e=>window.__retried=e.message)");
+            await(scenario, "window.__retried === true");
+            assertEquals("{}", new String(Files.readAllBytes(destination.toPath()), StandardCharsets.UTF_8));
+            intended(allOf(hasAction(Intent.ACTION_CREATE_DOCUMENT), hasExtra(Intent.EXTRA_TITLE, "failed.json")));
+            intended(allOf(hasAction(Intent.ACTION_CREATE_DOCUMENT), hasExtra(Intent.EXTRA_TITLE, "retry.json")));
         } finally {
             Intents.release();
             Files.deleteIfExists(destination.toPath());
