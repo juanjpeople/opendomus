@@ -9,6 +9,7 @@ import android.app.Activity;
 import android.app.Instrumentation.ActivityResult;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.SystemClock;
@@ -17,7 +18,9 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.concurrent.CountDownLatch;
@@ -28,6 +31,19 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class NativeFlowTest {
+    private void screenshot(String name) throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        File folder = new File(context.getExternalFilesDir(null), "test-screenshots");
+        assertTrue(folder.isDirectory() || folder.mkdirs());
+        Bitmap bitmap = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+        assertNotNull(bitmap);
+        try (FileOutputStream output = new FileOutputStream(new File(folder, name + ".png"))) {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
+        } finally {
+            bitmap.recycle();
+        }
+    }
+
     private String evaluate(ActivityScenario<MainActivity> scenario, String script) throws Exception {
         CountDownLatch done = new CountDownLatch(1);
         AtomicReference<String> value = new AtomicReference<>();
@@ -45,6 +61,7 @@ public class NativeFlowTest {
             if ("true".equals(evaluate(scenario, "Boolean(" + condition + ")"))) return;
             SystemClock.sleep(150);
         } while (SystemClock.elapsedRealtime() < deadline);
+        screenshot("failure");
         fail("Condition did not become true: " + condition + "; page: " + evaluate(scenario, "location.pathname + ': ' + document.body.innerText.slice(0, 1000)"));
     }
 
@@ -57,14 +74,16 @@ public class NativeFlowTest {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             ready(scenario);
             scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/empezar"));
-            await(scenario, "[...document.querySelectorAll('button')].some(b => b.textContent.includes('Empezar acá'))");
-            evaluate(scenario, "[...document.querySelectorAll('button')].find(b => b.textContent.includes('Empezar acá')).click()");
-            await(scenario, "document.body.innerText.includes('¿Quién está en casa?') && document.body.innerText.includes('Administrador')");
+            await(scenario, "[...document.querySelectorAll('button')].some(b => /Empezar acá|Start here/.test(b.textContent))");
+            screenshot("onboarding");
+            evaluate(scenario, "[...document.querySelectorAll('button')].find(b => /Empezar acá|Start here/.test(b.textContent)).click()");
+            await(scenario, "/Who.s home|Quién está en casa/.test(document.body.innerText) && /Administrador|Administrator/.test(document.body.innerText)");
             scenario.recreate();
             ready(scenario);
-            await(scenario, "document.body.innerText.includes('Administrador')");
+            await(scenario, "/Administrador|Administrator/.test(document.body.innerText)");
+            screenshot("persisted-house");
             scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/cuenta?modo=crear"));
-            await(scenario, "location.pathname === '/cuenta' && document.body.innerText.includes('Esta instalación funciona sin servidor')");
+            await(scenario, "location.pathname === '/cuenta' && /Esta instalación funciona sin servidor|This installation works without a server/.test(document.body.innerText)");
             evaluate(scenario, "window.__swCount = -1; navigator.serviceWorker.getRegistrations().then(r => window.__swCount = r.length)");
             await(scenario, "window.__swCount === 0");
         }

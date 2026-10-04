@@ -51,7 +51,7 @@ jobs:
           script: |
             adb shell svc wifi disable
             adb shell svc data disable
-            cd android && bash gradlew --no-daemon connectedDebugAndroidTest
+            cd android && bash gradlew --no-daemon connectedDebugAndroidTest; result=$?; adb pull /sdcard/Android/data/io.github.juanjpeople.opendomus/files/test-screenshots app/build/reports/native-screenshots || true; exit $result
       - uses: actions/upload-artifact@v7
         if: always()
         with:

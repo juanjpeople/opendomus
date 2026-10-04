@@ -11,6 +11,10 @@ orígenes, cookies y retornos OAuth. La PWA conserva su funcionamiento habitual.
 Requisitos: Node 24, JDK 21 y Android SDK 36. Android Studio 2025.2.1 o posterior
 permite instalar el SDK. Capacitor está fijado en 8.4.3: la CLI 8.5.2 introducía
 una dependencia de desarrollo `xcode → uuid` con un aviso de seguridad.
+El manifiesto permite Android 7/API 24+, pero eso no certifica todos esos equipos:
+Next requiere un motor Chromium 111+ y las funciones de la app necesitan un WebView
+actualizado. La prueba instrumentada usa Android 15/API 35; versiones anteriores
+y dispositivos físicos necesitan validación adicional.
 
 ```sh
 npm ci
@@ -44,10 +48,14 @@ cambiar y no sirve para una línea de actualizaciones distribuida.
 Los assets se actualizan junto al APK, sin service worker dentro de Android.
 Las claves de firma no se versionan. El build release no habilita depuración web
 ni tráfico HTTP. La captura de cámara pide permiso cuando se utiliza.
+Se deshabilitan los logs del puente nativo, incluso en debug, porque sus argumentos
+pueden contener respaldos completos. Las reglas de backup excluyen explícitamente
+los datos de copias cloud y transferencias entre dispositivos; el traslado previsto
+es la exportación/importación elegida por el usuario.
 
 ## Verificación pendiente antes de distribuir
 
-- Compilación Android, lint e inspección del APK final.
+- Inspección del APK final (la primera compilación y lint Android pasaron en CI).
 - Inicio offline, navegación directa y recarga de rutas internas.
 - Crear datos, cerrar y abrir la app, actualizar sin desinstalar y comprobar datos.
 - Exportar, cancelar, fallar al guardar e importar un respaldo con fotos y contenedores.
