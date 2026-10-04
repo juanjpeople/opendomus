@@ -121,6 +121,14 @@ reintentos hasta volver a entrar o reiniciar el motor con una sesión válida.
 
 ### Administración privada (CLI + Cloudflare Access)
 
+Para saber qué falta configurar, ejecutar `npm run admin -- diagnostico`. Funciona
+sin cuenta doméstica ni tokens: revisa el formato del origen, presencia de variables
+y disponibilidad de `cloudflared`, sin contactar la red ni mostrar sus valores.
+No valida credenciales, políticas, OTP o MFA. No hay que registrarse en la app pública
+para convertirse en operador; el acceso depende de la configuración privada siguiente.
+`OPENDOMUS_API` debe ser solo el origen del gateway (`https://HOST`), sin rutas,
+credenciales, parámetros ni fragmentos; HTTP se reserva a localhost para pruebas.
+
 La app pública **no compila ni publica `/admin`**. Sus cuentas domésticas no otorgan
 permisos globales. El antiguo `/api/platform-admin/*` deja de existir, y las operaciones
 `/api/admin/*` solo funcionan desde el hostname del gateway privado, con una identidad
