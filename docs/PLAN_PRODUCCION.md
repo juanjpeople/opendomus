@@ -11,7 +11,7 @@ solos una configuración real de producción. El despliegue queda manual.
 | Entrega | Estado y condición para darla por terminada |
 |---|---|
 | Administración privada | Gateway y CLI implementados, sin página `/admin`. Falta verificar en la instalación real identidad permitida + MFA, rechazo de identidad ajena, token vencido y acceso directo al Worker público. Los correos exactos y proveedores se configuran fuera del código público. |
-| Google y GitHub para cuentas domésticas | Pendientes. Requieren apps OAuth y un flujo de creación/desbloqueo de identidad cifrada. Probar cuenta nueva y existente, rechazo de vinculación por email no verificado, callback inválido, recuperación y revocación. No conceder permisos de operador por login social. |
+| Google y GitHub para cuentas domésticas | Implementación de vinculación explícita, login y desbloqueo local en `ACCESO_SOCIAL.md`; el alta sigue por contraseña. Pruebas con proveedores simulados, incluido rechazo de emails distintos/no verificados y state reutilizado. Pendientes configuración y prueba con apps OAuth reales, recuperación y revocación en esa instalación. No concede permisos de operador. |
 | Correos y OTP domésticos | Pendientes de proveedor/remitente verificado. Probar entrega real, expiración, uso único, límites de reenvío/intentos y respuestas sin enumeración de cuentas. OTP no sustituye al kit para descifrar datos. El OTP administrativo pertenece a Access y tiene configuración separada. |
 | Métricas | PR #26 prepara estadísticas públicas estáticas y consulta CLI del tráfico privado de GitHub. Contadores propios privados de descargas siguen pendientes de decisión; los contadores de assets de GitHub son públicos y no miden instalaciones. |
 | Android | PWA disponible; APK/AAB nativos pendientes. Reutilizar el export web y agregar solo integración nativa necesaria. Verificar instalación, QR, fotos, almacenamiento, actualización y funcionamiento offline en Android real; evaluar el origen y las cookies antes de habilitar nube en un contenedor nativo. |
@@ -69,7 +69,7 @@ El contenido sincronizado y las fotos se cifran en el cliente. Cuentas, membres�
   - un **kit de recuperación** (código para imprimir) abre lo privado;
   - lo compartido, otro miembro (el admin) te lo vuelve a entregar;
   - sin kit ni otro dispositivo, lo privado no se puede recuperar (es el precio de que nadie más pueda leerlo, y se explica antes de crear la cuenta).
-- **Pendiente**: Google, GitHub y enlace mágico deben autenticar identidad sin saltarse el desbloqueo de las claves. Todavía no están habilitados para cuentas domésticas.
+- **Google/GitHub**: vinculación explícita desde una cuenta existente y desbloqueo local con contraseña; configuración y verificación real pendientes. Ver `ACCESO_SOCIAL.md`, incluida la limitación del primer login. El enlace mágico sigue pendiente.
 
 ### Privacidad: tres niveles para cada cosa
 

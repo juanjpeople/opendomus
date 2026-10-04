@@ -58,7 +58,9 @@ Access y la lista de correos permitidos, además de los controles del gateway.
 La exigencia del segundo factor depende de la política de Access: el código por sí
 solo no demuestra que una instalación tenga MFA correctamente configurado.
 
-Google, GitHub y correos para las cuentas domésticas siguen pendientes. Un email
+Google y GitHub requieren configurar y verificar las aplicaciones OAuth propias;
+la integración exige vinculación explícita y desbloqueo local de claves (ver
+[acceso social](docs/ACCESO_SOCIAL.md)). Los correos domésticos siguen pendientes. Un email
 de registro no verificado no demuestra propiedad de esa dirección y no debe conceder
 privilegios de operador. Un futuro OTP o login social tampoco puede reconstruir por
 sí solo las claves de cifrado; la recuperación actual usa el kit.

@@ -16,6 +16,7 @@ import type { CloudHousehold } from "../domain";
 import { useCloudActions, useCloudStore } from "../hooks";
 import { chooseProfile, claimableMembers, downloadHouse, hasLocalHouse, uploadThisHouse } from "../sync";
 import { AuthForm } from "./AuthForm";
+import { SocialAccess, SocialUnlock } from "./SocialAccess";
 import { ChooseProfile } from "./ChooseProfile";
 import { AccessCodeStep, CryptoSupportGate, InstallAppCard } from "./CloudSteps";
 import { HouseTransfer } from "./HouseTransfer";
@@ -159,6 +160,8 @@ export function AccountPage() {
                     { value: "signin", label: t("cloud.auth.signInTab") },
                   ]}
                 />
+                {params.get("socialError") === "1" && <Alert type="error" showIcon title={t(params.get("error") === "email_not_verified" ? "social.verificationPending" : "social.signinFailed")} />}
+                {params.get("social") === "1" && mode === "signin" ? <SocialUnlock onUnlocked={afterSignIn} onForgot={() => setMode("recover")} /> : <>
                 <AuthForm
                   key={mode}
                   mode={mode === "create" ? "create" : "signin"}
@@ -169,6 +172,8 @@ export function AccountPage() {
                   onSignedIn={afterSignIn}
                   onForgot={() => setMode("recover")}
                 />
+                {mode === "signin" && <SocialAccess mode="signin" />}
+                </>}
               </Flex>
             )}
             {step === "kit" && (

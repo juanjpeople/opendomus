@@ -992,6 +992,21 @@ export const en: Messages = {
     toCloudText: "Take this home to the cloud: your family joins with an invite and uses it on all their devices. It's encrypted here before uploading.",
     toCloudButton: "Create my home in the cloud",
   },
+  social: {
+    verificationPending: "The provider could not complete verification for this sign-in. Check that your email is verified. If you just linked the account, try continuing with the provider once more; you can also sign in with your password.",
+    signin: "Continue with {provider}",
+    link: "Link {provider}",
+    linked: "{provider} linked",
+    signinHint: "Create your account with a password first, then link the provider in Settings → Account. On another device, you will also need your password to open encrypted data.",
+    linkHint: "Link an identity with the same verified email. This does not change your encryption password or grant administrative access.",
+    unavailable: "We could not load or open the providers. You can still use your password and try again later.",
+    signinFailed: "Provider sign-in could not be completed. Sign in with your password and check the connection in Settings → Account.",
+    unlockTitle: "Open your encrypted data",
+    unlockHint: "The provider verifies your identity. Your OpenDomus password opens the keys on this device and is not sent to the provider or server.",
+    unlock: "Unlock data",
+    unlockFailed: "We could not open your keys. Check your password; if the session expired, sign in again. You can also recover with your kit.",
+    back: "Back to sign-in",
+  },
   cloud: {
     entry: {
       description: "Your account is separate from your home. Signing up does not require an invitation code.",
