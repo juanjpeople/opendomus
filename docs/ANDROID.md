@@ -71,7 +71,7 @@ es la exportación/importación elegida por el usuario.
 
 ## Verificación pendiente antes de distribuir
 
-La ejecución Android de CI `37244332219` pasó cinco pruebas instrumentadas sin
+La ejecución Android de CI `37244862651` pasó cinco pruebas instrumentadas sin
 fallos ni omisiones con Android 15 sin Wi-Fi ni datos móviles, y una prueba
 posterior de actualización:
 
@@ -80,16 +80,15 @@ posterior de actualización:
 - Exportar por el selector nativo, comprobar el JSON y restaurar foto y contenido desde Ajustes.
 - Escritura UTF-8 del respaldo, cancelación sin informar éxito y falla con mensaje genérico seguida de reintento exitoso.
 - Captura de cámara real del emulador y cierre de su stream.
-- Lectura QR desde un video sintético mediante el decodificador local, navegación y cierre de cámara.
+- Lectura QR desde un video sintético mediante el decodificador local, apertura del contenedor restaurado con contenido y foto, y cierre de cámara.
 - Instalar un APK con `versionCode=2` sobre el anterior, con la misma firma e identidad,
   sin desinstalar, y verificar sesión, contenedor, contenido y foto conservados.
 
 Los resultados de los selectores se simulan con Espresso; el puente, la escritura,
 la interfaz y la base local son reales. El video QR es sintético; la decodificación
 es real. No prueba todos los proveedores ni una actualización desde cada versión
-histórica. Las capturas usan datos sintéticos. La captura QR de esa ejecución llegó
-durante la transición: el test se reforzó para esperar el contenedor restaurado,
-su contenido y su foto; esa comprobación adicional necesita una nueva ejecución.
+histórica. Las capturas usan datos sintéticos. El test QR espera a que se muestren
+el contenedor restaurado, su contenido y su foto antes de capturar el resultado.
 
 La ejecución previa `37243268831` se canceló tras quedar esperando en onboarding,
 antes del QR. Se recuperaron sus logs; los límites por prueba y fase conservan
@@ -127,3 +126,9 @@ revisión y no equivale por sí solo a una vulnerabilidad detectada. Incluye `js
 transitivas y procesa las imágenes localmente. Esto limita el alcance del componente,
 pero no demuestra ausencia de fallas. Conservar las advertencias y revisar cambios
 antes de actualizar; el audit de producción sin alertas tampoco es una garantía.
+
+Los avisos originales de jsQR y Capacitor se distribuyen también en
+`public/third-party-notices.txt`, copiado al sitio estático y a los assets del APK.
+La PWA también lo conserva sin conexión; comprobado en el recorrido offline.
+Actualizar ese archivo al cambiar esas versiones. Esta lista documenta los componentes
+incorporados por este MVP; no reemplaza una revisión de todas las dependencias del proyecto.

@@ -22,4 +22,8 @@ test("instalada, funciona sin conexión (también los QR impresos)", async ({ ho
   await page.goto("/recetas");
   await expect(page.getByRole("heading", { level: 2 }).first()).toContainText("Recetas");
   await expect(page.getByText("Sin conexión")).toBeVisible();
+  await page.goto("/third-party-notices.txt");
+  await expect(page.locator("body")).toContainText("jsqr 1.4.0");
+  await expect(page.locator("body")).toContainText("Apache License");
+  await expect(page.locator("body")).toContainText("@capacitor/core 8.4.3");
 });
