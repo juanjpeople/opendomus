@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import {
+  checkCryptoSupport,
   createIdentity,
   decodeRecoveryCode,
   derivePasswordKeys,
@@ -165,5 +166,12 @@ describe("invitaciones", () => {
     assert.equal(await openText(joined.wrapKey, box), "claves de la casa");
     const fromToken = await importScopeKey(Uint8Array.from(Buffer.from(created.authToken, "base64url")));
     await assert.rejects(open(fromToken, box));
+  });
+});
+
+describe("navegador compatible", () => {
+  test("Node tiene todo lo criptográfico que usa la nube (solo le falta IndexedDB)", async () => {
+    const missing = await checkCryptoSupport();
+    assert.deepEqual(missing.filter((requirement) => requirement !== "indexeddb"), []);
   });
 });

@@ -7,7 +7,8 @@ import { usePreferences, useSetPreference } from "@/hooks/usePreferences";
 import { detectBrowserLocale, LOCALE_META, LOCALES, useI18n, useT, type Locale } from "@/i18n";
 import { MemberAvatar } from "@/components/ui/MemberAvatar";
 import { OfflineBadge } from "@/components/pwa/OfflineBadge";
-import { isSecured } from "@/features/members/domain";
+import { isSecured, pickableProfiles } from "@/features/members/domain";
+import { getSyncLink } from "@/lib/sync/middleware";
 import { useCurrentUser, useLockStore, useMembersStore, useSessionStore } from "@/lib/auth/session";
 import { useUiStore } from "@/store/useNavigationStore";
 import type { ThemeMode } from "@/store/usePreferencesStore";
@@ -132,7 +133,8 @@ export function UserMenu({ labeled = false, onSelect }: { labeled?: boolean; onS
       type: "group" as const,
       label: t("shell.switchProfile"),
       // Cambiar a un perfil protegido pide su PIN/biometría (lo resuelve AppShell).
-      children: (members ?? [])
+      // Con la casa en la nube, solo los perfiles que se pueden elegir acá (ver `pickableProfiles`).
+      children: pickableProfiles(members ?? [], getSyncLink()?.userId ?? null)
         .filter((member) => member.id !== user.id)
         .map((member) => ({
           key: member.id,

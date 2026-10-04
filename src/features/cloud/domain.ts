@@ -18,6 +18,9 @@ export interface CloudHousehold {
   familyKeyVersion: number;
   adultsKeyVersion: number;
   envelopes: { scope: Scope; version: number; envelope: string }[];
+  /** Plan de la casa en la nube (`beta` por ahora) y si está activo o en pausa (se baja, no se sube). */
+  plan: string;
+  planStatus: "active" | "paused";
 }
 
 export interface CloudMember {

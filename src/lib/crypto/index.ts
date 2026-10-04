@@ -342,6 +342,35 @@ export async function sha256(text: string): Promise<string> {
   return toB64u(await subtle.digest("SHA-256", encoder.encode(text)));
 }
 
+// --- ¿Este navegador puede? ------------------------------------------------------------------
+
+/** Lo que la nube cifrada necesita del navegador y puede faltar en uno viejo. */
+export type CryptoRequirement = "secure-context" | "webcrypto" | "indexeddb" | "x25519" | "ed25519" | "pbkdf2";
+
+/**
+ * Prueba de verdad (no por versión) lo que usa la nube: contexto seguro (https), Web Crypto con
+ * X25519, Ed25519 y PBKDF2, e IndexedDB. Así un navegador viejo ve "actualizá" en vez de un error.
+ */
+export async function checkCryptoSupport(): Promise<CryptoRequirement[]> {
+  const missing: CryptoRequirement[] = [];
+  if (globalThis.isSecureContext === false) missing.push("secure-context");
+  if (typeof indexedDB === "undefined") missing.push("indexeddb");
+  if (!globalThis.crypto?.subtle) return [...missing, "webcrypto"];
+  const probes: [CryptoRequirement, () => Promise<unknown>][] = [
+    ["x25519", () => subtle.generateKey({ name: "X25519" }, false, ["deriveBits"])],
+    ["ed25519", () => subtle.generateKey({ name: "Ed25519" }, false, ["sign", "verify"])],
+    ["pbkdf2", () => subtle.importKey("raw", new Uint8Array(16), "PBKDF2", false, ["deriveBits"])],
+  ];
+  for (const [requirement, probe] of probes) {
+    try {
+      await probe();
+    } catch {
+      missing.push(requirement);
+    }
+  }
+  return missing;
+}
+
 // --- Firmas (para los cambios sincronizados, hito 2) ------------------------------------------
 
 export async function sign(identity: Identity, data: string): Promise<string> {

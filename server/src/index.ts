@@ -19,8 +19,10 @@ import {
   changeRoleInput,
   createHouseholdInput,
   createInviteInput,
+  createLicensesInput,
   envelopeInput,
   inviteTokenInput,
+  licenseCheckInput,
   pullQuery,
   pushInput,
   recoveryCompleteInput,
@@ -79,6 +81,11 @@ async function verifySignature(publicKey: string, data: string, signature: strin
   }
 }
 
+/** "od-abcd efgh…" → "ODABCDEFGH…": el código se compara sin guiones ni espacios, en mayúscula. */
+function normalizeLicenseCode(code: string) {
+  return code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
 /** Comparación en tiempo constante (no corta en el primer carácter distinto). */
 function timingSafeEqual(a: string, b: string) {
   if (a.length !== b.length) return false;
@@ -106,7 +113,7 @@ app.use("*", async (c, next) => {
 
 // CSRF: todo lo que cambia algo tiene que venir de la app (Origin conocido). Better Auth valida lo suyo.
 app.use("*", async (c, next) => {
-  if (["GET", "HEAD", "OPTIONS"].includes(c.req.method) || c.req.path.startsWith("/api/auth/")) return next();
+  if (["GET", "HEAD", "OPTIONS"].includes(c.req.method) || c.req.path.startsWith("/api/auth/") || c.req.path.startsWith("/api/admin/")) return next();
   const origin = c.req.header("Origin");
   if (!origin || !allowedOrigins(c.env).includes(origin)) return c.json({ error: "forbidden-origin" }, 403);
   return next();
@@ -196,12 +203,13 @@ app.get("/me", async (c) => {
     .bind(user.id)
     .first();
   const households = await c.env.DB.prepare(
-    `select h.id, h.encrypted_name as encryptedName, h.family_key_version as familyKeyVersion, h.adults_key_version as adultsKeyVersion, m.role
-       from memberships m join households h on h.id = m.household_id
+    `select h.id, h.encrypted_name as encryptedName, h.family_key_version as familyKeyVersion, h.adults_key_version as adultsKeyVersion, m.role,
+            coalesce(p.plan, 'beta') as plan, coalesce(p.status, 'active') as planStatus
+       from memberships m join households h on h.id = m.household_id left join household_plans p on p.household_id = h.id
       where m.user_id = ? order by m.joined_at`,
   )
     .bind(user.id)
-    .all<{ id: string; encryptedName: string; familyKeyVersion: number; adultsKeyVersion: number; role: Role }>();
+    .all<{ id: string; encryptedName: string; familyKeyVersion: number; adultsKeyVersion: number; role: Role; plan: string; planStatus: "active" | "paused" }>();
   const envelopes = await c.env.DB.prepare(
     "select household_id as householdId, scope, version, envelope from key_envelopes where recipient_user_id = ?",
   )
@@ -348,23 +356,60 @@ app.post("/households", async (c) => {
   if (!scopes.has("family") || !scopes.has("adults") || input.envelopes.some((entry) => entry.version !== 1)) return c.json({ error: "invalid-envelopes" }, 400);
 
   const now = Date.now();
-  // batch = una transacción en D1: o se crea todo, o nada.
-  await c.env.DB.batch([
-    c.env.DB.prepare("insert into households (id, encrypted_name, created_by, created_at) values (?, ?, ?, ?)").bind(input.id, input.encryptedName, user.id, now),
-    c.env.DB.prepare("insert into memberships (household_id, user_id, role, joined_at) values (?, ?, 'admin', ?)").bind(input.id, user.id, now),
-    ...input.envelopes.map((entry) =>
-      c.env.DB.prepare("insert into key_envelopes (household_id, scope, version, recipient_user_id, envelope, created_by, created_at) values (?, ?, ?, ?, ?, ?, ?)").bind(
-        input.id,
-        entry.scope,
-        entry.version,
-        user.id,
-        entry.envelope,
-        user.id,
-        now,
-      ),
+  const open = c.env.HOUSEHOLD_ACCESS === "open";
+  if (!open) {
+    if (await tooMany(c.env, `license:${user.id}`, 10, RECOVERY_WINDOW)) return c.json({ error: "rate-limited" }, 429);
+    if (!input.accessCode) return c.json({ error: "license-required" }, 403);
+  }
+  const codeHash = input.accessCode ? await sha256(normalizeLicenseCode(input.accessCode)) : "";
+  // batch = una transacción en D1: o se crea todo, o nada. Con licencia, primero se consume (si
+  // es válida, está activa, no venció y le quedan usos) y la casa se crea solo si se consumió.
+  const results = await c.env.DB.batch([
+    open
+      ? c.env.DB.prepare("select 1")
+      : c.env.DB.prepare(
+          "update cloud_licenses set used = used + 1 where code_hash = ? and status = 'active' and used < max_households and (expires_at is null or expires_at > ?)",
+        ).bind(codeHash, now),
+    c.env.DB.prepare(`insert into households (id, encrypted_name, created_by, created_at) select ?, ?, ?, ? where ${open ? "1" : "changes() = 1"}`).bind(
+      input.id,
+      input.encryptedName,
+      user.id,
+      now,
     ),
+    c.env.DB.prepare("insert into memberships (household_id, user_id, role, joined_at) select ?, ?, 'admin', ? where exists (select 1 from households where id = ?)").bind(
+      input.id,
+      user.id,
+      now,
+      input.id,
+    ),
+    ...input.envelopes.map((entry) =>
+      c.env.DB.prepare(
+        "insert into key_envelopes (household_id, scope, version, recipient_user_id, envelope, created_by, created_at) select ?, ?, ?, ?, ?, ?, ? where exists (select 1 from households where id = ?)",
+      ).bind(input.id, entry.scope, entry.version, user.id, entry.envelope, user.id, now, input.id),
+    ),
+    c.env.DB.prepare(
+      `insert into household_plans (household_id, license_id, plan, status, updated_at)
+         select ?, l.id, coalesce(l.plan, 'beta'), 'active', ?
+           from (select 1) left join cloud_licenses l on l.code_hash = ?
+          where exists (select 1 from households where id = ?)`,
+    ).bind(input.id, now, codeHash, input.id),
   ]);
+  if (results[1].meta.changes === 0) return c.json({ error: "license-invalid" }, 403);
   return c.json({ id: input.id }, 201);
+});
+
+/** Antes de crear la cuenta: ¿el código de licencia sirve? (No lo consume.) */
+app.post("/licenses/check", async (c) => {
+  const input = await parse(c, licenseCheckInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+  if (await tooMany(c.env, `license-check:${clientIp(c)}`, 20, RECOVERY_WINDOW)) return c.json({ error: "rate-limited" }, 429);
+  if (c.env.HOUSEHOLD_ACCESS === "open") return c.json({ valid: true });
+  const license = await c.env.DB.prepare(
+    "select 1 from cloud_licenses where code_hash = ? and status = 'active' and used < max_households and (expires_at is null or expires_at > ?)",
+  )
+    .bind(await sha256(normalizeLicenseCode(input.code)), Date.now())
+    .first();
+  return c.json({ valid: !!license });
 });
 
 app.get("/households/:id/members", async (c) => {
@@ -665,10 +710,16 @@ app.post("/households/:id/ops", async (c) => {
   if (!input) return c.json({ error: "invalid" }, 400);
 
   const [household, keys] = await Promise.all([
-    c.env.DB.prepare("select family_key_version as family, adults_key_version as adults from households where id = ?").bind(householdId).first<{ family: number; adults: number }>(),
+    c.env.DB.prepare(
+      "select h.family_key_version as family, h.adults_key_version as adults, coalesce(p.status, 'active') as planStatus from households h left join household_plans p on p.household_id = h.id where h.id = ?",
+    )
+      .bind(householdId)
+      .first<{ family: number; adults: number; planStatus: string }>(),
     c.env.DB.prepare("select sign_public_key as signPublicKey from user_keys where user_id = ?").bind(user.id).first<{ signPublicKey: string }>(),
   ]);
   if (!household || !keys) return c.json({ error: "not-found" }, 404);
+  // Casa en pausa (plan vencido o pausado): se puede bajar todo, pero no subir.
+  if (household.planStatus === "paused") return c.json({ error: "plan-paused" }, 402);
   const allowed = scopesFor(member.role);
   for (const op of input.ops) {
     if (!allowed.includes(op.scope)) return c.json({ error: "forbidden-scope" }, 403);
@@ -698,6 +749,89 @@ app.get("/households/:id/ops", async (c) => {
   if (!query.success) return c.json({ error: "invalid" }, 400);
   return c.json(await householdLog(c.env, householdId).pull({ userId: user.id, adults: member.role !== "kid", ...query.data }));
 });
+
+// --- Administración (licencias y planes) -----------------------------------------------------
+//
+// Con `Authorization: Bearer <ADMIN_TOKEN>`, sin cookies. La usa la CLI de Juan (`npm run admin`) y,
+// más adelante, el webhook del cobro. Nunca ve contenido de las casas (está cifrado igual).
+
+const admin = new Hono<AppEnv>();
+
+admin.use("*", async (c, next) => {
+  const token = c.env.ADMIN_TOKEN;
+  const given = c.req.header("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  // Sin token configurado, la administración no existe.
+  if (!token || token.length < 32 || !timingSafeEqual(given, token)) return c.json({ error: "unauthorized" }, 401);
+  return next();
+});
+
+const LICENSE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin I, O, 0, 1: no se confunden al dictarlo
+
+/** Código nuevo: "OD-XXXX-XXXX-XXXX-XXXX" (80 bits al azar). */
+function newLicenseCode() {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  const chars = [...bytes].map((byte) => LICENSE_ALPHABET[byte % 32]).join("");
+  return `OD-${chars.match(/.{4}/g)!.join("-")}`;
+}
+
+admin.post("/licenses", async (c) => {
+  const input = await parse(c, createLicensesInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+  const now = Date.now();
+  const expiresAt = input.expiresInDays ? now + input.expiresInDays * DAY : null;
+  const licenses = Array.from({ length: input.count }, () => ({ id: crypto.randomUUID(), code: newLicenseCode() }));
+  await c.env.DB.batch(
+    await Promise.all(
+      licenses.map(async ({ id, code }) =>
+        c.env.DB.prepare(
+          "insert into cloud_licenses (id, code_hash, plan, max_households, expires_at, source, external_id, note, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ).bind(id, await sha256(normalizeLicenseCode(code)), input.plan, input.maxHouseholds, expiresAt, input.source, input.externalId ?? null, input.note ?? null, now),
+      ),
+    ),
+  );
+  // Los códigos se ven UNA vez: acá no se guardan en claro.
+  return c.json({ licenses: licenses.map(({ id, code }) => ({ id, code, plan: input.plan, expiresAt })) }, 201);
+});
+
+admin.get("/licenses", async (c) => {
+  const rows = await c.env.DB.prepare(
+    "select id, plan, max_households as maxHouseholds, used, status, expires_at as expiresAt, source, note, created_at as createdAt from cloud_licenses order by created_at desc",
+  ).all();
+  return c.json({ licenses: rows.results });
+});
+
+admin.post("/licenses/:id/revoke", async (c) => {
+  const result = await c.env.DB.prepare("update cloud_licenses set status = 'revoked' where id = ?").bind(c.req.param("id")).run();
+  return result.meta.changes ? c.json({ ok: true }) : c.json({ error: "not-found" }, 404);
+});
+
+admin.get("/households", async (c) => {
+  const rows = await c.env.DB.prepare(
+    `select h.id, h.created_at as createdAt, coalesce(p.plan, 'beta') as plan, coalesce(p.status, 'active') as status, p.period_end as periodEnd,
+            (select count(*) from memberships m where m.household_id = h.id) as members, l.note as licenseNote
+       from households h left join household_plans p on p.household_id = h.id left join cloud_licenses l on l.id = p.license_id
+      order by h.created_at desc`,
+  ).all();
+  return c.json({ households: rows.results });
+});
+
+for (const [action, status] of [
+  ["pause", "paused"],
+  ["resume", "active"],
+] as const) {
+  admin.post(`/households/:id/${action}`, async (c) => {
+    const householdId = c.req.param("id");
+    const result = await c.env.DB.prepare(
+      `insert into household_plans (household_id, plan, status, updated_at) select id, 'beta', ?, ? from households where id = ?
+         on conflict (household_id) do update set status = excluded.status, updated_at = excluded.updated_at`,
+    )
+      .bind(status, Date.now(), householdId)
+      .run();
+    return result.meta.changes ? c.json({ ok: true, status }) : c.json({ error: "not-found" }, 404);
+  });
+}
+
+app.route("/admin", admin);
 
 app.notFound((c) => c.json({ error: "not-found" }, 404));
 app.onError((error, c) => {

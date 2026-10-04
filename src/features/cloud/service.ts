@@ -125,8 +125,16 @@ export async function refreshHouseholds(session: CloudSession): Promise<CloudHou
   return decryptHouseholds({ ...me, user: me.user }, session.identity);
 }
 
-/** Crea una casa: tres claves de nivel nuevas, ensobradas para quien la crea (admin). */
-export async function createHousehold(session: CloudSession, name: string): Promise<string> {
+/** ¿Sirve este código de licencia? Se pregunta antes de crear la cuenta (no la consume). */
+export async function checkLicense(code: string): Promise<boolean> {
+  return (await api<{ valid: boolean }>("POST", "/licenses/check", { code: code.trim() })).valid;
+}
+
+/**
+ * Crea una casa: tres claves de nivel nuevas, ensobradas para quien la crea (admin). La nube es
+ * opcional y pide una licencia (`accessCode`): el servidor la consume en la misma transacción.
+ */
+export async function createHousehold(session: CloudSession, name: string, accessCode: string): Promise<string> {
   const id = crypto.randomUUID();
   const raw: Record<Scope, Uint8Array> = { family: newScopeKey(), adults: newScopeKey(), private: newScopeKey() };
   const encryptedName = await seal(await importScopeKey(raw.family), name.trim(), nameContext(id));
@@ -137,7 +145,7 @@ export async function createHousehold(session: CloudSession, name: string): Prom
       envelope: await sealEnvelope(raw[scope], session.identity.encPublicKey, envelopeContext(id, scope, 1, session.user.id)),
     })),
   );
-  await api("POST", "/households", { id, encryptedName, envelopes });
+  await api("POST", "/households", { id, encryptedName, envelopes, accessCode: accessCode.trim() });
   return id;
 }
 

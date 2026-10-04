@@ -1,6 +1,6 @@
 # OpenDomus: plan para llevarla a producción
 
-> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: cuentas, casas e invitaciones cifradas · ✅ hito 2: sincronización cifrada y privacidad · ✅ hito 3a: recuperación con el kit, contraseña, dispositivos y rotación de claves · sigue abrir la nube en producción y el 3b). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
+> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: cuentas, casas e invitaciones cifradas · ✅ hito 2: sincronización cifrada y privacidad · ✅ hito 3a: recuperación con el kit, contraseña, dispositivos y rotación de claves · 🔄 MVP: beta por invitación con licencias, fotos cifradas y prueba con la familia; después el 3b). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
 > Mantener este archivo al día al cerrar cada paso.
 
 ## Contexto
@@ -209,12 +209,10 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
 
 ## Etapa 6: suscripciones automáticas
 
-- **Entitlements por casa** en el servidor (`plan`, `status`, `currentPeriodEnd`, límites como almacenamiento o cantidad de miembros). La app solo pregunta "¿puede?", como con los permisos.
-- **Planes** (propuesta):
-  - autoalojado = gratis y completo;
-  - nube Gratis (1 casa, límites suaves);
-  - nube Plus (más espacio de fotos, backups, dispositivos).
-- **Cobro web**: proveedor con *checkout* + portal del cliente + webhooks idempotentes → entitlements.
+> OpenDomus es **gratis y local por defecto**. La nube es **opcional**, con **licencia por casa**. El modelo de cobro está en definición y, por ahora, no se muestra en la app.
+
+- **Licencias y planes por casa** (✅ base técnica en el MVP: `cloud_licenses` y `household_plans`, admin API con token, CLI `npm run admin`, pausa = se baja pero no se sube). La app solo pregunta "¿puede?", como con los permisos.
+- **Cobro web**: *checkout* + portal del cliente + webhooks idempotentes → emiten o extienden la licencia de la casa.
 - **Android**: Google exige **Play Billing** para vender suscripciones digitales dentro de la app. Plan: unificar los dos cobros (por ejemplo, con RevenueCat), o al principio vender solo por web y que la app solo permita entrar (verificar la política vigente).
 - **Hasta que haya clientes**: dejar el modelo, los webhooks y la UI de "Plan" listos en modo prueba.
 

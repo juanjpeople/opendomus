@@ -9,9 +9,10 @@ import { House } from "@/components/illustrations/House";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { useT } from "@/i18n";
 import { MemberAvatar } from "@/components/ui/MemberAvatar";
-import { isSecured } from "@/features/members/domain";
+import { isSecured, pickableProfiles } from "@/features/members/domain";
 import { useMembersStore, useSessionStore } from "@/lib/auth/session";
 import { SPRING } from "@/lib/motion";
+import { getSyncLink } from "@/lib/sync/middleware";
 import { DataModeBadge } from "./DataModeBadge";
 import { LanguageSwitch, ThemeModeSwitch } from "./HeaderActions";
 
@@ -20,7 +21,8 @@ export function ProfilePicker() {
   const { token } = theme.useToken();
   const t = useT();
   const signIn = useSessionStore((s) => s.signIn);
-  const members = useMembersStore((s) => s.members) ?? [];
+  // Con la casa en la nube, solo el perfil propio y los que no tienen cuenta (ver `pickableProfiles`).
+  const members = pickableProfiles(useMembersStore((s) => s.members) ?? [], getSyncLink()?.userId ?? null);
 
   return (
     <Flex

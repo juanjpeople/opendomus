@@ -20,13 +20,16 @@ interface Choice {
   color: AppearanceColor;
   /** La nube todavía no está lista: se muestra (para que se entienda el camino) pero no se puede elegir. */
   soon?: boolean;
+  /** Etiqueta del camino: la nube está en beta por invitación; el dispositivo es gratis. */
+  badge?: { key: MessageKey; color: string };
 }
 
-// Crear y unirse esperan a la nube (se habilitan con NEXT_PUBLIC_CLOUD=1 hasta que esté la sincronización).
+// Crear y unirse necesitan la nube (NEXT_PUBLIC_CLOUD=1). Crear una casa en la nube pide licencia
+// (beta por invitación); unirse no (la licencia es de la casa). En el dispositivo, siempre gratis.
 const CHOICES: Choice[] = [
-  { id: "create", icon: House, color: "blue", soon: !CLOUD_ENABLED },
+  { id: "create", icon: House, color: "blue", soon: !CLOUD_ENABLED, badge: { key: "onboarding.beta", color: "processing" } },
   { id: "join", icon: UserPlus, color: "green", soon: !CLOUD_ENABLED },
-  { id: "local", icon: HardDrive, color: "orange" },
+  { id: "local", icon: HardDrive, color: "orange", badge: { key: "onboarding.free", color: "success" } },
 ];
 
 /**
@@ -133,7 +136,7 @@ function ChoiceCard({ choice, index, onChoose }: { choice: Choice; index: number
       >
         <Flex align="center" justify="space-between">
           <IconTile icon={choice.icon} color={choice.color} size={52} />
-          {choice.soon && <Tag color="processing">{t("onboarding.soon")}</Tag>}
+          {choice.soon ? <Tag color="processing">{t("onboarding.soon")}</Tag> : choice.badge && <Tag color={choice.badge.color}>{t(choice.badge.key)}</Tag>}
         </Flex>
         <div>
           <Typography.Title level={4} style={{ margin: 0 }}>

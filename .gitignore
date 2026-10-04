@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.development
+!.env.production
+
+# Notas privadas (no se publican: el repo es público)
+/docs/privado/
 
 # vercel
 .vercel

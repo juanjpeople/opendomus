@@ -4,6 +4,7 @@
  * Además, lo que NO tiene que poder pasar. Uso: `node --import ./scripts/test-hooks.mjs --test server/test/api.e2e.ts`
  */
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   createIdentity,
@@ -66,6 +67,22 @@ async function signUp(name: string, email: string, password: string) {
 
 const unique = Date.now().toString(36);
 
+/** Token de administración del Worker local (de `.dev.vars`, o del entorno en CI). */
+function adminToken() {
+  if (process.env.ADMIN_TOKEN) return process.env.ADMIN_TOKEN;
+  const vars = existsSync(".dev.vars") ? readFileSync(".dev.vars", "utf8") : "";
+  return vars.match(/^ADMIN_TOKEN=(.+)$/m)?.[1].trim() ?? "";
+}
+
+async function adminCall(method: "GET" | "POST", path: string, body?: unknown, token = adminToken()) {
+  const response = await fetch(`${API}/api/admin${path}`, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  return { status: response.status, body: await response.json().catch(() => null) };
+}
+
 test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () => {
   // Ana: cuenta + casa con sus tres claves de nivel.
   const ana = await signUp("Ana", `ana-${unique}@casa.test`, "una frase larga para ana");
@@ -80,12 +97,34 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
       envelope: await sealEnvelope(raw[scope], ana.upload.encPublicKey, envelopeContext(householdId, scope, 1, ana.userId)),
     })),
   );
-  const created = await ana.client.call("POST", "/api/households", { id: householdId, encryptedName, envelopes });
+  // --- Licencias: la nube es opcional y crear una casa pide una (la emite Juan, o mañana el cobro) ---
+  assert.equal((await adminCall("GET", "/licenses", undefined, "")).status, 401);
+  assert.equal((await adminCall("GET", "/licenses", undefined, "x".repeat(48))).status, 401);
+  const issued = await adminCall("POST", "/licenses", { count: 2, note: `prueba ${unique}` });
+  assert.equal(issued.status, 201, JSON.stringify(issued.body));
+  const [license, spare] = issued.body.licenses as { id: string; code: string }[];
+  assert.match(license.code, /^OD(-[A-Z2-9]{4}){4}$/);
+  // Se valida antes de crear la cuenta, sin consumirla; con guiones o sin, en minúscula o mayúscula.
+  assert.equal((await new Client().call("POST", "/api/licenses/check", { code: license.code.toLowerCase().replace(/-/g, " ") })).body.valid, true);
+  assert.equal((await new Client().call("POST", "/api/licenses/check", { code: "OD-AAAA-AAAA-AAAA-AAAA" })).body.valid, false);
+  const createWith = (accessCode?: string) => ana.client.call("POST", "/api/households", { id: householdId, encryptedName, envelopes, accessCode });
+  assert.equal((await createWith()).status, 403);
+  assert.equal((await createWith("OD-AAAA-AAAA-AAAA-AAAA")).status, 403);
+  // Una licencia revocada no sirve.
+  assert.equal((await adminCall("POST", `/licenses/${spare.id}/revoke`)).status, 200);
+  assert.equal((await createWith(spare.code)).status, 403);
+  const created = await createWith(license.code);
   assert.equal(created.status, 201, JSON.stringify(created.body));
+  // Usada una vez (una casa por licencia): ya no sirve para otra.
+  assert.equal((await new Client().call("POST", "/api/licenses/check", { code: license.code })).body.valid, false);
+  const second = await ana.client.call("POST", "/api/households", { id: crypto.randomUUID(), encryptedName, envelopes, accessCode: license.code });
+  assert.equal(second.status, 403);
 
   // Ana se vuelve a abrir todo desde el servidor (otro dispositivo): contraseña → identidad → sobres.
   const me = await ana.client.call("GET", "/api/me");
   assert.equal(me.body.households[0].role, "admin");
+  assert.equal(me.body.households[0].plan, "beta");
+  assert.equal(me.body.households[0].planStatus, "active");
   const again = await unlockIdentity(me.body.keys, ana.keys.encKey);
   const familyEnvelope = me.body.households[0].envelopes.find((entry: { scope: string }) => entry.scope === "family");
   const opened = await openEnvelope(familyEnvelope.envelope, again, envelopeContext(householdId, "family", 1, ana.userId));
@@ -344,4 +383,18 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal((await anaAgain.call("PATCH", membersPath, { ...demote, rotation: { ...demote.rotation, version: 2 } })).status, 409);
   assert.equal((await anaAgain.call("PATCH", membersPath, demote)).status, 200);
   assert.equal((await anaAgain.call("GET", "/api/me")).body.households[0].adultsKeyVersion, 3);
+
+  // --- Pausa (plan vencido o pausado): se baja todo, no se sube. Nadie queda sin sus datos. ---
+  const listed = (await adminCall("GET", "/households")).body.households as { id: string; members: number; licenseNote: string }[];
+  const mine = listed.find((household) => household.id === householdId)!;
+  assert.equal(mine.licenseNote, `prueba ${unique}`);
+  assert.ok(!("encryptedName" in mine));
+  assert.equal((await adminCall("POST", `/households/${householdId}/pause`)).status, 200);
+  assert.equal((await anaAgain.call("GET", "/api/me")).body.households[0].planStatus, "paused");
+  assert.equal((await pull(anaSigner)).status, 200);
+  const paused = await push(anaSigner, [await op(anaSigner, "family", opened2.key, { changes: [] }, { keyVersion: 2 })]);
+  assert.equal(paused.status, 402);
+  assert.equal(paused.body.error, "plan-paused");
+  assert.equal((await adminCall("POST", `/households/${householdId}/resume`)).status, 200);
+  assert.equal((await push(anaSigner, [await op(anaSigner, "family", opened2.key, { changes: [] }, { keyVersion: 2 })])).status, 200);
 });

@@ -79,9 +79,14 @@ export function CloudSync() {
     if (status === "signed-out") useSyncStatus.getState().update({ phase: "error", error: "session" });
   }, [active, status]);
 
-  // En un dispositivo personal entra directo con el perfil de su cuenta (sin "¿Quién está en casa?").
+  // Al abrir la app sin perfil elegido, entra directo con el de su cuenta (sin "¿Quién está en
+  // casa?"). Una sola vez: si después alguien cambia de perfil a mano (un chico con su PIN en la
+  // tablet), se respeta.
+  const autoSelected = useRef(false);
   useEffect(() => {
-    if (!active || !session || !members || currentProfileId) return;
+    if (!active || !session || !members || autoSelected.current) return;
+    autoSelected.current = true;
+    if (currentProfileId) return;
     const mine = members.find((member) => member.userId === session.user.id);
     if (mine) useSessionStore.getState().signIn(mine.id);
   }, [active, session, members, currentProfileId]);
