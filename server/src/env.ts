@@ -5,8 +5,6 @@ export interface Env {
   DB: D1Database;
   /** Registro de cambios cifrados de cada casa (un Durable Object por casa). */
   HOUSEHOLD: DurableObjectNamespace<HouseholdLog>;
-  /** Fotos, cifradas en el dispositivo antes de subir (R2). */
-  PHOTOS: R2Bucket;
   /** Los archivos estáticos de la app (out/). */
   ASSETS: Fetcher;
   /** Secreto de sesiones de Better Auth (`wrangler secret put BETTER_AUTH_SECRET`). */
@@ -15,6 +13,14 @@ export interface Env {
   APP_ORIGIN: string;
   /** Orígenes extra separados por coma (en desarrollo: http://localhost:3000). */
   DEV_ORIGINS?: string;
+  /** Proyecto de Supabase que guarda únicamente los bytes ya cifrados de las fotos. */
+  SUPABASE_URL: string;
+  /** Bucket privado de Supabase Storage. */
+  SUPABASE_PHOTOS_BUCKET: string;
+  /** Secreto de servidor de Supabase (`wrangler secret put SUPABASE_SERVICE_ROLE_KEY`). */
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  /** `memory` solo para pruebas locales explícitas; producción usa `supabase`. */
+  PHOTO_STORAGE?: string;
   /**
    * Quién puede crear una casa en la nube: `codes` (con una licencia; producción) u `open` (sin
    * licencia; solo para desarrollo). Cualquier otro valor, o ninguno, cuenta como `codes`.

@@ -12,6 +12,7 @@ import type { z } from "zod";
 import { opSigningData, SYNC_LIMITS } from "../../src/lib/sync/protocol";
 import { authOptions } from "./auth-options";
 import type { AppEnv, Env, SessionUser } from "./env";
+import { PhotoStorageError, photoStorage } from "./photo-storage";
 import { OP_CONFLICT } from "./sync";
 import {
   acceptInviteInput,
@@ -740,12 +741,24 @@ app.post("/households/:id/ops", async (c) => {
 // --- Fotos (cifradas en el dispositivo) ------------------------------------------------------
 //
 // Cada foto tiene su propia clave, que viaja DENTRO del registro sincronizado (cifrado con el nivel
-// de su receta). Acá solo llegan bytes cifrados: R2 no puede ver ninguna foto. Se pide ser miembro
-// de la casa para subir, bajar o borrar.
+// de su receta). Acá solo llegan bytes cifrados: el proveedor no puede ver ninguna foto. Se pide
+// ser miembro de la casa para subir, bajar o borrar.
 
 const PHOTO_VARIANTS = ["full", "thumb"] as const;
 const PHOTO_MAX_BYTES = 4 * 1024 * 1024;
 const photoKey = (householdId: string, photoId: string, variant: string) => `households/${householdId}/photos/${photoId}/${variant}`;
+
+function photoStorageFailure(c: Context<AppEnv>, error: unknown) {
+  if (error instanceof PhotoStorageError) {
+    console.error(`[photo-storage] ${error.operation} failed with status ${error.status}`);
+    if (error.status === 413) return c.json({ error: "too-large" }, 413);
+    if (error.status === 429) return c.json({ error: "storage-rate-limited" }, 429);
+    if (error.status === 402 || error.status === 507) return c.json({ error: "storage-quota" }, 507);
+  } else {
+    console.error("[photo-storage] unexpected failure", error);
+  }
+  return c.json({ error: "storage-unavailable" }, 503);
+}
 
 /** Miembro de la casa y foto bien nombrada; si no, la respuesta de error. */
 async function photoAccess(c: Context<AppEnv>) {
@@ -773,16 +786,24 @@ app.put("/households/:id/photos/:photoId/:variant", async (c) => {
   if (body.byteLength > PHOTO_MAX_BYTES) return c.json({ error: "too-large" }, 413);
   if (body.byteLength < 29) return c.json({ error: "invalid" }, 400);
   const key = photoKey(householdId, photoId, variant);
-  await c.env.PHOTOS.put(key, body, { httpMetadata: { contentType: "application/octet-stream" } });
-  return c.json({ ok: true });
+  try {
+    await photoStorage(c.env).put(key, body);
+    return c.json({ ok: true });
+  } catch (error) {
+    return photoStorageFailure(c, error);
+  }
 });
 
 app.get("/households/:id/photos/:photoId/:variant", async (c) => {
   const access = await photoAccess(c);
   if ("error" in access) return access.error;
-  const object = await c.env.PHOTOS.get(photoKey(access.householdId, access.photoId, access.variant));
-  if (!object) return c.json({ error: "not-found" }, 404);
-  return new Response(object.body, { headers: { "Content-Type": "application/octet-stream", "Cache-Control": "private, no-store" } });
+  try {
+    const object = await photoStorage(c.env).get(photoKey(access.householdId, access.photoId, access.variant));
+    if (!object) return c.json({ error: "not-found" }, 404);
+    return new Response(object.body, { headers: { "Content-Type": "application/octet-stream", "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    return photoStorageFailure(c, error);
+  }
 });
 
 /** Borrar una foto (las dos variantes): quien puede administrar recetas. */
@@ -792,8 +813,12 @@ app.delete("/households/:id/photos/:photoId", async (c) => {
   const { member, householdId, photoId } = access;
   if (member.role === "kid") return c.json({ error: "forbidden" }, 403);
   const keys = PHOTO_VARIANTS.map((variant) => photoKey(householdId, photoId, variant));
-  await c.env.PHOTOS.delete(keys);
-  return c.json({ ok: true });
+  try {
+    await photoStorage(c.env).delete(keys);
+    return c.json({ ok: true });
+  } catch (error) {
+    return photoStorageFailure(c, error);
+  }
 });
 
 /** Bajar cambios desde `since`: solo los niveles que la persona puede abrir. */

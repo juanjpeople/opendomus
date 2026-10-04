@@ -29,10 +29,12 @@
     "bindings": [{ "name": "HOUSEHOLD", "class_name": "HouseholdLog" }],
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["HouseholdLog"] }],
-  // Fotos cifradas en el dispositivo (R2 guarda bytes que no puede leer). Ver server/src/index.ts.
-  "r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "opendomus-photos" }],
   "vars": {
     "APP_ORIGIN": "https://opendomus.juanjpeople.workers.dev",
+    // Bucket privado: guarda solo bytes cifrados. La service role se configura como secreto.
+    "SUPABASE_URL": "https://qaeqyeadwijphhlqcrku.supabase.co",
+    "SUPABASE_PHOTOS_BUCKET": "opendomus-photos",
+    "PHOTO_STORAGE": "supabase",
     // Crear una casa en la nube pide una licencia (en desarrollo, `.dev.vars` puede poner `open`).
     "HOUSEHOLD_ACCESS": "codes",
   },
