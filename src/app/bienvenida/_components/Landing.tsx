@@ -32,6 +32,7 @@ export function Landing() {
     <div style={{ background: token.colorBgLayout, color: token.colorText, minHeight: "100vh" }}>
       <LandingHeader />
       <Hero />
+      <ProjectIntroduction />
       <AccountLinks />
       <ValuesSection />
       <TransparencySection />
@@ -40,6 +41,29 @@ export function Landing() {
       <ProjectStats />
       <Closing />
     </div>
+  );
+}
+
+function ProjectIntroduction() {
+  const t = useT();
+  const { token } = theme.useToken();
+  return (
+    <section aria-labelledby="project-introduction" style={{ paddingBlock: 40, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+      <Container>
+        <Row gutter={[40, 24]}>
+          <Col xs={24} md={12}>
+            <Typography.Title id="project-introduction" level={2} style={{ marginTop: 0 }}>{t("landing.introduction.title")}</Typography.Title>
+            <Typography.Paragraph style={{ fontSize: token.fontSizeLG }}>{t("landing.introduction.what")}</Typography.Paragraph>
+          </Col>
+          <Col xs={24} md={12}>
+            <Typography.Title level={3} style={{ marginTop: 0 }}>{t("landing.introduction.whoTitle")}</Typography.Title>
+            <Typography.Paragraph type="secondary">{t("landing.introduction.who")}</Typography.Paragraph>
+            <Typography.Paragraph type="secondary">{t("landing.introduction.invitation")}</Typography.Paragraph>
+            <Button href="https://github.com/juanjpeople/opendomus" target="_blank" rel="noopener noreferrer" icon={<ExternalLink />} iconPlacement="end">{t("landing.introduction.repository")}</Button>
+          </Col>
+        </Row>
+      </Container>
+    </section>
   );
 }
 
@@ -142,7 +166,7 @@ function Hero() {
       }}
     >
       <Container>
-        <Row gutter={[48, 48]} align="middle">
+        <Row gutter={[40, 48]} align="middle">
           <Col xs={24} md={13}>
             <motion.div {...fadeUp(0)}>
               <Flex gap={8} wrap>

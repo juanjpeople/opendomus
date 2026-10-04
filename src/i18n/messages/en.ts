@@ -271,9 +271,6 @@ export const en: Messages = {
     shoppingReview: { one: "{count} suggestion to review", other: "{count} suggestions to review" },
     shoppingEmpty: "Nothing missing",
     shoppingOpen: "Open the list",
-    valuesTitle: "What is OpenDomus and what do we believe in?",
-    valuesText: "The values and guidelines behind every decision in the project.",
-    valuesCta: "Meet OpenDomus",
     recentActivity: "Recent activity",
     allPlaces: "See all places",
   },
@@ -1458,6 +1455,14 @@ export const en: Messages = {
   },
 
   landing: {
+    introduction: {
+      title: "What OpenDomus is and what it does",
+      what: "An open-source app for organizing your home and workshop: inventory tools and supplies, find things by QR code, and save photos or notes for a container without turning every object into a product. It also brings together shopping, calendars and household finances.",
+      whoTitle: "An open project, still growing",
+      who: "We build OpenDomus to meet everyday needs while keeping you in control of your data. You can use it locally without an account; sharing through the cloud is optional.",
+      invitation: "We are not perfect and cannot promise absolute security. Real problems, suggestions and code reviews help us improve. The repository shows who contributes, what changes and what remains to be solved.",
+      repository: "View code and contribute",
+    },
     start: "Get started",
     goHome: "Go to my home",
     hero: {

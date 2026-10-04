@@ -1,8 +1,8 @@
 "use client";
 
-import { Button, Card, Col, Flex, Grid, Row, Typography, theme } from "antd";
+import { Card, Col, Flex, Grid, Row, Typography, theme } from "antd";
 import { motion } from "framer-motion";
-import { ArrowRight, Boxes, ShoppingCart, Sparkles, type LucideIcon } from "lucide-react";
+import { ArrowRight, Boxes, ShoppingCart, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Can } from "@/components/auth/Can";
@@ -87,9 +87,6 @@ export function HomeDashboard() {
               <RecentActivityCard />
             </Col>
           </Can>
-          <Col xs={24}>
-            <ValuesCard />
-          </Col>
         </Row>
       </Stagger>
     </>
@@ -261,43 +258,6 @@ function RecentActivityCard() {
       <Card title={t("home.recentActivity")} style={{ height: "100%" }} styles={{ body: { paddingBlock: 8 } }}>
         <ActivityList entries={entries} showPlace />
       </Card>
-    </StaggerItem>
-  );
-}
-
-function ValuesCard() {
-  const { token } = theme.useToken();
-  const t = useT();
-
-  return (
-    <StaggerItem>
-      <Flex
-        align="center"
-        justify="space-between"
-        gap={16}
-        wrap
-        style={{
-          padding: "20px 24px",
-          borderRadius: token.borderRadiusLG * 1.5,
-          background: `linear-gradient(110deg, ${token.colorPrimaryBg}, ${token.colorPrimaryBgHover})`,
-        }}
-      >
-        <Flex align="center" gap={16}>
-          <IconTile icon={Sparkles} solid />
-          <div>
-            <Typography.Text strong style={{ fontSize: token.fontSizeLG }}>
-              {t("home.valuesTitle")}
-            </Typography.Text>
-            <br />
-            <Typography.Text type="secondary">{t("home.valuesText")}</Typography.Text>
-          </div>
-        </Flex>
-        <Link href="/bienvenida">
-          <Button type="primary" icon={<ArrowRight />} iconPlacement="end">
-            {t("home.valuesCta")}
-          </Button>
-        </Link>
-      </Flex>
     </StaggerItem>
   );
 }

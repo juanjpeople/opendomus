@@ -276,9 +276,6 @@ export const es = {
     shoppingReview: { one: "{count} sugerencia para revisar", other: "{count} sugerencias para revisar" },
     shoppingEmpty: "No falta nada",
     shoppingOpen: "Ver la lista",
-    valuesTitle: "¿Qué es OpenDomus y en qué creemos?",
-    valuesText: "Los valores y lineamientos que guían cada decisión del proyecto.",
-    valuesCta: "Conocé OpenDomus",
     recentActivity: "Actividad reciente",
     allPlaces: "Ver todos los lugares",
   },
@@ -1463,6 +1460,14 @@ export const es = {
   },
 
   landing: {
+    introduction: {
+      title: "Qué es OpenDomus y para qué sirve",
+      what: "Una app de código abierto para organizar tu casa y tu taller: inventariar herramientas e insumos, ubicar cosas por su QR y guardar fotos o notas de un contenedor sin convertir cada objeto en un producto. También reúne compras, calendario y cuentas del hogar.",
+      whoTitle: "Un proyecto abierto, en construcción",
+      who: "Construimos OpenDomus para resolver necesidades cotidianas con control sobre tus datos. Podés usarla localmente sin cuenta; compartir mediante la nube es opcional.",
+      invitation: "No somos perfectos ni prometemos seguridad absoluta. Queremos mejorar con problemas reales, sugerencias y revisiones del código. El repositorio muestra quiénes contribuyen, qué cambia y qué falta resolver.",
+      repository: "Ver código y contribuir",
+    },
     start: "Empezar",
     goHome: "Ir a mi casa",
     hero: {
