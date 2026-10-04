@@ -8,7 +8,7 @@ import { useCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
 import { normalizeContainerCode, type Container, type NewContainer, type NewSpace, type Space } from "./domain";
-import { createContainer, createSpace, deleteContainer, deleteSpace, updateContainer, updateSpace } from "./service";
+import { createContainer, createSpace, deleteContainer, deleteContainerContent, deleteSpace, saveContainerContent, updateContainer, updateSpace } from "./service";
 import { ancestorsOf, flattenTree, pathLabel } from "./tree";
 
 export interface ContainerOverview extends Container {
@@ -18,6 +18,8 @@ export interface ContainerOverview extends Container {
   /** Desglose por estado (para la barra de stock), también agregado. */
   low: number;
   empty: number;
+  contentCount: number;
+  photoCount: number;
   /** Compartimentos directos, con sus propios totales. */
   children: ContainerOverview[];
   /** Nivel: 1 = directo en el recinto. */
@@ -29,8 +31,8 @@ export interface SpaceOverview extends Space {
   containers: ContainerOverview[];
 }
 
-type Stats = Pick<ContainerOverview, "itemCount" | "needsAttention" | "low" | "empty">;
-const NO_STATS: Stats = { itemCount: 0, needsAttention: 0, low: 0, empty: 0 };
+type Stats = Pick<ContainerOverview, "itemCount" | "needsAttention" | "low" | "empty" | "contentCount" | "photoCount">;
+const NO_STATS: Stats = { itemCount: 0, needsAttention: 0, low: 0, empty: 0, contentCount: 0, photoCount: 0 };
 
 async function loadStorage() {
   const [spaces, containers, items] = await Promise.all([
@@ -39,6 +41,13 @@ async function loadStorage() {
     db.inventory.toArray(),
   ]);
   const own = new Map<string, Stats>();
+  await Promise.all(containers.map(async (container) => {
+    const [contentCount, photoCount] = await Promise.all([
+      db.containerContents.where("containerId").equals(container.id).count(),
+      db.photos.where("[ownerType+ownerId]").equals(["container", container.id]).count(),
+    ]);
+    own.set(container.id, { ...NO_STATS, contentCount, photoCount });
+  }));
   for (const item of items) {
     const entry = { ...(own.get(item.containerId) ?? NO_STATS) };
     const status = getStockStatus(item);
@@ -60,6 +69,8 @@ function buildNode(container: Container, containers: Container[], own: Map<strin
       needsAttention: sum.needsAttention + child.needsAttention,
       low: sum.low + child.low,
       empty: sum.empty + child.empty,
+      contentCount: sum.contentCount + child.contentCount,
+      photoCount: sum.photoCount + child.photoCount,
     }),
     own.get(container.id) ?? NO_STATS,
   );
@@ -81,6 +92,10 @@ export function useStorageOverview(): SpaceOverview[] | undefined {
 
 export function useSpaces() {
   return useLiveQuery(() => db.spaces.orderBy("name").toArray());
+}
+
+export function useContainerContents(containerId: string) {
+  return useLiveQuery(() => db.containerContents.where("containerId").equals(containerId).sortBy("createdAt"), [containerId]);
 }
 
 /**
@@ -145,6 +160,8 @@ export function useStorageActions() {
   }
 
   return {
+    saveContent: (containerId: string, text: string, id?: string) => run(() => saveContainerContent(user, containerId, text, id)),
+    deleteContent: (id: string) => run(() => deleteContainerContent(user, id).then(() => true)),
     createSpace: (input: NewSpace) => run(() => createSpace(user, input), t("storage.toast.spaceCreated")),
     updateSpace: (id: string, input: NewSpace) => run(() => updateSpace(user, id, input).then(() => true), t("storage.toast.saved")),
     deleteSpace: (id: string) => run(() => deleteSpace(user, id).then(() => true), t("storage.toast.deleted")),

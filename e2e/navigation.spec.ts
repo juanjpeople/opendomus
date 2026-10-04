@@ -23,7 +23,7 @@ test("los QR impresos (/c/<código>) y las URLs viejas llevan al contenedor", as
 
   await page.goto(`/c/${code}`);
   await expect(page).toHaveURL(/inventario\/ver\?id=/);
-  await expect(page.getByRole("heading", { level: 2 })).toContainText("Heladera");
+  await expect(page.getByRole("heading", { name: "Heladera", exact: true })).toBeVisible();
 
   await page.goto(`/inventario/${id}`);
   await expect(page).toHaveURL(new RegExp(`inventario/ver\\?id=${id}`));

@@ -57,6 +57,11 @@ export function ContainerTile({ container, onLabel }: { container: ContainerOver
               {container.code}
             </Typography.Text>
           </Flex>
+          {(container.contentCount > 0 || container.photoCount > 0) && (
+            <Typography.Text type="secondary" style={{ display: "block", fontSize: token.fontSizeSM, marginTop: 4 }}>
+              {t("storage.contents.summary", { entries: container.contentCount, photos: container.photoCount })}
+            </Typography.Text>
+          )}
           {container.children.length > 0 && (
             <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4 }}>
               <Layers /> {t("storage.childCount", { count: container.children.length })}

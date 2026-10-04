@@ -84,6 +84,7 @@ export const es = {
       project: "Ese proyecto ya no existe.",
       recipe: "Esa receta ya no existe.",
       photo: "Esa foto ya no existe.",
+      containerContent: "Esa anotación ya no existe en este contenedor.",
     },
     members: {
       lastAdmin: "Tiene que quedar al menos un administrador.",
@@ -126,6 +127,8 @@ export const es = {
     storage: {
       spaceNotEmpty: "Este recinto tiene contenedores. Movelos o borralos primero.",
       containerNotEmpty: "Este contenedor tiene productos. Movelos o borralos primero.",
+      containerHasContent: "Este contenedor tiene anotaciones o fotos. Retiralas antes de eliminarlo.",
+      tooMuchContent: "Podés guardar hasta {max} anotaciones por contenedor.",
       containerHasChildren: "Este contenedor tiene compartimentos. Movelos o borralos primero.",
       tooDeep: "No se puede anidar más de {max} niveles.",
       cycle: "Un contenedor no puede ir dentro de sí mismo ni de sus compartimentos.",
@@ -294,7 +297,7 @@ export const es = {
     },
     list: {
       title: "Contenido",
-      emptyTitle: "Todavía no hay nada acá",
+      emptyTitle: "Todavía no hay productos inventariados",
       emptyText: "Cargá el primer producto arriba y OpenDomus te avisa cuando quede poco.",
       min: "Mínimo: {min} {unit}",
       deleteConfirm: "¿Eliminar “{name}”?",
@@ -335,6 +338,22 @@ export const es = {
     },
   },
   storage: {
+    contents: {
+      title: "Qué hay acá",
+      hint: "Anotá lo que guardás, aunque no sea un producto: cables sueltos, recuerdos, piezas por identificar. Herramientas e insumos con cantidades van en el inventario de abajo.",
+      input: "Contenido guardado",
+      placeholder: "Ej. Cables viejos, piezas de la impresora…",
+      add: "Anotar",
+      empty: "Todavía no hay anotaciones. También podés guardar solo fotos.",
+      edit: "Editar anotación: {name}",
+      delete: "Eliminar anotación: {name}",
+      deleteConfirm: "¿Eliminar la anotación “{name}”?",
+      editTitle: "Editar anotación",
+      save: "Guardar anotación",
+      photos: "Fotos del contenedor",
+      inventory: "Herramientas, insumos y productos",
+      summary: "{entries} anotaciones · {photos} fotos",
+    },
     eyebrow: "Lugares",
     title: "Inventario",
     description: "Los recintos de tu casa, sus contenedores y lo que guarda cada uno.",

@@ -14,6 +14,7 @@ import { AddTile, ContainerTile } from "@/features/storage/components/ContainerT
 import type { LabelData } from "@/features/storage/components/ContainerLabel";
 import { LabelModal } from "@/features/storage/components/LabelModal";
 import { ContainerModal } from "@/features/storage/components/StorageForms";
+import { ContainerContents } from "@/features/storage/components/ContainerContents";
 import { containerAppearance, STORAGE_LIMITS } from "@/features/storage/domain";
 import { useContainer, useStorageActions } from "@/features/storage/hooks";
 import { useT } from "@/i18n";
@@ -103,7 +104,7 @@ export function ContainerPage() {
           </>
         }
       />
-      <InventoryStats containerId={container.id} />
+      <ContainerContents key={container.id} containerId={container.id} />
       {(container.children.length > 0 || (canManage && container.depth < STORAGE_LIMITS.maxDepth)) && (
         <Reveal delay={0.1}>
           <section
@@ -145,6 +146,8 @@ export function ContainerPage() {
           </section>
         </Reveal>
       )}
+      <Typography.Title level={2} style={{ fontSize: token.fontSizeHeading4 }}>{t("storage.contents.inventory")}</Typography.Title>
+      <InventoryStats containerId={container.id} />
       <Can perform="inventory.create">
         <Reveal delay={0.15}>
           <InventoryForm containerId={container.id} />
@@ -153,6 +156,7 @@ export function ContainerPage() {
       <Reveal delay={0.25}>
         <InventoryList containerId={container.id} onOpen={setOpenItem} />
       </Reveal>
+
 
       <ItemDrawer itemId={openItem} onClose={() => setOpenItem(null)} />
       <ContainerModal open={dialog === "edit"} container={container} onClose={() => setDialog(null)} />

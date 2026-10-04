@@ -42,11 +42,12 @@ export function canSee(viewer: Viewer | null | undefined, record: { privacy?: un
 }
 
 /** Dueños de comentarios y fotos (`ownerType`) → su tabla. */
-const COMMENT_OWNERS: Record<string, SyncTable> = { recipe: "recipes" };
+const COMMENT_OWNERS: Record<string, SyncTable> = { recipe: "recipes", container: "containers" };
 const ACTIVITY_OWNERS: Partial<Record<string, SyncTable>> = { lists: "shoppingLists", projects: "projects", recipes: "recipes", calendar: "events" };
 
 /** De quién hereda el nivel una fila, si hereda. */
 export function parentOf(table: SyncTable, row: Row): { table: SyncTable; id: string } | null {
+  if (table === "containerContents" && typeof row.containerId === "string") return { table: "containers", id: row.containerId };
   if (table === "shoppingList" && typeof row.listId === "string") return { table: "shoppingLists", id: row.listId };
   if ((table === "comments" || table === "photos") && typeof row.ownerId === "string" && COMMENT_OWNERS[String(row.ownerType)]) {
     return { table: COMMENT_OWNERS[String(row.ownerType)], id: row.ownerId };

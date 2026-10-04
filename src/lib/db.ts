@@ -9,11 +9,12 @@ import type { PriceRecord } from "@/features/prices/domain";
 import type { Recipe } from "@/features/recipes/domain";
 import type { Project } from "@/features/projects/domain";
 import { HOME_LIST_ID, type ShoppingCandidate, type ShoppingList, type ShoppingListItem } from "@/features/shopping/domain";
-import type { Container, Space } from "@/features/storage/domain";
+import type { Container, ContainerContent, Space } from "@/features/storage/domain";
 import { buildDefaultStorage } from "@/features/storage/seed";
 import type { SyncRecord } from "@/lib/sync/merge";
 import { syncMiddleware } from "@/lib/sync/middleware";
 import type { PhotoDelete } from "@/lib/sync/photos";
+import { CONTAINER_BACKFILL } from "@/lib/sync/upgrades";
 
 /**
  * Base de datos local (IndexedDB). Solo los servicios (`src/features/<x>/service.ts`)
@@ -33,6 +34,7 @@ export const db = new Dexie("OpenDomusDB") as Dexie & {
   activity: EntityTable<ActivityEntry, "id">;
   spaces: EntityTable<Space, "id">;
   containers: EntityTable<Container, "id">;
+  containerContents: EntityTable<ContainerContent, "id">;
   prices: EntityTable<PriceRecord, "id">;
   members: EntityTable<Member, "id">;
   events: EntityTable<CalendarEvent, "id">;
@@ -184,6 +186,18 @@ export function declareSchema(target: Dexie, upTo = Infinity) {
   if (upTo >= 11) target.version(11).stores({
     photoDeletes: "k, householdId, requestedAt",
   });
+  // v12: contenido libre por contenedor. Las altas de distintos dispositivos no se pisan.
+  if (upTo >= 12) target.version(12)
+    .stores({ containerContents: "id, containerId, createdAt" })
+    .upgrade(async (tx) => {
+      // v11 rechazaba operaciones que incluían la tabla desconocida. El motor recupera
+      // solo esas operaciones, no vuelve a aplicar consumos ya procesados.
+      const cursor = await tx.table("syncState").get("cursor");
+      if (typeof cursor?.value === "number" && cursor.value > 0) {
+        await tx.table("syncState").put({ key: CONTAINER_BACKFILL, value: cursor.value });
+        await tx.table("syncState").delete("cursor");
+      }
+    });
 }
 
 declareSchema(db);
