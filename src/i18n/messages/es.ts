@@ -6,6 +6,11 @@
  * - Plurales: un objeto `{ one, other }` se elige con `Intl.PluralRules` según `count`.
  */
 export const es = {
+  localOnly: {
+    title: "Esta instalación funciona sin servidor",
+    description: "Podés organizar tu casa en este dispositivo. Las cuentas, las invitaciones y el envío de comentarios necesitan una conexión con nuestros servicios y no están disponibles en esta instalación.",
+    continue: "Continuar en este dispositivo",
+  },
   common: {
     appName: "OpenDomus",
     cancel: "Cancelar",
