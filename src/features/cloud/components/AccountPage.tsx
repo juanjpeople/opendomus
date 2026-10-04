@@ -160,7 +160,7 @@ export function AccountPage() {
                     { value: "signin", label: t("cloud.auth.signInTab") },
                   ]}
                 />
-                {params.get("socialError") === "1" && <Alert type="error" showIcon title={t("social.signinFailed")} />}
+                {params.get("socialError") === "1" && <Alert type="error" showIcon title={t(params.get("error") === "email_not_verified" ? "social.verificationPending" : "social.signinFailed")} />}
                 {params.get("social") === "1" && mode === "signin" ? <SocialUnlock onUnlocked={afterSignIn} onForgot={() => setMode("recover")} /> : <>
                 <AuthForm
                   key={mode}

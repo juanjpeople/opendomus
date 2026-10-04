@@ -93,6 +93,10 @@ or commit it. Review provider quotas and billing controls before enabling storag
 
 ### Dispositivos y revocación
 
+Las cuentas domésticas pueden vincular Google/GitHub cuando el operador configure
+sus credenciales OAuth. El proveedor identifica la cuenta; la contraseña sigue abriendo
+los datos cifrados en el dispositivo. Ver [configuración y límites del acceso social](docs/ACCESO_SOCIAL.md).
+
 En Ajustes → Cuenta se muestran las sesiones y se puede cerrar la de otro dispositivo.
 Cerrar una sesión corta el acceso futuro a la API; no borra los datos ya descargados.
 Los avisos de sincronización por WebSocket revalidan sesión, vencimiento y membresía

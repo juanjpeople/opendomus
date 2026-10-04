@@ -1,5 +1,15 @@
 import { expect, test } from "@playwright/test";
 
+test("el retorno con email pendiente explica el reintento sin hacerlo automáticamente", async ({ page }) => {
+  const writes: string[] = [];
+  page.on("request", (request) => { if (request.method() === "POST") writes.push(request.url()); });
+  await page.route("**/api/social-providers", (route) => route.fulfill({ json: { providers: ["github"] } }));
+  await page.goto("/cuenta?modo=entrar&socialError=1&error=email_not_verified");
+  await expect(page.getByText("El proveedor no pudo completar la verificación", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continuar con GitHub" })).toBeVisible();
+  expect(writes).toEqual([]);
+});
+
 test("proveedores habilitados y rechazo de un destino OAuth inesperado", async ({ page }) => {
   await page.route("**/api/social-providers", (route) => route.fulfill({ json: { providers: ["google", "github"] } }));
   await page.route("**/api/auth/sign-in/social", async (route) => {
