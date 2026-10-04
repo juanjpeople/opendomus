@@ -1,6 +1,6 @@
 # OpenDomus: plan para llevarla a producción
 
-> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: servidor, cuentas, casas e invitaciones cifradas · sigue el hito 2: sincronización). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
+> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: servidor, cuentas, casas e invitaciones cifradas · 🔄 hito 2: ✅ sincronización cifrada, sigue elegir la privacidad de cada cosa y abrir la nube en producción). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
 > Mantener este archivo al día al cerrar cada paso.
 
 ## Contexto
@@ -67,13 +67,16 @@ El servidor es TypeScript y comparte `packages/core` (dominio, permisos, protoco
 
 ### Sincronización con E2EE
 
-El servidor no puede ejecutar el dominio sobre datos que no lee. Por eso la regla pasa al cliente:
+El servidor no puede ejecutar el dominio sobre datos que no lee. Por eso la regla pasa al cliente (✅ implementado en `src/lib/sync` y `server/src/sync.ts`):
 
-- cada cambio es una **operación cifrada y firmada** (ej. "ajustar Leche −1"), con metadatos en claro mínimos (tipo de operación, alcance, autor) para que el servidor autorice a grandes rasgos (un chico no puede escribir en "Adultos");
-- el Durable Object de la casa le asigna un número de orden y la reparte;
-- cada dispositivo aplica las operaciones en ese orden con el **mismo `domain.ts`** y verifica firma y permisos con `permissions.ts`;
-- las cantidades son deltas (dos consumos simultáneos no se pisan); en ediciones gana la última por campo; borrar gana sobre editar;
-- local primero: se escribe en IndexedDB al instante y se sube cuando hay conexión.
+- **Captura**: un middleware de Dexie anota cada escritura de los servicios en `syncRecords`, en la misma transacción (sin tocar los servicios). Solo con la casa en la nube.
+- **Operaciones**: los cambios se agrupan por nivel, se cifran con la clave de ese nivel (AES-GCM, con casa, id, nivel, versión y autor como datos adicionales) y se firman (Ed25519). En claro viaja solo id, nivel, versión de clave y autor.
+- **Servidor**: verifica sesión, membresía, que el rol pueda escribir en ese nivel (un chico no escribe en "Adultos"), la versión vigente de la clave y **la firma**: una cookie robada sola no alcanza para escribir. El Durable Object de la casa les da número de orden, las guarda y avisa por WebSocket (sin contenido). A cada uno le baja solo lo que puede abrir.
+- **Cada dispositivo** verifica la firma con la clave del autor (fijada la primera vez que se vio: si el servidor diera otra, la sincronización se frena), abre la operación y revisa con `permissions.ts` que el autor tenga permiso. Lo que no pasa, se descarta y se cuenta.
+- **Fusión**: el orden lo da el servidor (no el reloj de cada equipo). Ediciones: gana la última, campo por campo; lo que este dispositivo no subió todavía no se pisa. Cantidades: diferencias que se suman. Borrar gana sobre editar. Cambiar el nivel de algo lo borra del nivel anterior y lo publica entero en el nuevo (con lo que hereda: ítems de la lista, comentarios, historial).
+- **Robustez**: el lote se guarda antes de mandarlo y se reintenta idéntico (mismos ids): el servidor no lo duplica y una cantidad no se resta dos veces. Una sola pestaña sincroniza a la vez (Web Locks).
+- **No viajan**: el PIN y las huellas de cada perfil (protegen el perfil en ese dispositivo). Las fotos, más adelante (R2, cifradas).
+- Local primero: se escribe en IndexedDB al instante y se sube cuando hay conexión.
 
 ### Resto (sin cambios)
 
@@ -139,7 +142,12 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
 
 **Hitos:**
 1. ✅ **Cuentas, casas e invitaciones** (`server/`, `src/lib/crypto`, `src/features/cloud`): Worker en el mismo origen (`/api/*`), D1, Better Auth con contraseña derivada en el dispositivo, identidad X25519/Ed25519, claves Familia/Adultos/Privado ensobradas, kit de recuperación, invitaciones por link/QR con el secreto en el `#`. Probado de punta a punta (API y navegador) y en CI. En producción la UI sigue en "Muy pronto" (`NEXT_PUBLIC_CLOUD`) hasta el hito 2.
-2. **Sincronización cifrada** de los datos de la casa (Durable Object por casa, operaciones firmadas, niveles de privacidad por cosa); con esto la casa local pasa a la nube y el indicador a "Nube cifrada".
+2. 🔄 **Sincronización cifrada** de los datos de la casa.
+   - ✅ Durable Object por casa, operaciones cifradas y firmadas, verificación de firma en el servidor y en cada dispositivo, permisos verificados al recibir, fusión por campo con cantidades como diferencias, avisos en tiempo real.
+   - ✅ "Crear mi casa" sube la casa de este dispositivo; unirse (o entrar en otro dispositivo) baja la casa y deja elegir un perfil libre ("Adulto" → Flor). El perfil queda atado a la cuenta y el dispositivo entra directo con él.
+   - ✅ Indicador "Nube cifrada" con su estado (al día, sincronizando, sin conexión, problema) y Ajustes → Datos: última vez, sincronizar ahora, salir de la nube en este dispositivo (borrando o conservando la copia). Importar se bloquea con la casa en la nube.
+   - ✅ Probado: tests de fusión, niveles y permisos; middleware con IndexedDB real (`fake-indexeddb`) y los servicios de verdad; API de punta a punta (incluye firmas falsas, operaciones alteradas, chico escribiendo en Adultos); dos navegadores (Ana y Flor) con consumo en vivo y simultáneo.
+   - Sigue: elegir el nivel (Familia, Adultos, Privado) en listas, proyectos, recetas y eventos, y una página de Privacidad; después, `NEXT_PUBLIC_CLOUD=1` en producción.
 3. **Recuperación y dispositivos**: "olvidé mi contraseña" con el kit, aprobar un dispositivo nuevo por QR, revocar, rotación de claves al sacar a alguien, Google/GitHub/passkeys, emails (Resend).
 
 

@@ -6,12 +6,15 @@ import { CURRENCIES, type Currency } from "@/features/prices/domain";
 import { parseMoney, type ListBudget } from "@/features/shopping/domain";
 import { isAppearanceColor, isAppearanceIcon, type AppearanceColor, type AppearanceIcon } from "@/lib/appearance";
 import { ValidationError } from "@/lib/errors";
+import type { Privacy } from "@/lib/sync/scope";
 
 export type ProjectStatus = "active" | "done";
 
 export interface Project {
   id: string;
   name: string;
+  /** Quién lo ve con la casa en la nube (por defecto, Familia). */
+  privacy?: Privacy;
   notes?: string;
   /** Presupuesto total del proyecto, en centavos de `currency`. */
   budgetCents?: number;

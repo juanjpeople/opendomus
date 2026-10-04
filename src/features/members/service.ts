@@ -5,11 +5,12 @@
  * QUITARLA (resetear un PIN olvidado), nunca poner un PIN en nombre de otro.
  */
 import { recordActivity } from "@/features/activity/service";
-import { assertCan, can, type Actor } from "@/lib/auth/permissions";
+import { APPEARANCE_COLORS } from "@/lib/appearance";
+import { assertCan, can, type Actor, type Role } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { NotFoundError, PermissionError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
-import { isValidPin, parseMember, type BiometricCredential, type MemberInput } from "./domain";
+import { isValidPin, MEMBER_LIMITS, parseMember, type BiometricCredential, type MemberInput } from "./domain";
 import { hashPin } from "./security";
 
 async function adminCount() {
@@ -54,6 +55,36 @@ export async function deleteMember(actor: Actor | null, id: string) {
     });
     await recordActivity(actor, { module: "members", action: "delete", entityId: id, entityName: member.name });
   });
+}
+
+/**
+ * Ata un perfil a una cuenta de la nube, o crea el perfil de quien se une a la casa. Sin chequeo
+ * de permisos: lo hace cada persona sobre sí misma (puede ser un chico). Cada dispositivo verifica
+ * al recibirlo que solo tome un perfil libre de su mismo rol (`src/lib/sync/policy.ts`).
+ */
+export async function linkMemberToAccount(input: { memberId?: string; userId: string; name: string; role: Role }): Promise<string> {
+  const now = Date.now();
+  const name = input.name.trim().slice(0, MEMBER_LIMITS.nameMaxLength) || input.role;
+  return db.transaction("rw", db.members, db.activity, async () => {
+    const existing = input.memberId ? await db.members.get(input.memberId) : undefined;
+    if (existing) {
+      await db.members.update(existing.id, { userId: input.userId, name, role: input.role, updatedAt: now });
+      return existing.id;
+    }
+    const members = await db.members.toArray();
+    const used = new Set(members.map((member) => member.color));
+    const color = APPEARANCE_COLORS.find((candidate) => !used.has(candidate)) ?? "cyan";
+    const id = createId();
+    await db.members.add({ id, name, role: input.role, color, userId: input.userId, createdAt: now, updatedAt: now });
+    await recordActivity({ id, name, role: input.role }, { module: "members", action: "create", entityId: id, entityName: name });
+    return id;
+  });
+}
+
+/** Un admin cambió el rol de una cuenta en la nube: su perfil en la casa lo refleja. */
+export async function setAccountRole(actor: Actor | null, userId: string, role: Role) {
+  assertCan(actor, "members.manage");
+  await db.members.where("userId").equals(userId).modify({ role, updatedAt: Date.now() });
 }
 
 // --- Seguridad del perfil ---------------------------------------------------------

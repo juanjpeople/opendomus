@@ -6,6 +6,7 @@ import Dexie from "dexie";
 import type { Actor } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { createId } from "@/lib/id";
+import { untracked } from "@/lib/sync/middleware";
 import { ACTIVITY_LIMITS, type ActivityEntry } from "./domain";
 
 type NewActivity = Omit<ActivityEntry, "id" | "at" | "actorId" | "actorName">;
@@ -40,6 +41,10 @@ export async function recordActivity(actor: Actor, entry: NewActivity): Promise<
 export async function pruneActivity() {
   const excess = (await db.activity.count()) - ACTIVITY_LIMITS.maxEntries;
   if (excess <= 0) return;
-  const oldest = await db.activity.orderBy("at").limit(excess).primaryKeys();
-  await db.activity.bulkDelete(oldest);
+  await db.transaction("rw", db.activity, async (tx) => {
+    // Limpieza de ESTE dispositivo: con la casa en la nube no se sube (cada uno recorta lo suyo).
+    untracked(tx);
+    const oldest = await db.activity.orderBy("at").limit(excess).primaryKeys();
+    await db.activity.bulkDelete(oldest);
+  });
 }

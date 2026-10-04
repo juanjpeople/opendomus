@@ -18,10 +18,14 @@ import {
   seal,
   sealEnvelope,
   sha256,
+  sign,
   toB64u,
   unlockIdentity,
+  verify,
+  type Identity,
   type Scope,
 } from "../../src/lib/crypto";
+import { opContext, opSigningData, type StoredOp, type WireOp } from "../../src/lib/sync/protocol";
 
 const API = process.env.API ?? "http://127.0.0.1:8787";
 const ORIGIN = "http://localhost:3000";
@@ -149,4 +153,87 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   // Sin sesión, nada: /me responde que no hay nadie y lo demás exige sesión.
   assert.equal((await new Client().call("GET", "/api/me")).body.user, null);
   assert.equal((await new Client().call("GET", `/api/households/${householdId}/members`)).status, 401);
+
+  // --- Sincronización: operaciones cifradas y firmadas ---
+  const anaFamily = familyKey;
+  const anaAdults = await importScopeKey(raw.adults);
+  const anaPrivate = await importScopeKey(raw.private);
+  const op = async (who: { identity: Identity; userId: string }, scope: Scope, key: CryptoKey, payload: unknown, overrides: Partial<WireOp> = {}) => {
+    const base = { id: crypto.randomUUID(), scope, keyVersion: 1, ...overrides };
+    const body = overrides.body ?? (await seal(key, JSON.stringify(payload), opContext(householdId, base, who.userId)));
+    const unsigned = { ...base, body, sig: "" };
+    return { ...unsigned, sig: overrides.sig ?? (await sign(who.identity, opSigningData(householdId, unsigned, who.userId))) };
+  };
+  const push = (who: { client: Client }, ops: WireOp[]) => who.client.call("POST", `/api/households/${householdId}/ops`, { ops });
+  const pull = (who: { client: Client }, since = 0) => who.client.call("GET", `/api/households/${householdId}/ops?since=${since}`);
+
+  const leche = await op(ana, "family", anaFamily, { changes: [{ t: "inventory", id: "leche", k: "put", f: { name: "Leche" } }] });
+  const first = await push(ana, [leche]);
+  assert.equal(first.status, 200, JSON.stringify(first.body));
+  // Reintentar lo mismo (se cortó la conexión antes de la respuesta) no duplica: mismo número.
+  assert.deepEqual((await push(ana, [leche])).body.acks, first.body.acks);
+  const regalo = await op(ana, "adults", anaAdults, { changes: [{ t: "shoppingList", id: "regalo", k: "put", f: { name: "Regalo de Tomi" } }] });
+  const diario = await op(ana, "private", anaPrivate, { changes: [{ t: "events", id: "diario", k: "put", f: { title: "Solo mío" } }] });
+  assert.equal((await push(ana, [regalo, diario])).status, 200);
+
+  // Flor (adulta) baja Familia y Adultos, no lo privado de Ana. Abre y verifica cada operación.
+  const florPull = await pull(flor);
+  assert.equal(florPull.status, 200);
+  assert.deepEqual(florPull.body.ops.map((stored: StoredOp) => stored.id), [leche.id, regalo.id]);
+  const stored: StoredOp = florPull.body.ops[0];
+  assert.equal(stored.author, ana.userId);
+  assert.ok(await verify(ana.upload.signPublicKey, opSigningData(householdId, stored, stored.author), stored.sig));
+  assert.deepEqual(JSON.parse(await openText(await importScopeKey(florFamily), stored.body, opContext(householdId, stored, stored.author))).changes[0].f, { name: "Leche" });
+  assert.equal(florPull.body.next, florPull.body.head);
+  // Pedir desde el último número no trae nada nuevo.
+  assert.equal((await pull(flor, florPull.body.next)).body.ops.length, 0);
+
+  // Un chico de verdad (Familia + su Privado) baja solo Familia y no puede escribir en Adultos.
+  const kidInvite2 = await inviteSecrets();
+  const kidInvite2Id = crypto.randomUUID();
+  await ana.client.call("POST", `/api/households/${householdId}/invites`, { id: kidInvite2Id, role: "kid", tokenHash: await sha256(kidInvite2.authToken), wrappedKeys });
+  const kidJoin = await kid.client.call("POST", `/api/invites/${kidInvite2Id}/accept`, {
+    authToken: kidInvite2.authToken,
+    envelopes: [
+      { scope: "family", version: 1, envelope: await sealEnvelope(raw.family, kid.upload.encPublicKey, envelopeContext(householdId, "family", 1, kid.userId)) },
+      { scope: "private", version: 1, envelope: await sealEnvelope(newScopeKey(), kid.upload.encPublicKey, envelopeContext(householdId, "private", 1, kid.userId)) },
+    ],
+  });
+  assert.equal(kidJoin.status, 201, JSON.stringify(kidJoin.body));
+  assert.deepEqual((await pull(kid)).body.ops.map((stored: StoredOp) => stored.id), [leche.id]);
+  assert.equal((await push(kid, [await op(kid, "adults", anaAdults, { changes: [] })])).status, 403);
+
+  // Firmas: una operación firmada por otra persona, o modificada después de firmar, no entra.
+  const forged = await op(flor, "family", anaFamily, { changes: [] });
+  assert.equal((await push(ana, [forged])).status, 400);
+  const tampered = await op(ana, "family", anaFamily, { changes: [] });
+  assert.equal((await push(ana, [{ ...tampered, body: leche.body }])).status, 400);
+  // El servidor tampoco puede cambiar de nivel una operación: deja de abrir en el dispositivo.
+  const moved = { ...stored, scope: "adults" as const };
+  await assert.rejects(openText(await importScopeKey(florFamily), moved.body, opContext(householdId, moved, moved.author)));
+  // Versión de clave vieja o futura: rechazada.
+  assert.equal((await push(ana, [await op(ana, "family", anaFamily, { changes: [] }, { keyVersion: 2 })])).status, 409);
+  // Reusar el id de una operación ajena: conflicto.
+  assert.equal((await push(flor, [await op(flor, "family", anaFamily, { changes: [] }, { id: leche.id })])).status, 409);
+  // Sin Origin, sin sesión o sin ser de la casa: nada.
+  assert.equal((await ana.client.call("POST", `/api/households/${householdId}/ops`, { ops: [leche] }, { origin: null })).status, 403);
+  assert.equal((await new Client().call("GET", `/api/households/${householdId}/ops`)).status, 401);
+
+  // Avisos en tiempo real: sin Origin conocido, rechazado; con sesión y Origin, llega el último número.
+  const live = (origin: string, client: Client | null) =>
+    new Promise<number | "rejected">((resolve) => {
+      const headers: Record<string, string> = { Origin: origin };
+      if (client) headers.Cookie = [...client.cookies].map(([name, value]) => `${name}=${value}`).join("; ");
+      // Node acepta encabezados al abrir un WebSocket (el navegador manda Origin y cookies solo).
+      const socket = new WebSocket(`${API.replace(/^http/, "ws")}/api/households/${householdId}/live`, { headers } as unknown as string[]);
+      socket.onmessage = (event) => {
+        resolve(JSON.parse(String(event.data)).seq);
+        socket.close();
+      };
+      socket.onerror = () => resolve("rejected");
+    });
+  assert.equal(await live("https://malicioso.example", flor.client), "rejected");
+  assert.equal(await live(ORIGIN, null), "rejected");
+  // Lo rechazado nunca llegó al registro: siguen siendo las tres operaciones de Ana.
+  assert.equal(await live(ORIGIN, flor.client), florPull.body.head);
 });

@@ -4,6 +4,7 @@ import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { AppShell } from "@/components/layout/AppShell";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { PwaBridge } from "@/components/pwa/PwaBridge";
+import { CloudSync } from "@/features/cloud/components/CloudSync";
 import { I18nProvider } from "@/i18n";
 import "./globals.css";
 
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <ThemeProvider>
               <AppShell>{children}</AppShell>
               <PwaBridge />
+              <CloudSync />
             </ThemeProvider>
           </I18nProvider>
         </AntdRegistry>

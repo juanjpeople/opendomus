@@ -3,9 +3,13 @@
 import { Alert, App, Button, Flex, Input, Modal, Progress, Tag, Typography, theme } from "antd";
 import { Cloud, Download, Eraser, HardDrive, RotateCcw, TriangleAlert, Upload } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { Can } from "@/components/auth/Can";
 import { DataModeBadge } from "@/components/layout/DataModeBadge";
 import { IconTile } from "@/components/ui";
+import { LeaveCloudButton, SyncSummary } from "@/features/cloud/components/CloudDataPanel";
+import { CLOUD_ENABLED } from "@/lib/cloud/api";
+import { useDeviceStore } from "@/store/useDeviceStore";
 import { useResetPreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n";
 import { useCurrentUser } from "@/lib/auth/session";
@@ -25,6 +29,7 @@ export function DataSettings() {
   const fileRef = useRef<HTMLInputElement>(null);
   const { modal } = App.useApp();
   const [wipeOpen, setWipeOpen] = useState(false);
+  const cloud = useDeviceStore((s) => s.mode) === "cloud";
 
   useEffect(() => {
     getStorageEstimate().then(setEstimate);
@@ -108,13 +113,14 @@ export function DataSettings() {
         align="flex-start"
         style={{ padding: 16, borderRadius: token.borderRadiusLG, border: `1px solid ${token.colorBorderSecondary}`, background: token.colorFillQuaternary }}
       >
-        <IconTile icon={HardDrive} color="orange" size={44} />
+        <IconTile icon={cloud ? Cloud : HardDrive} color={cloud ? "green" : "orange"} size={44} />
         <Flex vertical gap={6} style={{ minWidth: 0, flex: 1 }}>
           <Flex align="center" gap={8} wrap>
             <Typography.Text strong>{t("dataMode.title")}</Typography.Text>
             <DataModeBadge />
           </Flex>
-          <Typography.Text type="secondary">{t("dataMode.localText")}</Typography.Text>
+          <Typography.Text type="secondary">{cloud ? t("dataMode.cloudText") : t("dataMode.localText")}</Typography.Text>
+          {cloud && <SyncSummary />}
         </Flex>
       </Flex>
       {estimate && estimate.quota > 0 && (
@@ -134,14 +140,33 @@ export function DataSettings() {
         ))}
       </SettingRow>
 
-      <SettingRow label={t("dataMode.cloudSoon")} description={t("dataMode.cloudSoonText")}>
-        <Tag color="processing" icon={<Cloud />} style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
-          {t("onboarding.soon")}
-        </Tag>
-      </SettingRow>
+      {cloud ? (
+        <SettingRow label={t("cloud.leave.title")} description={t("cloud.leave.rowText")}>
+          <LeaveCloudButton />
+        </SettingRow>
+      ) : CLOUD_ENABLED ? (
+        <SettingRow label={t("dataMode.toCloud")} description={t("dataMode.toCloudText")}>
+          {adminOnly((disabled) => (
+            <Link href="/cuenta?modo=crear&siguiente=casa" aria-disabled={disabled} style={disabled ? { pointerEvents: "none" } : undefined}>
+              <Button type="primary" icon={<Cloud />} disabled={disabled}>
+                {t("dataMode.toCloudButton")}
+              </Button>
+            </Link>
+          ))}
+        </SettingRow>
+      ) : (
+        <SettingRow label={t("dataMode.cloudSoon")} description={t("dataMode.cloudSoonText")}>
+          <Tag color="processing" icon={<Cloud />} style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            {t("onboarding.soon")}
+          </Tag>
+        </SettingRow>
+      )}
 
-      <SettingRow label={t("settings.data.import.title")} description={t("settings.data.import.text")}>
-        {adminOnly((disabled) => (
+      <SettingRow label={t("settings.data.import.title")} description={cloud ? t("settings.data.import.cloudText") : t("settings.data.import.text")}>
+        {adminOnly((adminDisabled) => {
+          // Con la casa en la nube, importar reemplazaría la casa de toda la familia.
+          const disabled = adminDisabled || cloud;
+          return (
           <>
             <input
               ref={fileRef}
@@ -158,7 +183,8 @@ export function DataSettings() {
               {t("settings.data.import.button")}
             </Button>
           </>
-        ))}
+          );
+        })}
       </SettingRow>
 
       <SettingRow label={t("settings.data.cache.title")} description={t("settings.data.cache.text")}>

@@ -41,6 +41,8 @@ export interface ActivityEntry {
   containerId?: string;
   /** Nombre del lugar al momento de la acción ("Heladera", "Taller"…). */
   place?: string;
+  /** Lista de compras donde ocurrió: la entrada hereda su privacidad (lo de "Adultos" no lo ven los chicos). */
+  listId?: string;
   /** Ajustes de cantidad. */
   from?: number;
   to?: number;

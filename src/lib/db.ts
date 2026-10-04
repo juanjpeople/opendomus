@@ -11,6 +11,8 @@ import type { Project } from "@/features/projects/domain";
 import { HOME_LIST_ID, type ShoppingCandidate, type ShoppingList, type ShoppingListItem } from "@/features/shopping/domain";
 import type { Container, Space } from "@/features/storage/domain";
 import { buildDefaultStorage } from "@/features/storage/seed";
+import type { SyncRecord } from "@/lib/sync/merge";
+import { syncMiddleware } from "@/lib/sync/middleware";
 
 /**
  * Base de datos local (IndexedDB). Solo los servicios (`src/features/<x>/service.ts`)
@@ -36,7 +38,16 @@ export const db = new Dexie("OpenDomusDB") as Dexie & {
   recipes: EntityTable<Recipe, "id">;
   photos: EntityTable<Photo, "id">;
   comments: EntityTable<Comment, "id">;
+  /** Sincronización: qué falta subir de cada cosa y hasta dónde se conoce cada campo. */
+  syncRecords: EntityTable<SyncRecord, "k">;
+  /** Sincronización: hasta dónde se bajó, lo que está en viaje y las claves conocidas de la casa. */
+  syncState: EntityTable<SyncStateEntry, "key">;
 };
+
+export interface SyncStateEntry {
+  key: string;
+  value: unknown;
+}
 
 /**
  * Historial completo del esquema. Se declara en una función para poder abrir otra base con
@@ -156,9 +167,20 @@ export function declareSchema(target: Dexie, upTo = Infinity) {
         entry.listId ??= HOME_LIST_ID;
       });
     });
+
+  // v10: sincronización con la nube (ver `src/lib/sync`). Los miembros guardan su cuenta
+  // (`userId`) y el historial, la lista donde pasó (para heredar su privacidad).
+  if (upTo >= 10) target.version(10).stores({
+    members: "id, name, userId",
+    activity: "id, at, [containerId+at], [entityId+at], listId",
+    syncRecords: "k, pending",
+    syncState: "key",
+  });
 }
 
 declareSchema(db);
+// Cada escritura de lo que se sincroniza queda anotada para subirla (solo con la casa en la nube).
+db.use(syncMiddleware);
 
 /** Casa nueva: arranca con lugares de ejemplo (Cocina con Heladera y Alacena, Taller) y los perfiles base. */
 db.on("populate", async (tx) => {

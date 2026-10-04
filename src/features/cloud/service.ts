@@ -97,14 +97,12 @@ export async function signIn(input: { email: string; password: string }): Promis
   return sessionFrom(me, await unlockIdentity(me.keys, keys.encKey));
 }
 
-/** Al abrir la app: si hay sesión y este dispositivo tiene la identidad, entra sin pedir nada. */
+/**
+ * Al abrir la app: si hay sesión y este dispositivo tiene la identidad, entra sin pedir nada.
+ * `null` = no hay sesión. Sin conexión (o con el servidor caído) lanza: no es lo mismo que no tener sesión.
+ */
 export async function restoreSession(): Promise<CloudSession | null> {
-  let me: MeResponse;
-  try {
-    me = await api<MeResponse>("GET", "/me");
-  } catch {
-    return null;
-  }
+  const me = await api<MeResponse>("GET", "/me");
   if (!me.user) return null;
   const stored = await loadIdentity(me.user.id);
   if (!stored) return null;

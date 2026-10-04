@@ -9,7 +9,8 @@ import { getErrorMessage } from "@/lib/errors";
 import * as service from "./service";
 import type { CloudSession } from "./service";
 
-type Status = "idle" | "restoring" | "signed-out" | "ready";
+/** `offline`: no se pudo preguntar (sin conexión o servidor caído); se reintenta al volver la conexión. */
+type Status = "idle" | "restoring" | "signed-out" | "offline" | "ready";
 
 /**
  * Sesión de la nube en memoria (la identidad son CryptoKey no exportables: no se persiste en
@@ -29,15 +30,24 @@ export const useCloudStore = create<CloudState>()((set) => ({
   setStatus: (status) => set({ status }),
 }));
 
-/** La sesión de la nube; la primera vez que se pide, la recupera (cookie + llavero). */
+/** Recupera la sesión (cookie + llavero del dispositivo). */
+export async function restoreCloudSession() {
+  if (useCloudStore.getState().status === "restoring") return;
+  useCloudStore.getState().setStatus("restoring");
+  try {
+    useCloudStore.getState().setSession(await service.restoreSession());
+  } catch {
+    useCloudStore.getState().setStatus("offline");
+  }
+}
+
+/** La sesión de la nube; la primera vez que se pide, la recupera. */
 export function useCloudSession() {
   const status = useCloudStore((s) => s.status);
   const session = useCloudStore((s) => s.session);
 
   useEffect(() => {
-    if (!CLOUD_ENABLED || useCloudStore.getState().status !== "idle") return;
-    useCloudStore.getState().setStatus("restoring");
-    service.restoreSession().then((restored) => useCloudStore.getState().setSession(restored));
+    if (CLOUD_ENABLED && useCloudStore.getState().status === "idle") void restoreCloudSession();
   }, []);
 
   return { status: CLOUD_ENABLED ? status : ("signed-out" as Status), session };

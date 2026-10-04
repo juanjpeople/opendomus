@@ -4,6 +4,7 @@
  */
 import { INVENTORY_LIMITS, isUnit, type InventoryItem } from "@/features/inventory/domain";
 import { ValidationError } from "@/lib/errors";
+import type { Privacy } from "@/lib/sync/scope";
 
 /** Etiquetas fijas (se traducen con `recipes.tags.<id>`): así se filtran igual en cualquier idioma. */
 export const RECIPE_TAGS = ["quick", "vegetarian", "vegan", "kids", "healthy", "dessert", "budget", "batch", "party"] as const;
@@ -22,6 +23,8 @@ export interface RecipeIngredient {
 export interface Recipe {
   id: string;
   name: string;
+  /** Quién la ve con la casa en la nube (por defecto, Familia). Sus comentarios heredan el nivel. */
+  privacy?: Privacy;
   servings: number;
   /** Tiempo total aproximado, en minutos. */
   minutes: number;
