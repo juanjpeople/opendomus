@@ -128,7 +128,8 @@ app.post("/keys", async (c) => {
 
 app.get("/me", async (c) => {
   const user = await requireUser(c);
-  if (!user) return c.json({ error: "unauthorized" }, 401);
+  // "¿Hay sesión?" es una pregunta normal al abrir la app, no un error: sin sesión, `user: null`.
+  if (!user) return c.json({ user: null });
   const keys = await c.env.DB.prepare(
     "select kdf_version as kdfVersion, enc_public_key as encPublicKey, sign_public_key as signPublicKey, private_keys as privateKeys from user_keys where user_id = ?",
   )

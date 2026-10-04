@@ -15,6 +15,7 @@ import { useCurrentUser } from "@/lib/auth/session";
 import { SPRING } from "@/lib/motion";
 import { isSecured, type Member } from "../domain";
 import { useMemberActions, useMembers } from "../hooks";
+import { CloudHouseholdPanel } from "@/features/cloud/components/CloudHouseholdPanel";
 import { MemberModal } from "./MemberModal";
 import { SecurityDrawer } from "./SecurityDrawer";
 
@@ -49,6 +50,8 @@ export function MembersPage() {
           ))}
         </Row>
       </Stagger>
+
+      <CloudHouseholdPanel />
 
       <MemberModal open={editing !== null} member={editing === "new" || editing === null ? undefined : editing} onClose={() => setEditing(null)} />
       {/* Se busca en vivo: si se agrega un PIN o una huella, el panel se actualiza solo. */}

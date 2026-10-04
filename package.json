@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/fix-export-segments.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "node --import ./scripts/test-hooks.mjs --test \"src/**/*.test.ts\" \"src/**/*.test.mjs\"",

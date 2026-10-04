@@ -5,11 +5,11 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, HardDrive, House, ShieldCheck, UserPlus, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { HouseMark } from "@/components/illustrations/HouseMark";
-import { LanguageSwitch, ThemeModeSwitch } from "@/components/layout/HeaderActions";
+import { PublicLayout } from "@/components/layout/PublicLayout";
 import { Reveal } from "@/components/motion";
 import { IconTile } from "@/components/ui";
 import { useT, type MessageKey } from "@/i18n";
+import { CLOUD_ENABLED } from "@/lib/cloud/api";
 import type { AppearanceColor } from "@/lib/appearance";
 import { SPRING } from "@/lib/motion";
 import { useDeviceStore } from "@/store/useDeviceStore";
@@ -22,9 +22,10 @@ interface Choice {
   soon?: boolean;
 }
 
+// Crear y unirse esperan a la nube (se habilitan con NEXT_PUBLIC_CLOUD=1 hasta que esté la sincronización).
 const CHOICES: Choice[] = [
-  { id: "create", icon: House, color: "blue", soon: true },
-  { id: "join", icon: UserPlus, color: "green", soon: true },
+  { id: "create", icon: House, color: "blue", soon: !CLOUD_ENABLED },
+  { id: "join", icon: UserPlus, color: "green", soon: !CLOUD_ENABLED },
   { id: "local", icon: HardDrive, color: "orange" },
 ];
 
@@ -40,31 +41,15 @@ export function Onboarding() {
 
   function choose(choice: Choice) {
     if (choice.soon) return;
+    if (choice.id === "create") return router.push("/cuenta?modo=crear&siguiente=casa");
+    if (choice.id === "join") return router.push("/unirme");
     setMode("local");
     router.push("/");
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: `radial-gradient(ellipse 70% 40% at 50% 0%, ${token.colorPrimaryBg}, transparent 70%), ${token.colorBgLayout}`,
-      }}
-    >
-      <Flex align="center" justify="space-between" style={{ maxWidth: 1120, margin: "0 auto", padding: "16px 20px" }}>
-        <Link href="/bienvenida" style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-          <HouseMark size={24} />
-          <Typography.Text strong style={{ fontSize: token.fontSizeXL, color: token.colorPrimary, letterSpacing: "-0.02em" }}>
-            {t("common.appName")}
-          </Typography.Text>
-        </Link>
-        <Flex gap={8} align="center">
-          <LanguageSwitch />
-          <ThemeModeSwitch />
-        </Flex>
-      </Flex>
+    <PublicLayout>
 
-      <main style={{ maxWidth: 1120, margin: "0 auto", padding: "clamp(24px, 6vw, 64px) 20px 48px" }}>
         <Reveal>
           <Typography.Title style={{ textAlign: "center", letterSpacing: "-0.03em", fontSize: "clamp(2rem, 5vw, 3rem)", margin: 0 }}>
             {t("onboarding.title")}
@@ -117,8 +102,7 @@ export function Onboarding() {
             </Button>
           </Link>
         </Flex>
-      </main>
-    </div>
+    </PublicLayout>
   );
 }
 

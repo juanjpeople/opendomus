@@ -146,6 +146,7 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   // Una contraseña humana cruda (no derivada) no se acepta.
   const raw1 = await new Client().call("POST", "/api/auth/sign-up/email", { name: "X", email: `x-${unique}@casa.test`, password: "123456789" });
   assert.notEqual(raw1.status, 200);
-  // Sin sesión, nada.
-  assert.equal((await new Client().call("GET", "/api/me")).status, 401);
+  // Sin sesión, nada: /me responde que no hay nadie y lo demás exige sesión.
+  assert.equal((await new Client().call("GET", "/api/me")).body.user, null);
+  assert.equal((await new Client().call("GET", `/api/households/${householdId}/members`)).status, 401);
 });

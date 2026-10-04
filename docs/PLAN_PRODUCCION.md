@@ -1,6 +1,6 @@
 # OpenDomus: plan para llevarla a producción
 
-> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida; sigue: monorepo, servidor y cuentas). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
+> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: servidor, cuentas, casas e invitaciones cifradas · sigue el hito 2: sincronización). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
 > Mantener este archivo al día al cerrar cada paso.
 
 ## Contexto
@@ -135,7 +135,13 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
 7. ✅ **Deploy** en **Cloudflare** (Workers con archivos estáticos, `wrangler.jsonc`) (sigue siendo local-first; sirve para probar en el celular por HTTPS).
 8. **Monorepo**: mover a `apps/web` y extraer `packages/core` (dominio, permisos, i18n). Sin cambiar comportamiento.
 
-## Etapa 2: nube (Cloudflare), cuentas, casas, invitaciones y cifrado
+## 🔄 Etapa 2: nube (Cloudflare), cuentas, casas, invitaciones y cifrado
+
+**Hitos:**
+1. ✅ **Cuentas, casas e invitaciones** (`server/`, `src/lib/crypto`, `src/features/cloud`): Worker en el mismo origen (`/api/*`), D1, Better Auth con contraseña derivada en el dispositivo, identidad X25519/Ed25519, claves Familia/Adultos/Privado ensobradas, kit de recuperación, invitaciones por link/QR con el secreto en el `#`. Probado de punta a punta (API y navegador) y en CI. En producción la UI sigue en "Muy pronto" (`NEXT_PUBLIC_CLOUD`) hasta el hito 2.
+2. **Sincronización cifrada** de los datos de la casa (Durable Object por casa, operaciones firmadas, niveles de privacidad por cosa); con esto la casa local pasa a la nube y el indicador a "Nube cifrada".
+3. **Recuperación y dispositivos**: "olvidé mi contraseña" con el kit, aprobar un dispositivo nuevo por QR, revocar, rotación de claves al sacar a alguien, Google/GitHub/passkeys, emails (Resend).
+
 
 - `apps/server`:
   - Hono + Better Auth (email y contraseña, magic link, Google, GitHub, passkeys) + Drizzle.
