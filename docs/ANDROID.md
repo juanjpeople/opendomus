@@ -64,19 +64,27 @@ es la exportación/importación elegida por el usuario.
 
 ## Verificación pendiente antes de distribuir
 
-Ya pasaron tres pruebas instrumentadas con Android 15 sin Wi-Fi ni datos móviles:
-inicio local y persistencia al recrear la actividad, navegación directa a la pantalla
-de cuenta local, ausencia de service workers, escritura UTF-8 de un respaldo y
-cancelación. Los resultados del selector de documentos se simulan con Espresso;
-la escritura y el puente JavaScript/Java son reales. Esto no prueba todos los
-proveedores de almacenamiento ni una actualización entre versiones distintas.
+La ejecución Android de CI `37240235546` pasó tres pruebas instrumentadas con
+Android 15 sin Wi-Fi ni datos móviles y una prueba posterior de actualización:
 
-- Inspección del APK final (la primera compilación y lint Android pasaron en CI).
-- Inicio offline, navegación directa y recarga de rutas internas.
-- Crear datos, cerrar y abrir la app, actualizar sin desinstalar y comprobar datos.
-- Exportar, cancelar, fallar al guardar e importar un respaldo con fotos y contenedores.
-- Cámara/QR y selector de imágenes, incluyendo permiso denegado.
-- Apariencia con teclado, barras del sistema, tema claro y oscuro.
+- Inicio local, persistencia al recrear la actividad, navegación directa y ausencia de service workers.
+- Agregar una foto a un contenedor y anotar contenido libre desde la interfaz.
+- Exportar por el selector nativo, comprobar el JSON y restaurar foto y contenido desde Ajustes.
+- Escritura UTF-8 del respaldo y cancelación sin informar éxito.
+- Instalar un APK con `versionCode=2` sobre el anterior, con la misma firma e identidad,
+  sin desinstalar, y verificar sesión, contenedor, contenido y foto conservados.
+
+Los resultados de los selectores se simulan con Espresso; el puente, la escritura,
+la interfaz y la base local son reales. No prueba todos los proveedores de documentos
+ni una actualización desde cada versión histórica. Las capturas usan datos sintéticos.
+Las regresiones de navegador también cubren cancelar una detección y salir antes de
+recibir el permiso de cámara; no reemplazan una prueba de cámara física en Android.
+
+Pendiente antes de distribuir:
+
+- Falla de escritura nativa y proveedores de documentos diferentes al usado por el test.
+- Cámara/QR real, incluyendo permiso denegado.
+- Apariencia con teclado, barras del sistema y ambos temas en dispositivos físicos.
 - Revisar exclusión de datos de backup y transferencia entre dispositivos según versión Android.
 
 Hasta completar esas pruebas, el APK es experimental y el PR debe permanecer
