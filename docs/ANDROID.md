@@ -71,30 +71,35 @@ es la exportación/importación elegida por el usuario.
 
 ## Verificación pendiente antes de distribuir
 
-La ejecución Android de CI `37240235546` pasó tres pruebas instrumentadas con
-Android 15 sin Wi-Fi ni datos móviles y una prueba posterior de actualización:
+La ejecución Android de CI `37244332219` pasó cinco pruebas instrumentadas sin
+fallos ni omisiones con Android 15 sin Wi-Fi ni datos móviles, y una prueba
+posterior de actualización:
 
 - Inicio local, persistencia al recrear la actividad, navegación directa y ausencia de service workers.
 - Agregar una foto a un contenedor y anotar contenido libre desde la interfaz.
 - Exportar por el selector nativo, comprobar el JSON y restaurar foto y contenido desde Ajustes.
-- Escritura UTF-8 del respaldo y cancelación sin informar éxito.
+- Escritura UTF-8 del respaldo, cancelación sin informar éxito y falla con mensaje genérico seguida de reintento exitoso.
+- Captura de cámara real del emulador y cierre de su stream.
+- Lectura QR desde un video sintético mediante el decodificador local, navegación y cierre de cámara.
 - Instalar un APK con `versionCode=2` sobre el anterior, con la misma firma e identidad,
   sin desinstalar, y verificar sesión, contenedor, contenido y foto conservados.
 
 Los resultados de los selectores se simulan con Espresso; el puente, la escritura,
-la interfaz y la base local son reales. No prueba todos los proveedores de documentos
-ni una actualización desde cada versión histórica. Las capturas usan datos sintéticos.
-La ejecución posterior `37241186473` confirmó captura y cierre de un stream de cámara
-real del emulador y falla de escritura con mensaje genérico y reintento exitoso.
-También detectó que el `BarcodeDetector` de ese WebView no leía el QR de prueba.
-Se reemplazó por el lector local compartido: seis regresiones de navegador pasan,
-incluida la primera lectura sin conexión tras instalar la PWA, sin visitar antes
-el escáner y con `BarcodeDetector` deshabilitado. El video de esa prueba es sintético;
-la decodificación, navegación y cierre del stream son reales. La regresión Android
-usa el mismo QR y la pantalla real con Wi-Fi y datos apagados. La ejecución
-`37243268831` completó cuatro pruebas y quedó esperando en el onboarding de la
-quinta, antes del QR; se canceló y se recuperaron sus logs. El siguiente intento
-agrega límites y diagnóstico, sin considerar aprobada la lectura nativa todavía. Estas comprobaciones no reemplazan una cámara física en Android.
+la interfaz y la base local son reales. El video QR es sintético; la decodificación
+es real. No prueba todos los proveedores ni una actualización desde cada versión
+histórica. Las capturas usan datos sintéticos. La captura QR de esa ejecución llegó
+durante la transición: el test se reforzó para esperar el contenedor restaurado,
+su contenido y su foto; esa comprobación adicional necesita una nueva ejecución.
+
+La ejecución previa `37243268831` se canceló tras quedar esperando en onboarding,
+antes del QR. Se recuperaron sus logs; los límites por prueba y fase conservan
+ahora el diagnóstico de futuras esperas. No se atribuye esa espera a una causa
+confirmada solo porque la siguiente ejecución pasó.
+
+Seis regresiones de navegador pasan, incluida la primera lectura sin conexión tras
+instalar la PWA, sin visitar antes el escáner y con `BarcodeDetector` deshabilitado.
+Cubren permisos tardíos, cancelar el inicio de video, navegación y cierre del stream.
+Estas comprobaciones no reemplazan una cámara física en Android.
 
 Pendiente antes de distribuir:
 

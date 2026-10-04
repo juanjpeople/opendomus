@@ -70,5 +70,6 @@ test("QR: primera lectura sin conexión ni BarcodeDetector libera su stream", as
   await page.goto("/inventario/escanear");
   await page.getByRole("button", { name: "Activar cámara" }).click();
   await expect(page).toHaveURL(/\/c\?code=K7QM$/);
+  await expect(page.getByText("Este contenedor no está en este dispositivo", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => sessionStorage.getItem("qrTestStopped"))).toBe("true");
 });

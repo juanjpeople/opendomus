@@ -152,9 +152,20 @@ public class NativeFlowTest {
             assertTrue(tables.getJSONArray("containerContents").toString().contains("Cables Android"));
             String containerId = tables.getJSONArray("photos").getJSONObject(0).getString("ownerId");
             JSONArray containers = tables.getJSONArray("containers");
+            String previousCode = null;
             for (int i = 0; i < containers.length(); i++) {
                 JSONObject container = containers.getJSONObject(i);
-                if (container.getString("id").equals(containerId)) container.put("name", "Android importado");
+                if (container.getString("id").equals(containerId)) previousCode = container.getString("code");
+            }
+            assertNotNull(previousCode);
+            for (int i = 0; i < containers.length(); i++) {
+                JSONObject container = containers.getJSONObject(i);
+                if (container.getString("id").equals(containerId)) {
+                    container.put("name", "Android importado");
+                    container.put("code", "K7QM");
+                } else if (container.getString("code").equals("K7QM")) {
+                    container.put("code", previousCode);
+                }
             }
             Files.write(backup.toPath(), data.toString().getBytes(StandardCharsets.UTF_8));
             intending(allOf(hasAction(Intent.ACTION_GET_CONTENT), hasType("application/json"))).respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(backupUri)));
@@ -245,7 +256,7 @@ public class NativeFlowTest {
         evaluate(scenario, "Object.defineProperty(window,'BarcodeDetector',{value:undefined,configurable:true});navigator.mediaDevices.getUserMedia=async()=>{const image=new Image();image.src=" + JSONObject.quote(dataUrl) + ";await image.decode();const canvas=document.createElement('canvas');canvas.width=canvas.height=320;const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);const stream=canvas.captureStream(10);window.__qrStream=stream;sessionStorage.removeItem('qrTestStopped');for(const track of stream.getTracks()){const stop=track.stop.bind(track);track.stop=()=>{stop();sessionStorage.setItem('qrTestStopped',String(stream.getTracks().every(t=>t.readyState==='ended')))}}window.__qrTimer=setInterval(()=>ctx.drawImage(image,0,0),100);return stream}");
         try {
             tap(scenario, "[...document.querySelectorAll('button')].find(b=>/Activar cámara|Turn on camera/.test(b.textContent))");
-            await(scenario, "location.pathname === '/c' && new URL(location.href).searchParams.get('code') === 'K7QM'");
+            await(scenario, "location.pathname === '/inventario/ver' && document.body.innerText.includes('Android importado') && document.body.innerText.includes('Cables Android') && document.querySelector('.od-photo-tile img')?.naturalWidth === 32");
             await(scenario, "sessionStorage.getItem('qrTestStopped') === 'true'");
             screenshot("qr-decoded-offline");
         } finally {
