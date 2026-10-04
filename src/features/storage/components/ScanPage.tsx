@@ -10,6 +10,7 @@ import { Reveal } from "@/components/motion";
 import { PageHeader } from "@/components/ui";
 import { useT } from "@/i18n";
 import { isValidContainerCode, normalizeContainerCode, STORAGE_LIMITS } from "../domain";
+import { codeFromScan } from "../scan";
 import { qrHref } from "@/lib/navigation/routes";
 
 /** API nativa de lectura de códigos (Chromium/Android). No está en los tipos de TypeScript. */
@@ -20,20 +21,6 @@ type BarcodeDetectorCtor = new (options: { formats: string[] }) => BarcodeDetect
 
 function getDetector(): BarcodeDetectorCtor | undefined {
   return typeof window !== "undefined" ? (window as Window & { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector : undefined;
-}
-
-/** Extrae el código de un QR de OpenDomus (URL `/c/<código>`, `/c?code=<código>` o el código solo). */
-export function codeFromScan(raw: string): string | null {
-  const candidate = (() => {
-    try {
-      const url = new URL(raw);
-      return url.pathname.match(/\/c\/([^/]+)\/?$/)?.[1] ?? (url.pathname.replace(/\/$/, "") === "/c" ? (url.searchParams.get("code") ?? "") : "");
-    } catch {
-      return raw;
-    }
-  })();
-  const code = normalizeContainerCode(decodeURIComponent(candidate));
-  return isValidContainerCode(code) ? code : null;
 }
 
 type Status = "idle" | "scanning" | "denied" | "invalid";
