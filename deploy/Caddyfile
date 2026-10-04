@@ -1,0 +1,23 @@
+# Ejecutar desde el directorio extraído que contiene public/.
+# SITE_ADDRESS=localhost permite HTTPS local; para LAN, configurar nombre y confianza TLS.
+{$SITE_ADDRESS:localhost} {
+	root * ./public
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		X-Frame-Options DENY
+	}
+	@revalidate not path /_next/static/*
+	header @revalidate Cache-Control "no-cache"
+	@assets path /_next/static/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@api path /api/*
+	respond @api 404
+	try_files {path} {path}.html {path}/index.html
+	file_server
+	handle_errors {
+		rewrite * /404.html
+		file_server
+	}
+}
