@@ -68,6 +68,10 @@ export const en: Messages = {
       deleteSelf: "You can't delete your own profile.",
       pinInvalid: "The PIN must have 4 to 8 digits.",
     },
+    import: {
+      invalid: "That file isn't a valid OpenDomus export.",
+      newer: "That file comes from a newer OpenDomus version. Update the app before importing it.",
+    },
     activity: {
       notUndoable: "That change can no longer be undone.",
     },
@@ -681,6 +685,16 @@ export const en: Messages = {
         text: "Download everything as a JSON file, an open format you can take anywhere.",
         button: "Export",
         done: "Export ready",
+      },
+      import: {
+        title: "Import data",
+        text: "Load a file you exported before (from this or another device). It replaces everything here.",
+        button: "Import",
+        confirmTitle: "Replace the data on this device?",
+        summary: "Export from {date} with {records} records.",
+        warning: "Everything currently on this device is replaced by the file. If in doubt, export first.",
+        confirm: "Replace and import",
+        done: "Data imported. Reloading…",
       },
       cache: {
         title: "Clear cache",

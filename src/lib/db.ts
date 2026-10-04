@@ -28,92 +28,104 @@ export const db = new Dexie("OpenDomusDB") as Dexie & {
   events: EntityTable<CalendarEvent, "id">;
 };
 
-// Solo se declaran los campos indexados (los usados en `where`/`orderBy`).
-db.version(1).stores({
-  inventory: "id, name, inventoryType, quantity",
-  shoppingList: "id, name, isCompleted, inventoryItemId",
-});
-
-// v2: historial de acciones.
-db.version(2).stores({
-  activity: "id, at, [module+at], [entityId+at]",
-});
-
-// v3: lugares (recintos → contenedores) y precios. Los productos pasan de un tipo fijo
-// (alacena/taller) a un contenedor; `&code` garantiza códigos de etiqueta únicos.
-db.version(3)
-  .stores({
-    inventory: "id, name, containerId, quantity",
-    spaces: "id, name",
-    containers: "id, spaceId, &code, name",
-    prices: "id, itemId, [itemId+at], store",
-    activity: "id, at, [containerId+at], [entityId+at]",
-  })
-  .upgrade(async (tx) => {
-    const { legacy, placeName } = await seedStorage(tx);
-
-    await tx
-      .table("inventory")
-      .toCollection()
-      .modify((item: InventoryItem & { inventoryType?: string }) => {
-        item.containerId = item.inventoryType === "taller" ? legacy.taller : legacy.alacena;
-        delete item.inventoryType;
-      });
-
-    await tx
-      .table("activity")
-      .toCollection()
-      .modify((entry: Omit<ActivityEntry, "module"> & { module: string }) => {
-        if (!entry.module.startsWith("inventory.")) return;
-        const containerId = entry.module === "inventory.taller" ? legacy.taller : legacy.alacena;
-        entry.module = "inventory";
-        entry.containerId = containerId;
-        entry.place = placeName(containerId);
-      });
+/**
+ * Historial completo del esquema. Se declara en una función para poder abrir otra base con
+ * el esquema de una versión vieja (`upTo`): así un export viejo se importa y las mismas
+ * migraciones de acá lo llevan a la versión actual (ver `importAllData`).
+ */
+export function declareSchema(target: Dexie, upTo = Infinity) {
+  // Solo se declaran los campos indexados (los usados en `where`/`orderBy`).
+  if (upTo >= 1) target.version(1).stores({
+    inventory: "id, name, inventoryType, quantity",
+    shoppingList: "id, name, isCompleted, inventoryItemId",
   });
 
-// v4: contenedores anidados (placard → puerta → cajón). Sin migración de datos:
-// los contenedores existentes no tienen `parentId`, o sea, están directo en su recinto.
-db.version(4).stores({
-  containers: "id, spaceId, parentId, &code, name",
-});
-
-// v5: miembros de la casa (antes eran fijos en el código) y calendario compartido.
-// Los perfiles fijos se migran con los MISMOS ids: la sesión y el historial siguen funcionando.
-db.version(5)
-  .stores({
-    members: "id, name",
-    events: "id, start, repeat",
-  })
-  .upgrade((tx) => seedMembers(tx));
-
-// v6: recupera casas que quedaron totalmente vacías al fallar el populate por HTTP.
-db.version(6)
-  .stores({})
-  .upgrade(async (tx) => {
-    const counts = await Promise.all(tx.storeNames.map((name) => tx.table(name).count()));
-    if (counts.some((count) => count > 0)) return;
-    await seedStorage(tx);
-    await seedMembers(tx);
+  // v2: historial de acciones.
+  if (upTo >= 2) target.version(2).stores({
+    activity: "id, at, [module+at], [entityId+at]",
   });
 
-// v7: lista de compras de verdad. `isCompleted` (booleano, no indexable) pasa a `status`,
-// y nace la bandeja "Para revisar" con las sugerencias automáticas del inventario.
-db.version(7)
-  .stores({
-    shoppingList: "id, status, inventoryItemId, createdAt",
-    shoppingCandidates: "id, itemId, status, createdAt",
-  })
-  .upgrade(async (tx) => {
-    await tx
-      .table("shoppingList")
-      .toCollection()
-      .modify((entry: ShoppingListItem & { isCompleted?: boolean }) => {
-        entry.status = entry.isCompleted ? "bought" : "pending";
-        entry.createdBy ??= "";
-        delete entry.isCompleted;
-      });
+  // v3: lugares (recintos → contenedores) y precios. Los productos pasan de un tipo fijo
+  // (alacena/taller) a un contenedor; `&code` garantiza códigos de etiqueta únicos.
+  if (upTo >= 3) target.version(3)
+    .stores({
+      inventory: "id, name, containerId, quantity",
+      spaces: "id, name",
+      containers: "id, spaceId, &code, name",
+      prices: "id, itemId, [itemId+at], store",
+      activity: "id, at, [containerId+at], [entityId+at]",
+    })
+    .upgrade(async (tx) => {
+      const { legacy, placeName } = await seedStorage(tx);
+
+      await tx
+        .table("inventory")
+        .toCollection()
+        .modify((item: InventoryItem & { inventoryType?: string }) => {
+          item.containerId = item.inventoryType === "taller" ? legacy.taller : legacy.alacena;
+          delete item.inventoryType;
+        });
+
+      await tx
+        .table("activity")
+        .toCollection()
+        .modify((entry: Omit<ActivityEntry, "module"> & { module: string }) => {
+          if (!entry.module.startsWith("inventory.")) return;
+          const containerId = entry.module === "inventory.taller" ? legacy.taller : legacy.alacena;
+          entry.module = "inventory";
+          entry.containerId = containerId;
+          entry.place = placeName(containerId);
+        });
+    });
+
+  // v4: contenedores anidados (placard → puerta → cajón). Sin migración de datos:
+  // los contenedores existentes no tienen `parentId`, o sea, están directo en su recinto.
+  if (upTo >= 4) target.version(4).stores({
+    containers: "id, spaceId, parentId, &code, name",
   });
+
+  // v5: miembros de la casa (antes eran fijos en el código) y calendario compartido.
+  // Los perfiles fijos se migran con los MISMOS ids: la sesión y el historial siguen funcionando.
+  if (upTo >= 5) target.version(5)
+    .stores({
+      members: "id, name",
+      events: "id, start, repeat",
+    })
+    .upgrade((tx) => seedMembers(tx));
+
+  // v6: recupera casas que quedaron totalmente vacías al fallar el populate por HTTP.
+  if (upTo >= 6) target.version(6)
+    .stores({})
+    .upgrade(async (tx) => {
+      // Solo las tablas que existen en v6: si la casa salta varias versiones de una, `tx.storeNames`
+      // ya trae las de versiones posteriores, que en este paso todavía no se pueden leer.
+      const V6_TABLES = ["inventory", "shoppingList", "activity", "spaces", "containers", "prices", "members", "events"];
+      const counts = await Promise.all(V6_TABLES.map((name) => tx.table(name).count()));
+      if (counts.some((count) => count > 0)) return;
+      await seedStorage(tx);
+      await seedMembers(tx);
+    });
+
+  // v7: lista de compras de verdad. `isCompleted` (booleano, no indexable) pasa a `status`,
+  // y nace la bandeja "Para revisar" con las sugerencias automáticas del inventario.
+  if (upTo >= 7) target.version(7)
+    .stores({
+      shoppingList: "id, status, inventoryItemId, createdAt",
+      shoppingCandidates: "id, itemId, status, createdAt",
+    })
+    .upgrade(async (tx) => {
+      await tx
+        .table("shoppingList")
+        .toCollection()
+        .modify((entry: ShoppingListItem & { isCompleted?: boolean }) => {
+          entry.status = entry.isCompleted ? "bought" : "pending";
+          entry.createdBy ??= "";
+          delete entry.isCompleted;
+        });
+    });
+}
+
+declareSchema(db);
 
 /** Casa nueva: arranca con lugares de ejemplo (Cocina con Heladera y Alacena, Taller) y los perfiles base. */
 db.on("populate", async (tx) => {

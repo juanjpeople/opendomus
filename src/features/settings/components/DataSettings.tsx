@@ -1,15 +1,15 @@
 "use client";
 
 import { Alert, App, Button, Flex, Input, Modal, Progress, Typography, theme } from "antd";
-import { Download, Eraser, HardDrive, RotateCcw, TriangleAlert } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { Download, Eraser, HardDrive, RotateCcw, TriangleAlert, Upload } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Can } from "@/components/auth/Can";
 import { useResetPreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n";
 import { useCurrentUser } from "@/lib/auth/session";
 import { downloadJson } from "@/lib/download";
 import { getErrorMessage } from "@/lib/errors";
-import { clearCache, deleteAllData, exportAllData, getStorageEstimate } from "../service";
+import { clearCache, deleteAllData, exportAllData, getStorageEstimate, importAllData, parseExport } from "../service";
 import { SettingRow } from "./SettingRow";
 
 export function DataSettings() {
@@ -19,14 +19,16 @@ export function DataSettings() {
   const user = useCurrentUser();
   const resetPreferences = useResetPreferences();
   const [estimate, setEstimate] = useState<{ usage: number; quota: number } | null>(null);
-  const [busy, setBusy] = useState<"export" | "cache" | null>(null);
+  const [busy, setBusy] = useState<"export" | "cache" | "import" | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const { modal } = App.useApp();
   const [wipeOpen, setWipeOpen] = useState(false);
 
   useEffect(() => {
     getStorageEstimate().then(setEstimate);
   }, []);
 
-  async function run(kind: "export" | "cache", action: () => Promise<void>) {
+  async function run(kind: "export" | "cache" | "import", action: () => Promise<void>) {
     setBusy(kind);
     try {
       await action();
@@ -42,6 +44,46 @@ export function DataSettings() {
       const data = await exportAllData(user);
       downloadJson(data, `opendomus-${new Date().toISOString().slice(0, 10)}.json`);
       message.success(t("settings.data.export.done"));
+    });
+
+  /** Lee el archivo, muestra qué trae y recién con la confirmación reemplaza los datos. */
+  const onImportFile = (file: File) =>
+    run("import", async () => {
+      let raw: unknown;
+      try {
+        raw = JSON.parse(await file.text());
+      } catch {
+        raw = null;
+      }
+      const preview = parseExport(raw);
+      modal.confirm({
+        title: t("settings.data.import.confirmTitle"),
+        icon: <Upload style={{ color: token.colorWarning, fontSize: 22, marginInlineEnd: 12 }} />,
+        content: (
+          <>
+            <Typography.Paragraph>
+              {t("settings.data.import.summary", {
+                date: preview.exportedAt ? format.date(preview.exportedAt, { dateStyle: "long", timeStyle: "short" }) : "—",
+                records: format.number(preview.records),
+              })}
+            </Typography.Paragraph>
+            <Alert type="warning" showIcon title={t("settings.data.import.warning")} />
+          </>
+        ),
+        okText: t("settings.data.import.confirm"),
+        okButtonProps: { danger: true },
+        cancelText: t("common.cancel"),
+        onOk: async () => {
+          try {
+            await importAllData(user, preview);
+            message.success(t("settings.data.import.done"));
+            // Recarga completa: sesión, miembros en memoria y consultas tienen que leer los datos nuevos.
+            setTimeout(() => window.location.reload(), 600);
+          } catch (error) {
+            message.error(getErrorMessage(error, t));
+          }
+        },
+      });
     });
 
   const onClearCache = () =>
@@ -73,6 +115,27 @@ export function DataSettings() {
           <Button icon={<Download />} loading={busy === "export"} disabled={disabled} onClick={onExport}>
             {t("settings.data.export.button")}
           </Button>
+        ))}
+      </SettingRow>
+
+      <SettingRow label={t("settings.data.import.title")} description={t("settings.data.import.text")}>
+        {adminOnly((disabled) => (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (file) onImportFile(file);
+              }}
+            />
+            <Button icon={<Upload />} loading={busy === "import"} disabled={disabled} onClick={() => fileRef.current?.click()}>
+              {t("settings.data.import.button")}
+            </Button>
+          </>
         ))}
       </SettingRow>
 

@@ -73,6 +73,10 @@ export const es = {
       deleteSelf: "No podés eliminar tu propio perfil.",
       pinInvalid: "El PIN tiene que tener de 4 a 8 números.",
     },
+    import: {
+      invalid: "Ese archivo no es un export válido de OpenDomus.",
+      newer: "Ese archivo es de una versión más nueva de OpenDomus. Actualizá la app antes de importarlo.",
+    },
     activity: {
       notUndoable: "Ese cambio ya no se puede deshacer.",
     },
@@ -686,6 +690,16 @@ export const es = {
         text: "Descargá todo en un archivo JSON, un formato abierto que podés llevarte a donde quieras.",
         button: "Exportar",
         done: "Exportación lista",
+      },
+      import: {
+        title: "Importar datos",
+        text: "Cargá un archivo exportado antes (de este u otro dispositivo). Reemplaza todo lo que hay acá.",
+        button: "Importar",
+        confirmTitle: "¿Reemplazar los datos de este dispositivo?",
+        summary: "Export del {date} con {records} registros.",
+        warning: "Todo lo que hay ahora en este dispositivo se reemplaza por el archivo. Si dudás, exportá primero.",
+        confirm: "Reemplazar e importar",
+        done: "Datos importados. Recargando…",
       },
       cache: {
         title: "Borrar caché",
