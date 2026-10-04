@@ -6,6 +6,20 @@
  * - Plurales: un objeto `{ one, other }` se elige con `Intl.PluralRules` según `count`.
  */
 export const es = {
+  social: {
+    signin: "Continuar con {provider}",
+    link: "Vincular {provider}",
+    linked: "{provider} vinculado",
+    signinHint: "Primero creá tu cuenta con contraseña y vinculá el proveedor desde Ajustes → Cuenta. En otro dispositivo también necesitarás tu contraseña para abrir los datos cifrados.",
+    linkHint: "Vinculá una identidad con el mismo email verificado. No cambia tu contraseña de cifrado ni te da acceso administrativo.",
+    unavailable: "No pudimos consultar o abrir los proveedores. Podés seguir usando tu contraseña y volver a intentarlo más tarde.",
+    signinFailed: "No se pudo completar el acceso con el proveedor. Entrá con tu contraseña y revisá la vinculación en Ajustes → Cuenta.",
+    unlockTitle: "Abrí tus datos cifrados",
+    unlockHint: "El proveedor verifica tu identidad. Tu contraseña de OpenDomus abre las claves en este dispositivo y no se envía al proveedor ni al servidor.",
+    unlock: "Desbloquear datos",
+    unlockFailed: "No pudimos abrir tus claves. Revisá la contraseña; si la sesión venció, volvé a entrar. También podés recuperar con tu kit.",
+    back: "Volver al inicio de sesión",
+  },
   localOnly: {
     title: "Esta instalación funciona sin servidor",
     description: "Podés organizar tu casa en este dispositivo. Las cuentas, las invitaciones y el envío de comentarios necesitan una conexión con nuestros servicios y no están disponibles en esta instalación.",

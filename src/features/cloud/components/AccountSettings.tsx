@@ -12,6 +12,7 @@ import { PASSWORD_MIN_LENGTH, passwordStrength, type CloudDevice } from "../doma
 import { useCloudSession, useCloudStore } from "../hooks";
 import * as service from "../service";
 import { RecoveryKit } from "./RecoveryKit";
+import { SocialAccess } from "./SocialAccess";
 
 /**
  * Ajustes → Cuenta: la contraseña, el kit de recuperación y los dispositivos donde está abierta.
@@ -53,6 +54,7 @@ export function AccountSettings() {
       <SettingRow label={t("cloud.account.devicesTitle")} description={t("cloud.account.devicesText")} stacked last>
         <Devices />
       </SettingRow>
+      <SocialAccess mode="link" />
       <ChangePasswordModal open={dialog === "password"} onClose={() => setDialog(null)} />
       <NewKitModal open={dialog === "kit"} onClose={() => setDialog(null)} />
     </>
