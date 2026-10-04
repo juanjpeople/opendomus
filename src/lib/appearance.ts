@@ -33,6 +33,8 @@ import {
   Gift,
   Grid2x2,
   Hammer,
+  HardHat,
+  House,
   Inbox,
   Heart,
   Laptop,
@@ -43,13 +45,16 @@ import {
   Milk,
   Music,
   Package,
+  PaintRoller,
   Paintbrush,
   Pill,
   Plug,
   Refrigerator,
   Rows3,
+  Ruler,
   Scissors,
   Shirt,
+  ShoppingCart,
   Shovel,
   Snowflake,
   Sofa,
@@ -142,6 +147,12 @@ export const APPEARANCE_ICONS = {
   heart: Heart,
   star: Star,
   mapPin: MapPin,
+  // Compras y obras
+  house: House,
+  cart: ShoppingCart,
+  hardHat: HardHat,
+  ruler: Ruler,
+  paintRoller: PaintRoller,
 } satisfies Record<string, LucideIcon>;
 
 export type AppearanceIcon = keyof typeof APPEARANCE_ICONS;

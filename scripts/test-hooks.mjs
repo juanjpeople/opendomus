@@ -24,7 +24,8 @@ function withExtension(url) {
 
 function resolveSpecifier(specifier, context, nextResolve) {
   if (specifier.startsWith("@/")) return nextResolve(withExtension(new URL(specifier.slice(2), SRC).href), context);
-  if ((specifier.startsWith("./") || specifier.startsWith("../")) && context.parentURL?.startsWith("file:")) {
+  // Solo el código del proyecto: lo de node_modules ya se resuelve solo (y puede ser CommonJS).
+  if ((specifier.startsWith("./") || specifier.startsWith("../")) && context.parentURL?.startsWith("file:") && !context.parentURL.includes("/node_modules/")) {
     return nextResolve(withExtension(new URL(specifier, context.parentURL).href), context);
   }
   return nextResolve(specifier, context);

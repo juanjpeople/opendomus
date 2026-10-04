@@ -30,6 +30,8 @@ export const PERMISSIONS = [
   "recipes.view",
   "recipes.manage",
   "comments.create",
+  "projects.view",
+  "projects.manage",
   "finance.pay",
   "activity.view",
   "calendar.view",
@@ -57,13 +59,15 @@ const ROLE_PERMISSIONS: Record<Role, ReadonlySet<Permission>> = {
     "recipes.view",
     "recipes.manage",
     "comments.create",
+    "projects.view",
+    "projects.manage",
     "finance.pay",
     "activity.view",
     "calendar.view",
     "calendar.manage",
   ]),
   // Los chicos también opinan: ven las recetas y comentan o puntúan (con caritas).
-  kid: new Set(["inventory.view", "shopping.view", "calendar.view", "recipes.view", "comments.create"]),
+  kid: new Set(["inventory.view", "shopping.view", "calendar.view", "recipes.view", "comments.create", "projects.view"]),
 };
 
 /** Quien ejecuta una acción. Mínimo necesario para decidir permisos. */

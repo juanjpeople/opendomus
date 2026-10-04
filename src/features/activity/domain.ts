@@ -4,7 +4,7 @@
  */
 
 /** Qué tipo de cosa cambió. Cada módulo nuevo suma su valor acá. */
-export type ActivityModule = "inventory" | "storage" | "prices" | "members" | "calendar" | "shopping" | "recipes";
+export type ActivityModule = "inventory" | "storage" | "prices" | "members" | "calendar" | "shopping" | "recipes" | "lists" | "projects";
 
 export type ActivityAction =
   | "create"

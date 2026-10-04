@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import type { PriceRecord, PriceSummary } from "@/features/prices/domain";
+import { summarizeProject } from "@/features/projects/domain";
 import { ValidationError } from "@/lib/errors";
-import { decideSuggestion, estimateList, parseNewShoppingItem, suggestedQuantity } from "./domain";
+import { decideSuggestion, estimateList, HOME_LIST_ID, parseListInput, parseMoney, parseNewShoppingItem, suggestedQuantity, summarizeBudget } from "./domain";
 
 const item = (quantity: number, minThreshold = 2, autoSuggest?: boolean) => ({ quantity, minThreshold, autoSuggest });
 
@@ -81,9 +82,79 @@ describe("estimación de la lista", () => {
 
 describe("anotar en la lista", () => {
   test("valida nombre, cantidad y unidad", () => {
-    assert.deepEqual(parseNewShoppingItem({ name: " Velas ", quantity: 1, unit: "unidades" }), { name: "Velas", quantity: 1, unit: "unidades", inventoryItemId: undefined });
+    // Sin lista va a la de la casa.
+    assert.deepEqual(parseNewShoppingItem({ name: " Velas ", quantity: 1, unit: "unidades" }), {
+      name: "Velas",
+      quantity: 1,
+      unit: "unidades",
+      inventoryItemId: undefined,
+      listId: HOME_LIST_ID,
+      estimate: undefined,
+    });
     assert.throws(() => parseNewShoppingItem({ name: "", quantity: 1, unit: "unidades" }), ValidationError);
     assert.throws(() => parseNewShoppingItem({ name: "Velas", quantity: 0, unit: "unidades" }), ValidationError);
     assert.throws(() => parseNewShoppingItem({ name: "Velas", quantity: 1, unit: "toneladas" }), ValidationError);
+  });
+});
+
+describe("presupuesto de una lista", () => {
+  const summary = (amountCents: number, currency: PriceRecord["currency"] = "ARS"): PriceSummary => {
+    const record: PriceRecord = { id: "p", itemId: "i", amountCents, currency, store: "", at: 0, createdBy: "x" };
+    return { latest: record, cheapest: record, change: null, count: 1 };
+  };
+  const prices = new Map([
+    ["inodoro", summary(150_000_00)],
+    ["dolares", summary(50_00, "USD")],
+  ]);
+
+  test("gastado + comprado sin precio + lo que falta, contra el presupuesto", () => {
+    const budget = summarizeBudget({ currency: "ARS", budgetCents: 500_000_00 }, [
+      { status: "bought", quantity: 1, paidCents: 160_000_00, paidCurrency: "ARS" }, // pagado
+      { status: "bought", quantity: 1, inventoryItemId: "inodoro" }, // comprado sin precio: último precio
+      { status: "pending", quantity: 2, estimateCents: 40_000_00 }, // estimado a mano
+      { status: "pending", quantity: 1, inventoryItemId: "inodoro", estimateCents: 120_000_00 }, // el estimado manda
+      { status: "pending", quantity: 3 }, // sin precio
+    ], prices);
+    assert.equal(budget.spentCents, 160_000_00);
+    assert.equal(budget.boughtEstimateCents, 150_000_00);
+    assert.equal(budget.pendingCents, 80_000_00 + 120_000_00);
+    assert.equal(budget.totalCents, 510_000_00);
+    assert.equal(budget.remainingCents, -10_000_00);
+    assert.equal(budget.unpriced, 1);
+  });
+
+  test("no mezcla monedas: un precio en dólares no cuenta en una lista en pesos", () => {
+    const budget = summarizeBudget({ currency: "ARS" }, [
+      { status: "pending", quantity: 1, inventoryItemId: "dolares" },
+      { status: "bought", quantity: 1, paidCents: 10_00, paidCurrency: "USD" },
+    ], prices);
+    assert.equal(budget.totalCents, 0);
+    assert.equal(budget.unpriced, 2);
+    assert.equal(budget.remainingCents, undefined);
+  });
+
+  test("el proyecto suma sus listas de la misma moneda", () => {
+    const list = (spentCents: number, pendingCents: number, currency: PriceRecord["currency"] = "ARS") => ({
+      currency, spentCents, pendingCents, boughtEstimateCents: 0, unpriced: 0, totalCents: spentCents + pendingCents,
+    });
+    const project = summarizeProject({ currency: "ARS", budgetCents: 100_00 }, [list(30_00, 20_00), list(40_00, 20_00), list(5_00, 0, "USD")]);
+    assert.equal(project.totalCents, 110_00);
+    assert.equal(project.remainingCents, -10_00);
+    assert.equal(project.otherCurrency, 1);
+  });
+});
+
+describe("listas", () => {
+  test("montos en unidades pasan a centavos; vacío = sin presupuesto", () => {
+    assert.equal(parseMoney(1500.5), 150050);
+    assert.equal(parseMoney(null), undefined);
+    assert.throws(() => parseMoney(-1), ValidationError);
+  });
+
+  test("valida nombre, moneda y apariencia", () => {
+    const base = { name: "Sanitarios", currency: "ARS" as const, color: "blue" as const, icon: "bath" as const };
+    assert.deepEqual(parseListInput({ ...base, budget: 1000 }), { ...base, projectId: undefined, budgetCents: 100000 });
+    assert.throws(() => parseListInput({ ...base, name: " " }), ValidationError);
+    assert.throws(() => parseListInput({ ...base, icon: "inventado" as never }), ValidationError);
   });
 });

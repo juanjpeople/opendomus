@@ -1,10 +1,12 @@
 "use client";
 
-import { ChefHat, Languages, ListPlus, LogOut, Monitor, Moon, Package, PanelLeft, PanelLeftClose, PanelLeftDashed, ScanLine, Sun, type LucideIcon } from "lucide-react";
+import { ChefHat, ClipboardList, HardHat, Languages, ListPlus, LogOut, Monitor, Moon, Package, PanelLeft, PanelLeftClose, PanelLeftDashed, ScanLine, Sun, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { useAllInventoryItems } from "@/features/inventory/hooks";
+import { useProjects } from "@/features/projects/hooks";
 import { useRecipeNames } from "@/features/recipes/hooks";
+import { listName, useListSummaries } from "@/features/shopping/hooks";
 import { containerAppearance } from "@/features/storage/domain";
 import { useContainers } from "@/features/storage/hooks";
 import { useSetPreference } from "@/hooks/usePreferences";
@@ -17,7 +19,7 @@ import { useVisibleRoutes } from "./Navigation";
 
 export interface Command {
   id: string;
-  group: "recent" | "pages" | "containers" | "items" | "recipes" | "actions";
+  group: "recent" | "pages" | "containers" | "items" | "recipes" | "lists" | "actions";
   label: string;
   icon: LucideIcon;
   /** Texto extra para la búsqueda (no se muestra). */
@@ -40,6 +42,8 @@ export function useCommands(): Command[] {
   const containers = useContainers();
   const items = useAllInventoryItems();
   const recipes = useRecipeNames();
+  const lists = useListSummaries();
+  const projects = useProjects();
 
   return useMemo(() => {
     const visible = new Set(routes.map((route) => route.id));
@@ -97,6 +101,30 @@ export function useCommands(): Command[] {
         }))
       : [];
 
+    // Listas y proyectos: "baño" encuentra el proyecto y sus listas.
+    const listCommands: Command[] = [
+      ...(visible.has("compras")
+        ? (lists ?? [])
+            .filter((summary) => !summary.list.archivedAt)
+            .map((summary): Command => ({
+              id: `list:${summary.list.id}`,
+              group: "lists",
+              label: summary.project ? `${listName(summary.list, t)} · ${summary.project.name}` : listName(summary.list, t),
+              icon: ClipboardList,
+              run: () => router.push(`/compras?lista=${summary.list.id}`),
+            }))
+        : []),
+      ...(visible.has("projects")
+        ? (projects ?? []).map((summary): Command => ({
+            id: `project:${summary.project.id}`,
+            group: "lists",
+            label: summary.project.name,
+            icon: HardHat,
+            run: () => router.push(`/proyectos/ver?id=${summary.project.id}`),
+          }))
+        : []),
+    ];
+
     const pageCommands: Command[] = routes.filter((route) => !route.needsId).map((route) => ({
       id: `page:${route.id}`,
       group: "pages",
@@ -130,6 +158,6 @@ export function useCommands(): Command[] {
       { id: "session:signout", group: "actions", label: t("palette.actions.signOut"), icon: LogOut, run: signOut },
     ];
 
-    return [...recentCommands, ...pageCommands, ...containerCommands, ...itemCommands, ...recipeCommands, ...actionCommands];
-  }, [routes, recent, containers, items, recipes, user, t, locale, router, setPreference, signOut]);
+    return [...recentCommands, ...pageCommands, ...containerCommands, ...itemCommands, ...recipeCommands, ...listCommands, ...actionCommands];
+  }, [routes, recent, containers, items, recipes, lists, projects, user, t, locale, router, setPreference, signOut]);
 }

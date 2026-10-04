@@ -1,83 +1,177 @@
 "use client";
 
-import { Button, Card, Col, Flex, Grid, Popconfirm, Progress, Row, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
+import { App, Button, Card, Col, Dropdown, Flex, Grid, Progress, Row, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { ClipboardList, Eraser, MapPin, ShoppingBag, ShoppingBasket, Trash2, Wallet, type LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
-import { Can } from "@/components/auth/Can";
+import { Archive, ArchiveRestore, ArrowLeftRight, ClipboardList, Ellipsis, Eraser, FolderOpen, MapPin, Pencil, ShoppingBag, ShoppingBasket, Trash2, Wallet, type LucideIcon } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, type ReactNode } from "react";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { AnimatedNumber, Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { EmptyState, IconTile, PageHeader, QuantityStepper } from "@/components/ui";
 import { isUnit } from "@/features/inventory/domain";
+import type { Currency } from "@/features/prices/domain";
 import { useI18n } from "@/i18n";
+import { APPEARANCE_ICONS } from "@/lib/appearance";
 import { usePermission } from "@/lib/auth/hooks";
 import { SPRING } from "@/lib/motion";
-import { estimateList, SHOPPING_LIMITS, type ShoppingEstimate } from "../domain";
-import { useShoppingActions, useShoppingData, type ShoppingRow } from "../hooks";
+import { HOME_LIST_ID, SHOPPING_LIMITS, type ListBudget, type ShoppingList } from "../domain";
+import { listName, useListSummaries, useShoppingActions, useShoppingData, type ListSummary, type ShoppingRow } from "../hooks";
+import { BudgetBar } from "./BudgetBar";
 import { CheckCircle } from "./CheckCircle";
+import { ListModal } from "./ListModal";
+import { ListSwitcher } from "./ListSwitcher";
 import { QuickAdd } from "./QuickAdd";
-import { QuickPrice } from "./QuickPrice";
+import { EstimatePrice, QuickPrice } from "./QuickPrice";
 import { ReviewPanel } from "./ReviewPanel";
 
 export function ShoppingPage() {
   const { t } = useI18n();
-  const data = useShoppingData();
+  const router = useRouter();
+  const { modal } = App.useApp();
+  const listId = useSearchParams().get("lista") ?? HOME_LIST_ID;
+  const lists = useListSummaries();
+  const data = useShoppingData(listId);
   const canManage = usePermission("shopping.manage");
-  const { clearBought } = useShoppingActions();
-  const estimate = data ? estimateList(data.pending, data.prices) : null;
+  const { clearBought, archiveList, deleteList } = useShoppingActions();
+  const [dialog, setDialog] = useState<"create" | "edit" | null>(null);
+
+  const select = (id: string) => router.replace(id === HOME_LIST_ID ? "/compras" : `/compras?lista=${id}`, { scroll: false });
+
+  if (data === null) {
+    return (
+      <Card>
+        <EmptyState icon={ClipboardList} title={t("errors.notFound.list")} action={<Button onClick={() => select(HOME_LIST_ID)}>{t("shopping.lists.backHome")}</Button>} />
+      </Card>
+    );
+  }
+
+  const list = data?.list;
+  const home = listId === HOME_LIST_ID;
+  const summary = lists?.find((entry) => entry.list.id === listId);
   const hasCandidates = (data?.candidates.length ?? 0) > 0;
+
+  const listActions = list
+    ? [
+        ...(!home
+          ? [
+              list.archivedAt
+                ? { key: "unarchive", icon: <ArchiveRestore />, label: t("shopping.lists.unarchive"), onClick: () => archiveList(list.id, false) }
+                : { key: "archive", icon: <Archive />, label: t("shopping.lists.archive"), onClick: () => archiveList(list.id, true) },
+            ]
+          : []),
+        ...((data?.bought.length ?? 0) > 0
+          ? [{ key: "clear", icon: <Eraser />, label: t("shopping.clear"), onClick: () => modal.confirm({ title: t("shopping.clearConfirm"), okText: t("shopping.clear"), cancelText: t("common.cancel"), onOk: () => clearBought(list.id) }) }]
+          : []),
+        ...(!home
+          ? [
+              { type: "divider" as const },
+              {
+                key: "delete",
+                icon: <Trash2 />,
+                danger: true,
+                label: t("shopping.lists.delete"),
+                onClick: () =>
+                  modal.confirm({
+                    title: t("shopping.lists.deleteConfirm", { name: listName(list, t) }),
+                    content: t("shopping.lists.deleteText"),
+                    okText: t("shopping.lists.delete"),
+                    okButtonProps: { danger: true },
+                    cancelText: t("common.cancel"),
+                    onOk: async () => {
+                      if ((await deleteList(list.id)) !== null) select(HOME_LIST_ID);
+                    },
+                  }),
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   return (
     <RequirePermission perform="shopping.view">
       <PageHeader
-        eyebrow={t("shopping.eyebrow")}
-        title={t("shopping.title")}
-        description={t("shopping.description")}
+        eyebrow={
+          summary?.project ? (
+            <Link href={`/proyectos/ver?id=${summary.project.id}`} style={{ color: "inherit" }}>
+              {t("shopping.eyebrow")} · {summary.project.name}
+            </Link>
+          ) : (
+            t("shopping.eyebrow")
+          )
+        }
+        title={
+          list ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <IconTile icon={APPEARANCE_ICONS[list.icon]} color={list.color} size={40} />
+              {listName(list, t)}
+              {list.archivedAt && <Tag style={{ marginInlineStart: 4 }}>{t("shopping.lists.archived")}</Tag>}
+            </span>
+          ) : (
+            t("shopping.title")
+          )
+        }
+        description={home ? t("shopping.description") : t("shopping.lists.description")}
         extra={
-          canManage &&
-          (data?.bought.length ?? 0) > 0 && (
-            <Popconfirm title={t("shopping.clearConfirm")} okText={t("shopping.clear")} cancelText={t("common.cancel")} onConfirm={clearBought}>
-              <Button icon={<Eraser />}>{t("shopping.clear")}</Button>
-            </Popconfirm>
+          list &&
+          canManage && (
+            <>
+              <Tooltip title={t("shopping.lists.edit")}>
+                <Button icon={<Pencil />} aria-label={t("shopping.lists.edit")} onClick={() => setDialog("edit")} />
+              </Tooltip>
+              {listActions.length > 0 && (
+                <Dropdown menu={{ items: listActions }} trigger={["click"]} placement="bottomRight">
+                  <Button icon={<Ellipsis />} aria-label={t("shopping.lists.more")} />
+                </Dropdown>
+              )}
+            </>
           )
         }
       />
 
-      {!data || !estimate ? (
+      {lists && <ListSwitcher lists={lists} selectedId={listId} onSelect={select} onCreate={canManage ? () => setDialog("create") : undefined} />}
+
+      {!data || !list ? (
         <Skeleton active />
       ) : (
         <>
-          <Summary pending={data.pending.length} review={data.candidates.length} estimate={estimate} />
+          <Summary pending={data.pending.length} budget={data.budget} review={home ? data.candidates.length : undefined} />
           <Row gutter={[24, 24]}>
             {/* En el celular, si hay algo para revisar va primero: es lo que pide una decisión. */}
             <Col xs={{ span: 24, order: hasCandidates ? 2 : 1 }} lg={{ span: 15, order: 1 }}>
-              {canManage && (
+              {canManage && !list.archivedAt && (
                 <Reveal delay={0.1}>
-                  <QuickAdd />
+                  <QuickAdd key={list.id} listId={list.id} />
                 </Reveal>
               )}
               <Reveal delay={0.15}>
-                <ListCard pending={data.pending} bought={data.bought} />
+                <ListCard list={list} lists={lists ?? []} pending={data.pending} bought={data.bought} />
               </Reveal>
             </Col>
             <Col xs={{ span: 24, order: hasCandidates ? 1 : 2 }} lg={{ span: 9, order: 2 }}>
               <Reveal delay={0.2} style={{ position: "sticky", top: 88 }}>
-                <ReviewPanel candidates={data.candidates} />
+                <Flex vertical gap={16}>
+                  {home && <ReviewPanel candidates={data.candidates} />}
+                  {(!home || data.budget.budgetCents !== undefined) && <BudgetCard summary={summary} budget={data.budget} onEdit={canManage ? () => setDialog("edit") : undefined} />}
+                </Flex>
               </Reveal>
             </Col>
           </Row>
         </>
       )}
+
+      <ListModal open={dialog === "create"} onClose={() => setDialog(null)} onSaved={select} />
+      <ListModal open={dialog === "edit"} list={list ?? undefined} onClose={() => setDialog(null)} />
     </RequirePermission>
   );
 }
 
-// --- Resumen --------------------------------------------------------------------
+// --- Resumen y presupuesto -----------------------------------------------------------
 
-function Summary({ pending, review, estimate }: { pending: number; review: number; estimate: ShoppingEstimate }) {
+function Summary({ pending, budget, review }: { pending: number; budget: ListBudget; review?: number }) {
   const { t, format } = useI18n();
   const { token } = theme.useToken();
-  const [main, ...others] = estimate.totals;
+  const money = (cents: number) => format.money(cents, budget.currency);
 
   return (
     <Stagger delay={0.05}>
@@ -88,22 +182,30 @@ function Summary({ pending, review, estimate }: { pending: number; review: numbe
           </SummaryTile>
         </Col>
         <Col xs={12} md={8}>
-          <SummaryTile icon={ClipboardList} label={t("shopping.summary.review")} tone={review > 0 ? token.colorWarning : undefined}>
-            <AnimatedNumber value={review} />
-          </SummaryTile>
+          {review !== undefined ? (
+            <SummaryTile icon={ClipboardList} label={t("shopping.summary.review")} tone={review > 0 ? token.colorWarning : undefined}>
+              <AnimatedNumber value={review} />
+            </SummaryTile>
+          ) : (
+            <SummaryTile icon={ShoppingBag} label={t("shopping.budget.spent")}>
+              {money(budget.spentCents)}
+            </SummaryTile>
+          )}
         </Col>
         <Col xs={24} md={8}>
           <SummaryTile
             icon={Wallet}
-            label={t("shopping.summary.estimate")}
-            hint={estimate.count > 0 ? t("shopping.summary.priced", { priced: estimate.priced, count: estimate.count }) : undefined}
+            label={t("shopping.summary.total")}
+            tone={budget.remainingCents !== undefined && budget.remainingCents < 0 ? token.colorError : undefined}
+            hint={
+              budget.budgetCents !== undefined
+                ? t("shopping.summary.ofBudget", { budget: money(budget.budgetCents) })
+                : budget.unpriced > 0
+                  ? t("shopping.summary.unpriced", { count: budget.unpriced })
+                  : undefined
+            }
           >
-            {main ? format.money(main.cents, main.currency) : "—"}
-            {others.length > 0 && (
-              <Typography.Text type="secondary" style={{ fontSize: token.fontSize, fontWeight: 400, marginInlineStart: 8 }}>
-                + {others.map((total) => format.money(total.cents, total.currency)).join(" + ")}
-              </Typography.Text>
-            )}
+            {budget.totalCents > 0 ? money(budget.totalCents) : "—"}
           </SummaryTile>
         </Col>
       </Row>
@@ -143,20 +245,76 @@ function SummaryTile({ icon: Icon, label, hint, tone, children }: { icon: Lucide
   );
 }
 
+function BudgetCard({ summary, budget, onEdit }: { summary?: ListSummary; budget: ListBudget; onEdit?: () => void }) {
+  const { t, format } = useI18n();
+  const { token } = theme.useToken();
+  const money = (cents: number) => format.money(cents, budget.currency);
+
+  return (
+    <Card
+      title={t("shopping.budget.title")}
+      extra={
+        onEdit && (
+          <Button type="link" size="small" onClick={onEdit} style={{ paddingInline: 0 }}>
+            {budget.budgetCents === undefined ? t("shopping.budget.set") : t("shopping.budget.edit")}
+          </Button>
+        )
+      }
+    >
+      <Flex vertical gap={14}>
+        <BudgetBar currency={budget.currency} spentCents={budget.spentCents} pendingCents={budget.pendingCents + budget.boughtEstimateCents} budgetCents={budget.budgetCents} />
+        <Flex vertical gap={6} style={{ fontSize: token.fontSizeSM }}>
+          <BudgetLine label={t("shopping.budget.spentDetail")} value={money(budget.spentCents)} />
+          {budget.boughtEstimateCents > 0 && <BudgetLine label={t("shopping.budget.boughtEstimate")} value={`≈ ${money(budget.boughtEstimateCents)}`} />}
+          <BudgetLine label={t("shopping.budget.pendingDetail")} value={`≈ ${money(budget.pendingCents)}`} />
+          <BudgetLine label={t("shopping.budget.total")} value={money(budget.totalCents)} strong />
+        </Flex>
+        {budget.unpriced > 0 && (
+          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+            {t("shopping.budget.unpricedHint", { count: budget.unpriced })}
+          </Typography.Text>
+        )}
+        {summary?.project && (
+          <Link href={`/proyectos/ver?id=${summary.project.id}`}>
+            <Button block icon={<FolderOpen />}>
+              {t("shopping.lists.openProject", { name: summary.project.name })}
+            </Button>
+          </Link>
+        )}
+      </Flex>
+    </Card>
+  );
+}
+
+function BudgetLine({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <Flex justify="space-between" gap={8}>
+      <Typography.Text type="secondary" style={{ fontSize: "inherit" }}>
+        {label}
+      </Typography.Text>
+      <Typography.Text strong={strong} style={{ fontSize: "inherit" }}>
+        {value}
+      </Typography.Text>
+    </Flex>
+  );
+}
+
 // --- Lista ----------------------------------------------------------------------
 
-function ListCard({ pending, bought }: { pending: ShoppingRow[]; bought: ShoppingRow[] }) {
+function ListCard({ list, lists, pending, bought }: { list: ShoppingList; lists: ListSummary[]; pending: ShoppingRow[]; bought: ShoppingRow[] }) {
   const { t } = useI18n();
   const { token } = theme.useToken();
   const total = pending.length + bought.length;
+  const home = list.id === HOME_LIST_ID;
   const days = SHOPPING_LIMITS.boughtVisibleMs / 86_400_000;
+  const targets = lists.filter((summary) => summary.list.id !== list.id && !summary.list.archivedAt).map((summary) => summary.list);
 
   return (
     <Card
       title={t("shopping.list.title")}
       extra={
         total > 0 && (
-          <Tooltip title={t("shopping.list.progressHint", { days })}>
+          <Tooltip title={home ? t("shopping.list.progressHint", { days }) : undefined}>
             <Flex align="center" gap={8} style={{ minWidth: 120 }}>
               <Progress percent={(bought.length / total) * 100} showInfo={false} size="small" strokeColor={token.colorSuccess} style={{ margin: 0, width: 80 }} />
               <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, whiteSpace: "nowrap" }}>
@@ -170,13 +328,13 @@ function ListCard({ pending, bought }: { pending: ShoppingRow[]; bought: Shoppin
       // Las filas tienen fondo propio: sin esto taparían las esquinas redondeadas.
       style={{ overflow: "hidden" }}
     >
-      {total === 0 && <EmptyState icon={ShoppingBasket} title={t("shopping.list.emptyTitle")} description={t("shopping.list.emptyText")} />}
+      {total === 0 && <EmptyState icon={ShoppingBasket} title={t("shopping.list.emptyTitle")} description={home ? t("shopping.list.emptyText") : t("shopping.list.emptyTextList")} />}
 
       {/* LayoutGroup: al marcar, la fila viaja de "Por comprar" a "En la bolsa" en vez de saltar. */}
       <LayoutGroup>
         <AnimatePresence initial={false}>
           {pending.map((row) => (
-            <RowItem key={row.id} row={row} />
+            <RowItem key={row.id} row={row} currency={list.currency} targets={targets} />
           ))}
         </AnimatePresence>
 
@@ -196,7 +354,7 @@ function ListCard({ pending, bought }: { pending: ShoppingRow[]; bought: Shoppin
         )}
         <AnimatePresence initial={false}>
           {bought.map((row) => (
-            <RowItem key={row.id} row={row} />
+            <RowItem key={row.id} row={row} currency={list.currency} targets={targets} />
           ))}
         </AnimatePresence>
       </LayoutGroup>
@@ -204,16 +362,19 @@ function ListCard({ pending, bought }: { pending: ShoppingRow[]; bought: Shoppin
   );
 }
 
-function RowItem({ row }: { row: ShoppingRow }) {
+function RowItem({ row, currency, targets }: { row: ShoppingRow; currency: Currency; targets: ShoppingList[] }) {
   const { t, format } = useI18n();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const canManage = usePermission("shopping.manage");
-  const { buy, unbuy, setQuantity, remove } = useShoppingActions();
+  const { buy, unbuy, setQuantity, remove, move } = useShoppingActions();
   const done = row.status === "bought";
   const unit = (count: number) => (isUnit(row.unit) ? t(`inventory.units.${row.unit}`, { count }) : row.unit);
-  const cheapest = row.price?.cheapest;
-  const showCheapest = !done && cheapest?.store && cheapest.amountCents < (row.price?.latest.amountCents ?? 0);
+  // Precio conocido en la moneda de la lista (si es de otra, no se mezcla: se puede estimar a mano).
+  const knownPrice = row.estimateCents === undefined && row.price?.latest.currency === currency ? row.price : undefined;
+  const cheapest = knownPrice?.cheapest;
+  const showCheapest = !done && cheapest?.store && cheapest.amountCents < (knownPrice?.latest.amountCents ?? 0);
+  const estimateText = row.estimateCents !== undefined ? t("shopping.approx", { amount: format.money(row.estimateCents * row.quantity, currency) }) : null;
 
   return (
     <motion.div
@@ -246,9 +407,15 @@ function RowItem({ row }: { row: ShoppingRow }) {
                   {row.linked.place}
                 </Tag>
               )}
-              {!done && row.price && (
+              {!done && knownPrice && (
                 <Typography.Text type="secondary" style={{ fontSize: "inherit" }}>
-                  {t("shopping.approx", { amount: format.money(row.price.latest.amountCents * row.quantity, row.price.latest.currency) })}
+                  {t("shopping.approx", { amount: format.money(knownPrice.latest.amountCents * row.quantity, currency) })}
+                </Typography.Text>
+              )}
+              {!done && !knownPrice && canManage && <EstimatePrice row={row} currency={currency} />}
+              {!done && !knownPrice && !canManage && estimateText && (
+                <Typography.Text type="secondary" style={{ fontSize: "inherit" }}>
+                  {estimateText}
                 </Typography.Text>
               )}
               {showCheapest && (
@@ -268,15 +435,31 @@ function RowItem({ row }: { row: ShoppingRow }) {
         {canManage && (
           <Flex align="center" gap={screens.sm ? 8 : 0} style={{ flexShrink: 0 }}>
             {done ? (
-              row.inventoryItemId && (
-                <Can perform="prices.manage">
-                  <QuickPrice itemId={row.inventoryItemId} unit={row.unit} price={row.price} />
-                </Can>
-              )
+              <QuickPrice row={row} currency={currency} />
             ) : (
               <>
                 <QuantityStepper value={row.quantity} unit={unit(row.quantity)} min={1} onStep={(delta) => setQuantity(row.id, row.quantity + delta)} />
-                <Button type="text" danger aria-label={t("shopping.list.removeAria", { name: row.name })} icon={<Trash2 />} onClick={() => remove(row.id)} />
+                <Dropdown
+                  trigger={["click"]}
+                  placement="bottomRight"
+                  menu={{
+                    items: [
+                      ...(targets.length > 0
+                        ? [
+                            {
+                              key: "move",
+                              icon: <ArrowLeftRight />,
+                              label: t("shopping.list.moveTo"),
+                              children: targets.map((target) => ({ key: `move:${target.id}`, label: listName(target, t), onClick: () => move(row.id, target.id) })),
+                            },
+                          ]
+                        : []),
+                      { key: "remove", icon: <Trash2 />, danger: true, label: t("shopping.list.remove"), onClick: () => remove(row.id) },
+                    ],
+                  }}
+                >
+                  <Button type="text" aria-label={t("shopping.list.actionsAria", { name: row.name })} icon={<Ellipsis />} />
+                </Dropdown>
               </>
             )}
           </Flex>

@@ -7,7 +7,8 @@ import type { Photo } from "@/features/media/domain";
 import { DEFAULT_MEMBERS, type Member } from "@/features/members/domain";
 import type { PriceRecord } from "@/features/prices/domain";
 import type { Recipe } from "@/features/recipes/domain";
-import type { ShoppingCandidate, ShoppingListItem } from "@/features/shopping/domain";
+import type { Project } from "@/features/projects/domain";
+import { HOME_LIST_ID, type ShoppingCandidate, type ShoppingList, type ShoppingListItem } from "@/features/shopping/domain";
 import type { Container, Space } from "@/features/storage/domain";
 import { buildDefaultStorage } from "@/features/storage/seed";
 
@@ -21,7 +22,10 @@ import { buildDefaultStorage } from "@/features/storage/seed";
 
 export const db = new Dexie("OpenDomusDB") as Dexie & {
   inventory: EntityTable<InventoryItem, "id">;
+  /** Ítems de todas las listas (el nombre de la tabla es histórico: cada ítem tiene su `listId`). */
   shoppingList: EntityTable<ShoppingListItem, "id">;
+  shoppingLists: EntityTable<ShoppingList, "id">;
+  projects: EntityTable<Project, "id">;
   shoppingCandidates: EntityTable<ShoppingCandidate, "id">;
   activity: EntityTable<ActivityEntry, "id">;
   spaces: EntityTable<Space, "id">;
@@ -137,6 +141,21 @@ export function declareSchema(target: Dexie, upTo = Infinity) {
     photos: "id, [ownerType+ownerId], createdAt",
     comments: "id, [ownerType+ownerId], createdAt",
   });
+
+  // v9: varias listas de compras (con presupuesto) y proyectos que las agrupan. Todo lo que
+  // había pasa a la lista de la casa, que se crea acá y es adonde llegan las sugerencias.
+  if (upTo >= 9) target.version(9)
+    .stores({
+      shoppingList: "id, status, inventoryItemId, createdAt, listId, [listId+status]",
+      shoppingLists: "id, projectId, archivedAt",
+      projects: "id, status",
+    })
+    .upgrade(async (tx) => {
+      await seedLists(tx);
+      await tx.table("shoppingList").toCollection().modify((entry: ShoppingListItem) => {
+        entry.listId ??= HOME_LIST_ID;
+      });
+    });
 }
 
 declareSchema(db);
@@ -145,7 +164,15 @@ declareSchema(db);
 db.on("populate", async (tx) => {
   await seedStorage(tx);
   await seedMembers(tx);
+  await seedLists(tx);
 });
+
+/** La lista de la casa. Su nombre se muestra traducido (ver `listName`); el guardado es de respaldo. */
+async function seedLists(tx: Transaction) {
+  const now = Date.now();
+  const home: ShoppingList = { id: HOME_LIST_ID, name: "Casa", currency: "ARS", color: "blue", icon: "house", createdBy: "", createdAt: now, updatedAt: now };
+  await tx.table("shoppingLists").put(home);
+}
 
 async function seedMembers(tx: Transaction) {
   const now = Date.now();

@@ -1,4 +1,4 @@
-import { Boxes, CalendarDays, ChefHat, House, Palette, ScanLine, Settings, ShoppingCart, Sparkles, Users, type LucideIcon } from "lucide-react";
+import { Boxes, CalendarDays, ChefHat, HardHat, House, Palette, ScanLine, Settings, ShoppingCart, Sparkles, Users, type LucideIcon } from "lucide-react";
 import type { MessageKey } from "@/i18n/translate";
 import type { Permission } from "@/lib/auth/permissions";
 
@@ -32,6 +32,8 @@ export const APP_ROUTES: AppRoute[] = [
   { id: "calendar", href: "/calendario", labelKey: "nav.routes.calendar", icon: CalendarDays, permission: "calendar.view", section: "main" },
   { id: "compras", href: "/compras", labelKey: "nav.routes.compras", icon: ShoppingCart, permission: "shopping.view", section: "main" },
   { id: "recipes", href: "/recetas", labelKey: "nav.routes.recipes", icon: ChefHat, permission: "recipes.view", section: "main" },
+  { id: "projects", href: "/proyectos", labelKey: "nav.routes.projects", icon: HardHat, permission: "projects.view", section: "main" },
+  { id: "project", href: "/proyectos/ver", labelKey: "nav.routes.project", icon: HardHat, permission: "projects.view", section: "main", parent: "projects", hidden: true, needsId: true },
   // Detalle y editor con `?id=`: páginas fijas (sin rutas dinámicas), así la app se puede publicar como sitio estático.
   { id: "recipe", href: "/recetas/ver", labelKey: "nav.routes.recipe", icon: ChefHat, permission: "recipes.view", section: "main", parent: "recipes", hidden: true, needsId: true },
   { id: "recipeEdit", href: "/recetas/editar", labelKey: "nav.routes.recipeEdit", icon: ChefHat, permission: "recipes.manage", section: "main", parent: "recipes", hidden: true, needsId: true },

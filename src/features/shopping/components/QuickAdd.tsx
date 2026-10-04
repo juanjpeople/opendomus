@@ -15,7 +15,7 @@ import { useInventoryOptions, useShoppingActions, type ItemPlace } from "../hook
  * Anotar algo en la lista. Si coincide con un producto de la casa, se vincula: al comprarlo
  * entra solo al inventario y la lista muestra dónde va y cuánto salió la última vez.
  */
-export function QuickAdd() {
+export function QuickAdd({ listId }: { listId: string }) {
   const t = useT();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
@@ -51,7 +51,7 @@ export function QuickAdd() {
   async function submit() {
     if (!name.trim() || saving) return;
     setSaving(true);
-    const ok = await add({ name, quantity, unit, inventoryItemId: linked?.item.id });
+    const ok = await add({ name, quantity, unit, inventoryItemId: linked?.item.id, listId });
     setSaving(false);
     if (!ok) return;
     setName("");
@@ -120,6 +120,7 @@ export function QuickAdd() {
             precision={0}
             value={quantity}
             onChange={(value) => setQuantity(value ?? 1)}
+            onPressEnter={submit}
             style={{ width: 84 }}
           />
           <Select<Unit>

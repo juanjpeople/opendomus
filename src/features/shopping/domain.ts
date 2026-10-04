@@ -4,13 +4,69 @@
  * Sin React ni base de datos.
  */
 import { getStockStatus, INVENTORY_LIMITS, isUnit, type InventoryItem, type StockStatus } from "@/features/inventory/domain";
-import type { Currency, PriceSummary } from "@/features/prices/domain";
+import { CURRENCIES, type Currency, type PriceSummary } from "@/features/prices/domain";
+import { isAppearanceColor, isAppearanceIcon, type AppearanceColor, type AppearanceIcon } from "@/lib/appearance";
 import { ValidationError } from "@/lib/errors";
+
+// --- Listas ---------------------------------------------------------------------
+
+/** La lista de la casa: existe siempre, no se borra y es adonde llegan las sugerencias automáticas. */
+export const HOME_LIST_ID = "list-home";
+
+/** Una lista de compras: la del súper, "Sanitarios" de la renovación del baño, "Herramientas de jardín"… */
+export interface ShoppingList {
+  id: string;
+  name: string;
+  /** Proyecto al que pertenece (opcional). */
+  projectId?: string;
+  /** Presupuesto en centavos, en `currency`. */
+  budgetCents?: number;
+  currency: Currency;
+  color: AppearanceColor;
+  icon: AppearanceIcon;
+  /** Archivada: no aparece entre las activas, pero su historial de gastos queda. */
+  archivedAt?: number;
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ShoppingListInput {
+  name: string;
+  projectId?: string;
+  /** Presupuesto en unidades de la moneda (no centavos). Vacío = sin presupuesto. */
+  budget?: number | null;
+  currency: Currency;
+  color: AppearanceColor;
+  icon: AppearanceIcon;
+}
+
+export const LIST_LIMITS = { nameMaxLength: 60, maxBudget: 1_000_000_000 } as const;
+
+/** Monto en unidades (ej. 1500,50) → centavos enteros. `undefined` si está vacío. */
+export function parseMoney(amount: number | null | undefined): number | undefined {
+  if (amount === null || amount === undefined) return undefined;
+  if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 0 || amount > LIST_LIMITS.maxBudget) {
+    throw new ValidationError("errors.validation.amountInvalid");
+  }
+  return Math.round(amount * 100);
+}
+
+export function parseListInput(input: ShoppingListInput) {
+  const name = input.name?.trim() ?? "";
+  if (!name) throw new ValidationError("errors.validation.nameRequired");
+  if (name.length > LIST_LIMITS.nameMaxLength) throw new ValidationError("errors.validation.nameTooLong", { max: LIST_LIMITS.nameMaxLength });
+  if (!CURRENCIES.includes(input.currency)) throw new ValidationError("errors.validation.currencyInvalid");
+  if (!isAppearanceColor(input.color) || !isAppearanceIcon(input.icon)) throw new ValidationError("errors.validation.appearanceInvalid");
+  return { name, projectId: input.projectId || undefined, budgetCents: parseMoney(input.budget), currency: input.currency, color: input.color, icon: input.icon };
+}
 
 export type ShoppingStatus = "pending" | "bought";
 
 export interface ShoppingListItem {
   id: string;
+  /** Lista a la que pertenece (ver `HOME_LIST_ID`). */
+  listId: string;
   name: string;
   quantity: number;
   unit: string;
@@ -20,6 +76,12 @@ export interface ShoppingListItem {
   inventoryItemId?: string;
   /** Cuánto se sumó al inventario al comprarlo (para poder desmarcarlo sin dejar stock de más). */
   restocked?: number;
+  /** Precio estimado por unidad, en centavos de la moneda de la lista (para lo que no tiene historial de precios). */
+  estimateCents?: number;
+  /** Lo que se pagó en total, en centavos (y en qué moneda y dónde). */
+  paidCents?: number;
+  paidCurrency?: Currency;
+  store?: string;
   createdBy: string;
   createdAt: number;
   boughtAt?: number;
@@ -45,6 +107,10 @@ export interface NewShoppingItem {
   quantity: number;
   unit: string;
   inventoryItemId?: string;
+  /** Sin lista = la de la casa. */
+  listId?: string;
+  /** Precio estimado por unidad, en unidades de la moneda (opcional). */
+  estimate?: number | null;
 }
 
 export const SHOPPING_LIMITS = {
@@ -60,7 +126,14 @@ export function parseNewShoppingItem(input: NewShoppingItem): NewShoppingItem {
   if (name.length > SHOPPING_LIMITS.nameMaxLength) throw new ValidationError("errors.validation.nameTooLong", { max: SHOPPING_LIMITS.nameMaxLength });
   parseShoppingQuantity(input.quantity);
   if (!isUnit(input.unit)) throw new ValidationError("errors.validation.unitInvalid");
-  return { name, quantity: input.quantity, unit: input.unit, inventoryItemId: input.inventoryItemId || undefined };
+  return {
+    name,
+    quantity: input.quantity,
+    unit: input.unit,
+    inventoryItemId: input.inventoryItemId || undefined,
+    listId: input.listId || HOME_LIST_ID,
+    estimate: input.estimate ?? undefined,
+  };
 }
 
 export function parseShoppingQuantity(quantity: number): number {
@@ -134,5 +207,68 @@ export function estimateList(items: Pick<ShoppingListItem, "quantity" | "invento
     totals: [...totals].map(([currency, cents]) => ({ currency, cents })).sort((a, b) => b.cents - a.cents),
     priced,
     count: items.length,
+  };
+}
+
+// --- Presupuesto ------------------------------------------------------------------
+
+export interface ListBudget {
+  currency: Currency;
+  /** Lo que ya se pagó (de lo comprado con precio anotado). */
+  spentCents: number;
+  /** Lo que falta comprar, estimado (último precio o precio estimado). */
+  pendingCents: number;
+  /** Comprado sin precio anotado: se estima con el último precio conocido. */
+  boughtEstimateCents: number;
+  /** Ítems sin ningún precio (ni pagado, ni estimado, ni historial): el total puede quedarse corto. */
+  unpriced: number;
+  budgetCents?: number;
+  /** Total previsto: gastado + estimado de lo comprado sin precio + lo que falta. */
+  totalCents: number;
+  /** Lo que queda del presupuesto (negativo = pasado). `undefined` sin presupuesto. */
+  remainingCents?: number;
+}
+
+/** Precio por unidad que se usa para estimar un ítem, en la moneda de la lista (o `undefined`). */
+function unitEstimate(item: Pick<ShoppingListItem, "estimateCents" | "inventoryItemId">, prices: Map<string, PriceSummary>, currency: Currency) {
+  if (item.estimateCents !== undefined) return item.estimateCents;
+  const summary = item.inventoryItemId ? prices.get(item.inventoryItemId) : undefined;
+  // Solo se usa un precio de la misma moneda: no se mezclan pesos con dólares.
+  return summary && summary.latest.currency === currency ? summary.latest.amountCents : undefined;
+}
+
+/** Gastado, pendiente y lo que queda del presupuesto de una lista. */
+export function summarizeBudget(
+  list: Pick<ShoppingList, "currency" | "budgetCents">,
+  items: Pick<ShoppingListItem, "status" | "quantity" | "estimateCents" | "inventoryItemId" | "paidCents" | "paidCurrency">[],
+  prices: Map<string, PriceSummary>,
+): ListBudget {
+  let spentCents = 0;
+  let pendingCents = 0;
+  let boughtEstimateCents = 0;
+  let unpriced = 0;
+  for (const item of items) {
+    if (item.status === "bought" && item.paidCents !== undefined && (item.paidCurrency ?? list.currency) === list.currency) {
+      spentCents += item.paidCents;
+      continue;
+    }
+    const unit = unitEstimate(item, prices, list.currency);
+    if (unit === undefined) {
+      unpriced++;
+      continue;
+    }
+    if (item.status === "bought") boughtEstimateCents += unit * item.quantity;
+    else pendingCents += unit * item.quantity;
+  }
+  const totalCents = spentCents + boughtEstimateCents + pendingCents;
+  return {
+    currency: list.currency,
+    spentCents,
+    pendingCents,
+    boughtEstimateCents,
+    unpriced,
+    budgetCents: list.budgetCents,
+    totalCents,
+    remainingCents: list.budgetCents === undefined ? undefined : list.budgetCents - totalCents,
   };
 }

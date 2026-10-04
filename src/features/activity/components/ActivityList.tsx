@@ -64,6 +64,9 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
     if (entry.module === "storage") {
       return t(`activity.storage.${entry.action as "create" | "update" | "move" | "delete"}`, params);
     }
+    if (entry.module === "lists" || entry.module === "projects") {
+      return t(`activity.${entry.module}.${entry.action as "create" | "update" | "delete"}`, params);
+    }
     if (entry.module === "recipes") {
       return t(`activity.recipes.${entry.action as "create" | "update" | "delete" | "cooked"}`, params);
     }

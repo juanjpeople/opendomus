@@ -7,7 +7,7 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 ## 🛠️ Arquitectura (offline-first y self-hosted)
 
 - **Cliente:** Next.js 16 + React 19, Ant Design 6 (tokens, sin Tailwind), framer-motion, lucide-react. Se instala como **PWA** y funciona sin conexión.
-- **Datos locales:** **Dexie.js** (IndexedDB). Cada cambio de esquema es una versión nueva con migración (`declareSchema` en `src/lib/db.ts`); hoy vamos por la **v8**. La misma cadena de migraciones actualiza los exports viejos al importarlos.
+- **Datos locales:** **Dexie.js** (IndexedDB). Cada cambio de esquema es una versión nueva con migración (`declareSchema` en `src/lib/db.ts`); hoy vamos por la **v9**. La misma cadena de migraciones actualiza los exports viejos al importarlos.
 - **Servidor / sincronización:** a definir (Node.js o Go + SQLite/PostgreSQL). Hasta que exista, los datos viven en cada dispositivo.
 - **Despliegue:** Docker en una NAS o servidor de la casa.
 
@@ -20,7 +20,7 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 2. ✅ **Lugares e inventario:** recintos → contenedores (anidables) → productos, con color e ícono, etiquetas QR imprimibles y escaneo.
 3. ✅ **Precios:** historial por producto, el más barato y dónde, comparación online a pedido.
 4. ✅ **Consumo:** "Usé" con deshacer, consumo de los últimos 30 días, deshacer desde el historial y "Cociné esto" desde las recetas → [especificación](#1-consumo-y-descuento-de-insumos).
-5. ✅ **Lista de compras:** "Para revisar" automático, lista con estimado, reposición al comprar y precio pagado → [especificación](#2-lista-de-compras-con-candidatos-automáticos).
+5. ✅ **Listas de compras:** varias listas con presupuesto (la de la casa recibe las sugerencias de "Para revisar"), estimado, reposición al comprar y precio pagado → [especificación](#2-lista-de-compras-con-candidatos-automáticos).
 6. ✅ **PWA:** manifest, íconos, service worker con precache y aviso de versión nueva.
 
 ### 📍 Fase 2: Cocina y vida en común
@@ -35,7 +35,8 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 3. Presupuestos y metas.
 
 ### 📍 Fase 4: Proyectos, préstamos y roles
-1. Gestión de usuarios y roles reales (hoy los perfiles son fijos).
+0. ✅ **Proyectos** (`/proyectos`): agrupan listas de compras y suman su presupuesto ("Renovación del baño" → "Sanitarios", "Cerámicos"…).
+1. Gestión de usuarios y roles reales: cuentas, invitaciones y sincronización (ver el plan de producción).
 2. Inventarios temporales y préstamo de herramientas.
 
 ### 📍 Fase 5: Hub familiar y bóveda
@@ -60,6 +61,7 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 - **Lista de compras (`/compras`):** lo que cruza el mínimo entra en "Para revisar" (se suma con la cantidad que falta o se descarta, con "no volver a sugerir"); anotar con autocompletado vinculado al inventario; total estimado con el último precio y aviso de dónde está más barato; al marcar algo vinculado se repone el inventario en la misma transacción, y se puede registrar cuánto salió.
 - **PWA:** instalable (Ajustes → Acerca de, solo si el navegador lo permite), funciona sin conexión (páginas fijas y de cada contenedor precargadas), etiqueta "Sin conexión" en el header y aviso discreto cuando hay una versión nueva.
 - **Recetas (`/recetas`):** ingredientes vinculados al inventario (o texto libre), pasos, etiquetas, porciones. Cada receta dice si se puede cocinar con lo que hay (hay todo / falta poco / faltan cosas) y la lista se filtra por "se pueden hacer ya". "Cociné esto" muestra qué se descuenta y deja ajustarlo; "Agregar lo que falta" lo anota en la lista. Fotos comprimidas en el dispositivo (galería con portada) y comentarios con puntaje (caritas para los chicos). Detalle y editor en `/recetas/ver?id=` y `/recetas/editar?id=`: páginas fijas, sin rutas dinámicas.
+- **Listas y proyectos (`/compras?lista=`, `/proyectos`):** cada lista tiene presupuesto opcional; se calcula lo gastado (precio pagado anotado), lo comprado sin precio (último precio) y lo que falta (último precio o precio estimado a mano), con aviso cuando se pasa. Los ítems se mueven entre listas; las listas se archivan (su gasto queda). Un proyecto suma sus listas de la misma moneda contra su presupuesto total.
 - **Datos:** exportar e **importar** JSON (con resumen y confirmación; los exports viejos se migran).
 - **Tests:** `npm test` cubre permisos, dominio de inventario, compras, historial, precios y traductor.
 - **Inventario (`/inventario`):** plano de la casa con recintos (color, ícono) y contenedores adentro, con barra de stock. Los contenedores se anidan hasta 3 niveles (placard → puerta → cajón; cama → cajones), cada uno con su etiqueta QR. Página por contenedor con productos, detalle, precios, etiqueta e historial. QR en `/c/<código>` y escáner en `/inventario/escanear`.
