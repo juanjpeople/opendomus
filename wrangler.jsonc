@@ -1,14 +1,31 @@
-// Cloudflare (Workers con archivos estáticos): sirve `out/`, el sitio estático que genera `npm run build`.
-// Sin código de servidor: la app vive en el navegador. Con este archivo, Cloudflare no intenta
-// armar un servidor de Next (OpenNext), que esta app no usa.
+// Cloudflare: un solo Worker para la app (archivos estáticos de `out/`) y la API (`/api/*`, en
+// `server/`). Mismo origen: cookies de sesión de primera parte, sin CORS en producción.
 // En el panel: Build command `npm run build` · Deploy command `npx wrangler deploy`.
+// Base: `npm run db:migrate` (producción) / `npm run db:migrate:local` (desarrollo).
 {
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
   "name": "opendomus",
+  "main": "server/src/index.ts",
   "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./out",
+    "binding": "ASSETS",
     // Páginas inexistentes → 404.html, que además traduce URLs viejas (los QR impresos /c/<código>).
     "not_found_handling": "404-page",
+    // Solo la API pasa por el código del Worker; la app se sirve directo (más rápido y sin costo).
+    "run_worker_first": ["/api/*"],
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "opendomus",
+      "database_id": "0a293208-b372-43e6-b78a-f931df22bbb8",
+      "migrations_dir": "server/migrations",
+    },
+  ],
+  "vars": {
+    "APP_ORIGIN": "https://opendomus.juanjpeople.workers.dev",
+  },
+  "observability": { "enabled": true },
 }
