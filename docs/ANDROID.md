@@ -25,6 +25,8 @@ npm run android:open
 Desde Android Studio se puede ejecutar sobre emulador o dispositivo. Por CLI,
 desde `android/`: `./gradlew assembleDebug` (PowerShell: `./gradlew.bat assembleDebug`).
 El APK queda en `android/app/build/outputs/apk/debug/app-debug.apk`.
+Con `ANDROID_HOME` apuntando al SDK, `npm run android:build` hace el build web,
+la sincronización y la compilación debug en un solo comando, en Windows o Linux/macOS.
 El workflow Android compila y adjunta un APK de prueba, sin publicar ni desplegar.
 
 ## Datos y actualizaciones
@@ -54,6 +56,13 @@ los datos de copias cloud y transferencias entre dispositivos; el traslado previ
 es la exportación/importación elegida por el usuario.
 
 ## Verificación pendiente antes de distribuir
+
+Ya pasaron tres pruebas instrumentadas con Android 15 sin Wi-Fi ni datos móviles:
+inicio local y persistencia al recrear la actividad, navegación directa a la pantalla
+de cuenta local, ausencia de service workers, escritura UTF-8 de un respaldo y
+cancelación. Los resultados del selector de documentos se simulan con Espresso;
+la escritura y el puente JavaScript/Java son reales. Esto no prueba todos los
+proveedores de almacenamiento ni una actualización entre versiones distintas.
 
 - Inspección del APK final (la primera compilación y lint Android pasaron en CI).
 - Inicio offline, navegación directa y recarga de rutas internas.

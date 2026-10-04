@@ -13,6 +13,7 @@
     "build:local": "node scripts/build.mjs --local",
     "android:sync": "npm run build:local && cap sync android",
     "android:open": "cap open android",
+    "android:build": "node scripts/build-android.mjs",
     "package:local": "node scripts/package-local.mjs",
     "dist:local": "npm run build:local && npm run package:local",
     "start": "serve out --listen tcp://127.0.0.1:4173 --no-clipboard",
