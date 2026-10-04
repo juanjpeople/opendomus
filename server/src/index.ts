@@ -15,6 +15,7 @@ import type { AppEnv, Env, SessionUser } from "./env";
 import { OP_CONFLICT } from "./sync";
 import {
   acceptInviteInput,
+  changePasswordInput,
   changeRoleInput,
   createHouseholdInput,
   createInviteInput,
@@ -22,6 +23,10 @@ import {
   inviteTokenInput,
   pullQuery,
   pushInput,
+  recoveryCompleteInput,
+  recoveryKitInput,
+  recoveryStartInput,
+  removeMemberInput,
   userId,
   userKeysInput,
   uuid,
@@ -117,7 +122,41 @@ async function requireUser(c: Context<AppEnv>): Promise<SessionUser | null> {
   if (!session) return null;
   const user = { id: session.user.id, name: session.user.name, email: session.user.email };
   c.set("user", user);
+  c.set("sessionId", session.session.id);
   return user;
+}
+
+/**
+ * Límite de intentos (ventana fija) para lo que no pasa por Better Auth. En la base: cada isolate
+ * del Worker tiene su propia memoria. Devuelve `true` si ya se pasó del máximo.
+ */
+async function tooMany(env: Env, key: string, max: number, windowMs: number) {
+  const now = Date.now();
+  const row = await env.DB.prepare(
+    `insert into attempts (key, count, window_start) values (?, 1, ?)
+       on conflict (key) do update set
+         count = case when attempts.window_start < ? then 1 else attempts.count + 1 end,
+         window_start = case when attempts.window_start < ? then excluded.window_start else attempts.window_start end
+     returning count`,
+  )
+    .bind(key, now, now - windowMs, now - windowMs)
+    .first<{ count: number }>();
+  return (row?.count ?? 0) > max;
+}
+
+const clientIp = (c: Context<AppEnv>) => c.req.header("cf-connecting-ip") ?? "local";
+
+/** ¿Es la contraseña (la clave derivada) de esta persona? Con el mismo hash que usa Better Auth. */
+async function checkPassword(env: Env, userId: string, password: string) {
+  const account = await env.DB.prepare(`select "password" from "account" where "userId" = ? and "providerId" = 'credential'`).bind(userId).first<{ password: string | null }>();
+  if (!account?.password) return false;
+  return (await createAuth(env).$context).password.verify({ hash: account.password, password });
+}
+
+/** Cambia la contraseña: la sentencia va en el mismo lote (transacción) que el cambio de claves. */
+async function setPasswordStatement(env: Env, userId: string, password: string) {
+  const hash = await (await createAuth(env).$context).password.hash(password);
+  return env.DB.prepare(`update "account" set "password" = ?, "updatedAt" = ? where "userId" = ? and "providerId" = 'credential'`).bind(hash, new Date().toISOString(), userId);
 }
 
 async function parse<T extends z.ZodTypeAny>(c: Context<AppEnv>, schema: T): Promise<z.infer<T> | null> {
@@ -139,9 +178,9 @@ app.post("/keys", async (c) => {
   const now = Date.now();
   // Una sola vez: cambiar las claves (contraseña nueva, recuperación) es otro flujo, con su propia prueba.
   const result = await c.env.DB.prepare(
-    "insert into user_keys (user_id, kdf_version, enc_public_key, sign_public_key, private_keys, recovery_private_keys, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?) on conflict (user_id) do nothing",
+    "insert into user_keys (user_id, kdf_version, enc_public_key, sign_public_key, private_keys, recovery_private_keys, recovery_verifier, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?) on conflict (user_id) do nothing",
   )
-    .bind(user.id, input.kdfVersion, input.encPublicKey, input.signPublicKey, input.privateKeys, input.recoveryPrivateKeys, now, now)
+    .bind(user.id, input.kdfVersion, input.encPublicKey, input.signPublicKey, input.privateKeys, input.recoveryPrivateKeys, input.recoveryVerifier, now, now)
     .run();
   if (result.meta.changes === 0) return c.json({ error: "keys-exist" }, 409);
   return c.json({ ok: true }, 201);
@@ -176,6 +215,124 @@ app.get("/me", async (c) => {
       envelopes: envelopes.results.filter((entry) => entry.householdId === household.id).map(({ scope, version, envelope }) => ({ scope, version, envelope })),
     })),
   });
+});
+
+// --- Recuperar con el kit (sin sesión y sin email) -----------------------------------------
+
+const RECOVERY_WINDOW = 15 * 60_000;
+
+/**
+ * La cuenta, si la prueba del kit es la correcta. La comparación se hace siempre (también si el
+ * email no tiene cuenta) y la respuesta es la misma: no se puede averiguar qué emails existen.
+ */
+async function findRecovery(env: Env, email: string, recoveryAuth: string) {
+  const row = await env.DB.prepare(
+    `select u.id as userId, k.kdf_version as kdfVersion, k.enc_public_key as encPublicKey, k.sign_public_key as signPublicKey,
+            k.recovery_private_keys as recoveryPrivateKeys, k.recovery_verifier as verifier
+       from "user" u join user_keys k on k.user_id = u.id where u.email = ?`,
+  )
+    .bind(email)
+    .first<{ userId: string; kdfVersion: number; encPublicKey: string; signPublicKey: string; recoveryPrivateKeys: string; verifier: string | null }>();
+  const matches = timingSafeEqual(row?.verifier ?? "-".repeat(43), await sha256(recoveryAuth));
+  return row?.verifier && matches ? row : null;
+}
+
+async function recoveryLimited(c: Context<AppEnv>, email: string) {
+  return (await tooMany(c.env, `recovery:ip:${clientIp(c)}`, 20, RECOVERY_WINDOW)) || (await tooMany(c.env, `recovery:email:${email}`, 5, RECOVERY_WINDOW));
+}
+
+/** Paso 1: con email + prueba del kit, la copia de las claves cifrada con el kit (se abre en el dispositivo). */
+app.post("/recovery/start", async (c) => {
+  const input = await parse(c, recoveryStartInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+  if (await recoveryLimited(c, input.email)) return c.json({ error: "rate-limited" }, 429);
+  const found = await findRecovery(c.env, input.email, input.recoveryAuth);
+  if (!found) return c.json({ error: "recovery-failed" }, 403);
+  return c.json({ kdfVersion: found.kdfVersion, encPublicKey: found.encPublicKey, signPublicKey: found.signPublicKey, recoveryPrivateKeys: found.recoveryPrivateKeys });
+});
+
+/**
+ * Paso 2: contraseña nueva, claves re-cifradas con ella y un kit nuevo (el usado deja de servir),
+ * todo junto. Se cierran todas las sesiones: quien tuviera la contraseña vieja queda afuera.
+ */
+app.post("/recovery/complete", async (c) => {
+  const input = await parse(c, recoveryCompleteInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+  if (await recoveryLimited(c, input.email)) return c.json({ error: "rate-limited" }, 429);
+  const found = await findRecovery(c.env, input.email, input.recoveryAuth);
+  if (!found) return c.json({ error: "recovery-failed" }, 403);
+  await c.env.DB.batch([
+    await setPasswordStatement(c.env, found.userId, input.newPassword),
+    c.env.DB.prepare("update user_keys set private_keys = ?, recovery_private_keys = ?, recovery_verifier = ?, updated_at = ? where user_id = ?").bind(
+      input.privateKeys,
+      input.recoveryPrivateKeys,
+      input.recoveryVerifier,
+      Date.now(),
+      found.userId,
+    ),
+    c.env.DB.prepare(`delete from "session" where "userId" = ?`).bind(found.userId),
+  ]);
+  return c.json({ ok: true });
+});
+
+// --- Mi cuenta: contraseña, kit y dispositivos ---------------------------------------------
+
+/** Cambiar la contraseña sabiendo la actual. Las otras sesiones se cierran; esta sigue. */
+app.post("/account/password", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const input = await parse(c, changePasswordInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+  if (await tooMany(c.env, `password:${user.id}`, 5, RECOVERY_WINDOW)) return c.json({ error: "rate-limited" }, 429);
+  if (!(await checkPassword(c.env, user.id, input.currentPassword))) return c.json({ error: "wrong-password" }, 403);
+  await c.env.DB.batch([
+    await setPasswordStatement(c.env, user.id, input.newPassword),
+    c.env.DB.prepare("update user_keys set private_keys = ?, updated_at = ? where user_id = ?").bind(input.privateKeys, Date.now(), user.id),
+    c.env.DB.prepare(`delete from "session" where "userId" = ? and "id" <> ?`).bind(user.id, c.var.sessionId),
+  ]);
+  return c.json({ ok: true });
+});
+
+/** Un kit nuevo (si el anterior se perdió o se vio): el anterior deja de servir. Pide la contraseña. */
+app.post("/account/recovery-kit", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const input = await parse(c, recoveryKitInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+  if (await tooMany(c.env, `password:${user.id}`, 5, RECOVERY_WINDOW)) return c.json({ error: "rate-limited" }, 429);
+  if (!(await checkPassword(c.env, user.id, input.password))) return c.json({ error: "wrong-password" }, 403);
+  await c.env.DB.prepare("update user_keys set recovery_private_keys = ?, recovery_verifier = ?, updated_at = ? where user_id = ?")
+    .bind(input.recoveryPrivateKeys, input.recoveryVerifier, Date.now(), user.id)
+    .run();
+  return c.json({ ok: true });
+});
+
+/** Dónde está abierta la cuenta (sin los tokens: no salen nunca). */
+app.get("/account/devices", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const sessions = await c.env.DB.prepare(
+    `select "id", "userAgent", "createdAt", "updatedAt" from "session" where "userId" = ? and "expiresAt" > ? order by "updatedAt" desc`,
+  )
+    .bind(user.id, new Date().toISOString())
+    .all<{ id: string; userAgent: string | null; createdAt: string; updatedAt: string }>();
+  return c.json({
+    devices: sessions.results.map((session) => ({
+      id: session.id,
+      userAgent: session.userAgent ?? "",
+      createdAt: Date.parse(session.createdAt),
+      lastActiveAt: Date.parse(session.updatedAt),
+      current: session.id === c.var.sessionId,
+    })),
+  });
+});
+
+/** Cerrar la sesión de un dispositivo (deja de sincronizar; su copia local queda como estaba). */
+app.delete("/account/devices/:id", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  await c.env.DB.prepare(`delete from "session" where "id" = ? and "userId" = ?`).bind(c.req.param("id"), user.id).run();
+  return c.json({ ok: true });
 });
 
 // --- Casas -------------------------------------------------------------------------------
@@ -222,7 +379,85 @@ app.get("/households/:id/members", async (c) => {
   )
     .bind(householdId)
     .all();
-  return c.json({ members: members.results });
+  // Quienes se fueron: solo su rol de entonces y su clave de firma, para verificar sus cambios viejos.
+  const former = await c.env.DB.prepare(
+    `select f.user_id as userId, u.name, f.role, f.removed_at as removedAt, k.sign_public_key as signPublicKey
+       from former_members f join "user" u on u.id = f.user_id left join user_keys k on k.user_id = f.user_id
+      where f.household_id = ? order by f.removed_at`,
+  )
+    .bind(householdId)
+    .all();
+  return c.json({ members: members.results, former: former.results });
+});
+
+/**
+ * Sacar a alguien de la casa. Quien lo saca manda claves NUEVAS de los niveles que esa persona
+ * tenía (Familia siempre; Adultos si no era chico), ensobradas para cada uno de los que quedan, y
+ * el nombre de la casa cifrado con la Familia nueva. Desde acá, lo nuevo se cifra con claves que
+ * esa persona no tiene. Las invitaciones pendientes se anulan (llevaban las claves viejas).
+ */
+app.post("/households/:id/members/:userId/remove", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const householdId = c.req.param("id");
+  const targetId = c.req.param("userId");
+  if ((await membership(c.env, householdId, user.id))?.role !== "admin") return c.json({ error: "forbidden" }, 403);
+  if (targetId === user.id) return c.json({ error: "self" }, 400);
+  const target = await membership(c.env, householdId, targetId);
+  if (!target) return c.json({ error: "not-found" }, 404);
+  const input = await parse(c, removeMemberInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+
+  const household = await c.env.DB.prepare("select family_key_version as family, adults_key_version as adults from households where id = ?")
+    .bind(householdId)
+    .first<{ family: number; adults: number }>();
+  const remaining = await c.env.DB.prepare("select user_id as userId, role from memberships where household_id = ? and user_id <> ?")
+    .bind(householdId, targetId)
+    .all<{ userId: string; role: Role }>();
+  if (!household) return c.json({ error: "not-found" }, 404);
+
+  // Cada nivel que tenía se rota a la versión siguiente, con un sobre para cada uno de los que lo pueden abrir.
+  const needed: ("family" | "adults")[] = target.role === "kid" ? ["family"] : ["family", "adults"];
+  const byScope = new Map(input.rotation.map((entry) => [entry.scope, entry]));
+  if (byScope.size !== input.rotation.length || needed.some((scope) => !byScope.has(scope)) || input.rotation.some((entry) => !needed.includes(entry.scope))) {
+    return c.json({ error: "invalid-rotation" }, 400);
+  }
+  for (const scope of needed) {
+    const entry = byScope.get(scope)!;
+    const expected = remaining.results.filter((member) => scopesFor(member.role).includes(scope)).map((member) => member.userId);
+    const given = entry.envelopes.map((envelope) => envelope.userId);
+    if (entry.version !== household[scope] + 1) return c.json({ error: "stale-key" }, 409);
+    // Alguien entró o cambió de rol mientras tanto: hay que volver a armar los sobres.
+    if (new Set(given).size !== given.length || given.length !== expected.length || !expected.every((id) => given.includes(id))) {
+      return c.json({ error: "members-changed" }, 409);
+    }
+  }
+
+  const now = Date.now();
+  const family = byScope.get("family")!;
+  const adults = byScope.get("adults");
+  await c.env.DB.batch([
+    c.env.DB.prepare("delete from memberships where household_id = ? and user_id = ?").bind(householdId, targetId),
+    c.env.DB.prepare("delete from key_envelopes where household_id = ? and recipient_user_id = ?").bind(householdId, targetId),
+    c.env.DB.prepare(
+      "insert into former_members (household_id, user_id, role, removed_at, removed_by) values (?, ?, ?, ?, ?) on conflict do update set role = excluded.role, removed_at = excluded.removed_at, removed_by = excluded.removed_by",
+    ).bind(householdId, targetId, target.role, now, user.id),
+    ...input.rotation.flatMap((entry) =>
+      entry.envelopes.map((envelope) =>
+        c.env.DB.prepare(
+          "insert into key_envelopes (household_id, scope, version, recipient_user_id, envelope, created_by, created_at) values (?, ?, ?, ?, ?, ?, ?)",
+        ).bind(householdId, entry.scope, entry.version, envelope.userId, envelope.envelope, user.id, now),
+      ),
+    ),
+    c.env.DB.prepare("update households set encrypted_name = ?, family_key_version = ?, adults_key_version = ? where id = ?").bind(
+      input.encryptedName,
+      family.version,
+      adults?.version ?? household.adults,
+      householdId,
+    ),
+    c.env.DB.prepare("delete from invites where household_id = ? and used_at is null").bind(householdId),
+  ]);
+  return c.json({ ok: true });
 });
 
 app.patch("/households/:id/members/:userId", async (c) => {
@@ -238,7 +473,40 @@ app.patch("/households/:id/members/:userId", async (c) => {
     const admins = await c.env.DB.prepare("select count(*) as count from memberships where household_id = ? and role = 'admin'").bind(householdId).first<{ count: number }>();
     if ((admins?.count ?? 0) <= 1) return c.json({ error: "last-admin" }, 409);
   }
-  await c.env.DB.prepare("update memberships set role = ? where household_id = ? and user_id = ?").bind(input.role, householdId, c.req.param("userId")).run();
+  const targetId = c.req.param("userId");
+  const setRole = c.env.DB.prepare("update memberships set role = ? where household_id = ? and user_id = ?").bind(input.role, householdId, targetId);
+  if (input.role !== "kid" || target.role === "kid") {
+    await setRole.run();
+    return c.json({ ok: true });
+  }
+
+  // Pasar a chico: deja de ver "Adultos", y como ya tenía esa clave, se rota (igual que al sacar
+  // a alguien) para que no pueda abrir lo que se escriba desde ahora.
+  if (!input.rotation) return c.json({ error: "rotation-required" }, 400);
+  const household = await c.env.DB.prepare("select adults_key_version as adults from households where id = ?").bind(householdId).first<{ adults: number }>();
+  const adultsAfter = await c.env.DB.prepare("select user_id as userId from memberships where household_id = ? and user_id <> ? and role <> 'kid'")
+    .bind(householdId, targetId)
+    .all<{ userId: string }>();
+  if (!household) return c.json({ error: "not-found" }, 404);
+  if (input.rotation.version !== household.adults + 1) return c.json({ error: "stale-key" }, 409);
+  const expected = adultsAfter.results.map((member) => member.userId);
+  const given = input.rotation.envelopes.map((envelope) => envelope.userId);
+  if (new Set(given).size !== given.length || given.length !== expected.length || !expected.every((id) => given.includes(id))) {
+    return c.json({ error: "members-changed" }, 409);
+  }
+  const now = Date.now();
+  await c.env.DB.batch([
+    setRole,
+    c.env.DB.prepare("delete from key_envelopes where household_id = ? and recipient_user_id = ? and scope = 'adults'").bind(householdId, targetId),
+    ...input.rotation.envelopes.map((envelope) =>
+      c.env.DB.prepare(
+        "insert into key_envelopes (household_id, scope, version, recipient_user_id, envelope, created_by, created_at) values (?, 'adults', ?, ?, ?, ?, ?)",
+      ).bind(householdId, input.rotation!.version, envelope.userId, envelope.envelope, user.id, now),
+    ),
+    c.env.DB.prepare("update households set adults_key_version = ? where id = ?").bind(input.rotation.version, householdId),
+    // Las invitaciones pendientes llevaban la clave de Adultos vieja.
+    c.env.DB.prepare("delete from invites where household_id = ? and used_at is null").bind(householdId),
+  ]);
   return c.json({ ok: true });
 });
 

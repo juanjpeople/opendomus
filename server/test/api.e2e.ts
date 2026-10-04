@@ -11,10 +11,14 @@ import {
   envelopeContext,
   importScopeKey,
   inviteSecrets,
+  newRecoveryKit,
   newScopeKey,
   open,
   openEnvelope,
   openText,
+  recoverIdentity,
+  recoveryProof,
+  rewrapIdentity,
   seal,
   sealEnvelope,
   sha256,
@@ -236,4 +240,108 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal(await live(ORIGIN, null), "rejected");
   // Lo rechazado nunca llegó al registro: siguen siendo las tres operaciones de Ana.
   assert.equal(await live(ORIGIN, flor.client), florPull.body.head);
+
+  // --- Recuperar con el kit (sin sesión, sin email) ---
+  const anaEmail = `ana-${unique}@casa.test`;
+  const recovery = (path: string, body: unknown) => new Client().call("POST", `/api/recovery/${path}`, body);
+  const otherKit = (await createIdentity((await derivePasswordKeys("x@x.test", "x", FAST)).encKey)).recoveryCode;
+  // Kit equivocado o email sin cuenta: la misma respuesta (no revela qué emails existen).
+  assert.equal((await recovery("start", { email: anaEmail, recoveryAuth: await recoveryProof(otherKit) })).status, 403);
+  assert.equal((await recovery("start", { email: `nadie-${unique}@casa.test`, recoveryAuth: await recoveryProof(ana.recoveryCode) })).status, 403);
+  const started = await recovery("start", { email: anaEmail.toUpperCase(), recoveryAuth: await recoveryProof(ana.recoveryCode) });
+  assert.equal(started.status, 200, JSON.stringify(started.body));
+  assert.equal(started.body.recoveryPrivateKeys, ana.upload.recoveryPrivateKeys);
+  const anaNew = await derivePasswordKeys(anaEmail, "la contraseña nueva de ana", FAST);
+  const recovered = await recoverIdentity(started.body, ana.recoveryCode, anaNew.encKey);
+  const completed = await recovery("complete", {
+    email: anaEmail,
+    recoveryAuth: await recoveryProof(ana.recoveryCode),
+    newPassword: anaNew.authKey,
+    privateKeys: recovered.privateKeys,
+    recoveryPrivateKeys: recovered.kit.recoveryPrivateKeys,
+    recoveryVerifier: recovered.kit.recoveryVerifier,
+  });
+  assert.equal(completed.status, 200, JSON.stringify(completed.body));
+  // Se cerraron todas las sesiones; la contraseña vieja ya no entra y el kit usado ya no sirve.
+  assert.equal((await ana.client.call("GET", "/api/me")).body.user, null);
+  assert.notEqual((await new Client().call("POST", "/api/auth/sign-in/email", { email: anaEmail, password: ana.keys.authKey })).status, 200);
+  assert.equal((await recovery("start", { email: anaEmail, recoveryAuth: await recoveryProof(ana.recoveryCode) })).status, 403);
+  const anaAgain = new Client();
+  assert.equal((await anaAgain.call("POST", "/api/auth/sign-in/email", { email: anaEmail, password: anaNew.authKey })).status, 200);
+  const meAgain = await anaAgain.call("GET", "/api/me");
+  assert.equal((await unlockIdentity(meAgain.body.keys, anaNew.encKey)).signPublicKey, ana.upload.signPublicKey);
+
+  // --- Cambiar la contraseña y pedir un kit nuevo (con sesión) ---
+  const anaThird = await derivePasswordKeys(anaEmail, "tercera contraseña de ana", FAST);
+  const rewrapped = await rewrapIdentity(meAgain.body.keys.privateKeys, anaNew.encKey, anaThird.encKey);
+  assert.equal((await anaAgain.call("POST", "/api/account/password", { currentPassword: anaThird.authKey, newPassword: anaThird.authKey, privateKeys: rewrapped })).status, 403);
+  const anaOtherDevice = new Client();
+  await anaOtherDevice.call("POST", "/api/auth/sign-in/email", { email: anaEmail, password: anaNew.authKey });
+  assert.equal((await anaAgain.call("POST", "/api/account/password", { currentPassword: anaNew.authKey, newPassword: anaThird.authKey, privateKeys: rewrapped })).status, 200);
+  // Esta sesión sigue; la del otro dispositivo se cerró.
+  assert.ok((await anaAgain.call("GET", "/api/me")).body.user);
+  assert.equal((await anaOtherDevice.call("GET", "/api/me")).body.user, null);
+  const freshKit = await newRecoveryKit(rewrapped, anaThird.encKey);
+  assert.equal((await anaAgain.call("POST", "/api/account/recovery-kit", { password: anaNew.authKey, ...freshKit })).status, 403);
+  assert.equal((await anaAgain.call("POST", "/api/account/recovery-kit", { password: anaThird.authKey, ...freshKit })).status, 200);
+  assert.equal((await recovery("start", { email: anaEmail, recoveryAuth: await recoveryProof(freshKit.recoveryCode) })).status, 200);
+
+  // --- Dispositivos: se ven sin tokens y se cierra uno ---
+  const tablet = new Client();
+  await tablet.call("POST", "/api/auth/sign-in/email", { email: anaEmail, password: anaThird.authKey }, { origin: ORIGIN });
+  const devices = await anaAgain.call("GET", "/api/account/devices");
+  assert.equal(devices.body.devices.length, 2);
+  assert.equal(devices.body.devices.filter((device: { current: boolean }) => device.current).length, 1);
+  assert.ok(devices.body.devices.every((device: Record<string, unknown>) => !("token" in device)));
+  const other = devices.body.devices.find((device: { current: boolean }) => !device.current);
+  assert.equal((await anaAgain.call("DELETE", `/api/account/devices/${other.id}`)).status, 200);
+  assert.equal((await tablet.call("GET", "/api/me")).body.user, null);
+
+  // --- Sacar a Flor: claves nuevas de Familia y Adultos para los que quedan ---
+  const anaIdentity = await unlockIdentity(meAgain.body.keys, anaNew.encKey);
+  const roster = (await anaAgain.call("GET", `/api/households/${householdId}/members`)).body.members as { userId: string; role: string; encPublicKey: string }[];
+  const remaining = roster.filter((member) => member.userId !== flor.userId);
+  const newFamily = newScopeKey();
+  const newAdults = newScopeKey();
+  const wrapFor = (raw: Uint8Array, scope: Scope, members: typeof remaining) =>
+    Promise.all(members.map(async (member) => ({ userId: member.userId, envelope: await sealEnvelope(raw, member.encPublicKey, envelopeContext(householdId, scope, 2, member.userId)) })));
+  const removal = {
+    encryptedName: await seal(await importScopeKey(newFamily), "Casa Paredez", `household-name|${householdId}`),
+    rotation: [
+      { scope: "family", version: 2, envelopes: await wrapFor(newFamily, "family", remaining) },
+      { scope: "adults", version: 2, envelopes: await wrapFor(newAdults, "adults", remaining.filter((member) => member.role !== "kid")) },
+    ],
+  };
+  // Faltando alguien (Tomi) en los sobres: hay que rearmarlos. Flor no puede sacar a nadie.
+  const missingTomi = { ...removal, rotation: [{ ...removal.rotation[0], envelopes: removal.rotation[0].envelopes.filter((entry) => entry.userId !== kid.userId) }, removal.rotation[1]] };
+  assert.equal((await anaAgain.call("POST", `/api/households/${householdId}/members/${flor.userId}/remove`, missingTomi)).status, 409);
+  assert.equal((await flor.client.call("POST", `/api/households/${householdId}/members/${kid.userId}/remove`, removal)).status, 403);
+  const removed = await anaAgain.call("POST", `/api/households/${householdId}/members/${flor.userId}/remove`, removal);
+  assert.equal(removed.status, 200, JSON.stringify(removed.body));
+  // Flor ya no entra a nada de la casa.
+  assert.equal((await flor.client.call("GET", `/api/households/${householdId}/members`)).status, 404);
+  assert.equal((await pull(flor)).status, 404);
+  // La casa sigue legible con la Familia nueva; lo viejo, con la vieja (Ana guarda los dos sobres).
+  const afterRemoval = (await anaAgain.call("GET", "/api/me")).body.households[0];
+  assert.equal(afterRemoval.familyKeyVersion, 2);
+  const family2 = afterRemoval.envelopes.find((entry: { scope: string; version: number }) => entry.scope === "family" && entry.version === 2);
+  const opened2 = await openEnvelope(family2.envelope, anaIdentity, envelopeContext(householdId, "family", 2, ana.userId));
+  assert.equal(await openText(opened2.key, afterRemoval.encryptedName, `household-name|${householdId}`), "Casa Paredez");
+  // Flor sigue en la lista como ex miembro (para verificar sus cambios viejos), con su clave de firma.
+  const withFormer = (await anaAgain.call("GET", `/api/households/${householdId}/members`)).body;
+  assert.deepEqual(withFormer.former.map((member: { userId: string; signPublicKey: string }) => [member.userId, member.signPublicKey]), [[flor.userId, flor.upload.signPublicKey]]);
+  // Lo nuevo se escribe con la versión nueva; con la vieja, se rechaza.
+  const anaSigner = { identity: anaIdentity, userId: ana.userId, client: anaAgain };
+  assert.equal((await push(anaSigner, [await op(anaSigner, "family", anaFamily, { changes: [] })])).status, 409);
+  assert.equal((await push(anaSigner, [await op(anaSigner, "family", opened2.key, { changes: [] }, { keyVersion: 2 })])).status, 200);
+
+  // --- Pasar a alguien a chico rota la clave de Adultos (ya la tenía) ---
+  const membersPath = `/api/households/${householdId}/members/${kid.userId}`;
+  assert.equal((await anaAgain.call("PATCH", membersPath, { role: "adult" })).status, 200);
+  assert.equal((await anaAgain.call("PATCH", membersPath, { role: "kid" })).status, 400);
+  const adults3 = newScopeKey();
+  const demote = { role: "kid", rotation: { version: 3, envelopes: [{ userId: ana.userId, envelope: await sealEnvelope(adults3, ana.upload.encPublicKey, envelopeContext(householdId, "adults", 3, ana.userId)) }] } };
+  assert.equal((await anaAgain.call("PATCH", membersPath, { ...demote, rotation: { ...demote.rotation, version: 2 } })).status, 409);
+  assert.equal((await anaAgain.call("PATCH", membersPath, demote)).status, 200);
+  assert.equal((await anaAgain.call("GET", "/api/me")).body.households[0].adultsKeyVersion, 3);
 });

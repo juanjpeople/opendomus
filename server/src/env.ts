@@ -24,6 +24,8 @@ export interface SessionUser {
 /** Variables por pedido (Hono `c.var`). */
 export interface Vars {
   user: SessionUser;
+  /** La sesión de este pedido (para cerrar "las otras" sin cerrar esta). */
+  sessionId: string;
 }
 
 export type AppEnv = { Bindings: Env; Variables: Vars };
