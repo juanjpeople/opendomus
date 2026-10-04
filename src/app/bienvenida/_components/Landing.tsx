@@ -21,6 +21,7 @@ import { useT } from "@/i18n";
 import { GUIDELINES, ROADMAP, TRANSPARENCY_STAGES, TRUST_PROOFS, VALUES } from "./content";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useDeviceStore } from "@/store/useDeviceStore";
+import { ProjectStats } from "./ProjectStats";
 
 const MAX_WIDTH = 1160;
 
@@ -36,6 +37,7 @@ export function Landing() {
       <TransparencySection />
       <GuidelinesSection />
       <RoadmapSection />
+      <ProjectStats />
       <Closing />
     </div>
   );

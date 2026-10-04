@@ -52,6 +52,13 @@ npm run e2e       # Playwright on out/ (desktop + phone); uses the installed Chr
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions.
 
+### Métricas sin rastreo dentro de la app
+
+`npm run metrics` consulta por CLI los contadores de archivos publicados y el tráfico
+privado del repositorio. `npm run metrics -- --write-public` actualiza únicamente
+las cifras públicas que aparecen en la bienvenida, con fecha visible y sin requests
+a GitHub desde el navegador. Ver [alcance, permisos y límites](docs/METRICAS.md).
+
 ### Static site, offline and installable (PWA)
 
 `npm run build` produces a fully static site in `out/` (`output: "export"`): no Next.js
