@@ -1,8 +1,8 @@
 "use client";
-import { App, Alert, Button, Card, Col, Descriptions, Flex, Form, Input, InputNumber, Modal, Row, Segmented, Statistic, Table, Tabs, Tag, Typography } from "antd";
+import { App, Alert, Button, Card, Col, Descriptions, Flex, Form, Input, InputNumber, Modal, Row, Segmented, Skeleton, Statistic, Table, Tabs, Tag, Typography } from "antd";
 import { CircleAlert, Gauge, KeyRound, MessageSquare, RefreshCw, ShieldCheck, Users } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { PublicLayout, useT, api, CloudError, getErrorMessage } from "./support";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OperatorLayout, useT, api, CloudError, getErrorMessage } from "./support";
 import { IconTile } from "../src/components/ui/IconTile";
 interface Overview {
   metrics: {
@@ -90,57 +90,71 @@ async function fetchAdminData(): Promise<AdminData> {
 }
 export function PlatformAdminPage() {
   const t = useT();
-  const { message, modal } = App.useApp();
+  const { modal } = App.useApp();
   const [data, setData] = useState<AdminData | null>(null);
   const [forbidden, setForbidden] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const pending = useRef(false);
+  const notice = useRef<{ destroy: () => void } | null>(null);
   const [licenseOpen, setLicenseOpen] = useState(false);
   const [form] = Form.useForm<{ count: number; expiresInDays?: number; note?: string }>();
+  const fail = useCallback((error: unknown) => {
+    setData(null);
+    setLicenseOpen(false);
+    notice.current?.destroy();
+    notice.current = null;
+    setFailure(getErrorMessage(error));
+    setForbidden(error instanceof CloudError && [401, 403, 404].includes(error.status));
+  }, []);
   const load = useCallback(async () => {
     setLoading(true);
+    setFailure(null);
     setForbidden(false);
     try {
       setData(await fetchAdminData());
     } catch (error) {
-      if (error instanceof CloudError && [401, 403, 404].includes(error.status)) setForbidden(true);
-      else message.error(getErrorMessage(error));
+      fail(error);
     } finally {
       setLoading(false);
     }
-  }, [message]);
+  }, [fail]);
   useEffect(() => {
     let cancelled = false;
-    fetchAdminData()
-      .then((next) => {
-        if (!cancelled) setData(next);
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        if (error instanceof CloudError && [401, 403, 404].includes(error.status)) setForbidden(true);
-        else message.error(getErrorMessage(error));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [message]);
+    fetchAdminData().then((next) => { if (!cancelled) setData(next); })
+      .catch((error: unknown) => { if (!cancelled) fail(error); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [fail]);
   async function action(method: "POST" | "PATCH" | "DELETE", path: string, body?: unknown) {
+    if (pending.current) return false;
+    pending.current = true;
+    setBusy(true);
     try {
       await api(method, path, body);
       await load();
       return true;
     } catch (error) {
-      message.error(getErrorMessage(error));
+      fail(error);
       return false;
+    } finally {
+      pending.current = false;
+      setBusy(false);
     }
   }
   async function createLicenses(values: { count: number; expiresInDays?: number; note?: string }) {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
     try {
       const result = await api<{ licenses: { code: string }[] }>("POST", "/api/admin/platform/licenses", values);
       setLicenseOpen(false);
       form.resetFields();
-      modal.info({
+      notice.current = modal.info({
         title: t("platformAdmin.licenses.created"),
         width: 560,
+        afterClose: () => { void load(); },
         content: (
           <Flex vertical gap={8} style={{ marginTop: 16 }}>
             <Alert type="warning" showIcon title={t("platformAdmin.licenses.once")} />
@@ -152,13 +166,17 @@ export function PlatformAdminPage() {
           </Flex>
         ),
       });
-      await load();
     } catch (error) {
-      message.error(getErrorMessage(error));
+      fail(error);
+    } finally {
+      pending.current = false;
+      setBusy(false);
     }
   }
-  if (forbidden) return <PublicLayout><Alert type="error" title="Sesión privada vencida o acceso no autorizado" description="Volvé a iniciar sesión en Cloudflare Access." /></PublicLayout>;
-  const overview = data?.overview;
+  if (forbidden) return <OperatorLayout><Alert type="error" title="Sesión privada vencida o acceso no autorizado" description="Volvé a iniciar sesión en Cloudflare Access." /><Button href="/admin">Volver a ingresar</Button></OperatorLayout>;
+  if (failure) return <OperatorLayout><Alert type="error" title="No se pudo completar la consulta u operación" description={failure} /><Typography.Paragraph>Si estabas guardando un cambio, consultá el estado antes de repetirlo: la respuesta puede haberse perdido después de aplicarlo.</Typography.Paragraph><Button onClick={load}>Volver a consultar</Button></OperatorLayout>;
+  if (!data) return <OperatorLayout><Skeleton active title={{ width: "50%" }} /><Typography.Text>Cargando administración privada…</Typography.Text></OperatorLayout>;
+  const overview = data.overview;
   const metrics = overview?.metrics;
   const metricCards = [
     [t("platformAdmin.metrics.users"), metrics?.users ?? "—", Users],
@@ -167,7 +185,7 @@ export function PlatformAdminPage() {
     [t("platformAdmin.metrics.feedback"), metrics?.openFeedback ?? "—", MessageSquare],
   ] as const;
   return (
-    <PublicLayout width={1200}>
+    <OperatorLayout width={1200}>
       <Flex vertical gap={20}>
         <Flex align="center" justify="space-between" gap={12} wrap>
           <Flex align="center" gap={14}>
@@ -179,7 +197,7 @@ export function PlatformAdminPage() {
               <Typography.Text type="secondary">Acceso privado · Cloudflare Access</Typography.Text>
             </div>
           </Flex>
-          <Button icon={<RefreshCw />} loading={loading} onClick={load}>
+          <Button icon={<RefreshCw />} loading={loading} disabled={busy} onClick={load}>
             {t("common.reload")}
           </Button>
         </Flex>
@@ -228,7 +246,7 @@ export function PlatformAdminPage() {
                 key: "households",
                 label: t("platformAdmin.tabs.households"),
                 children: (
-                  <Table
+                  <Table scroll={{ x: "max-content" }}
                     rowKey="id"
                     dataSource={data?.households ?? []}
                     pagination={{ pageSize: 10 }}
@@ -272,7 +290,7 @@ export function PlatformAdminPage() {
                 key: "users",
                 label: t("platformAdmin.tabs.users"),
                 children: (
-                  <Table
+                  <Table scroll={{ x: "max-content" }}
                     rowKey="id"
                     dataSource={data?.users ?? []}
                     pagination={{ pageSize: 10 }}
@@ -294,7 +312,7 @@ export function PlatformAdminPage() {
                     <Button type="primary" icon={<KeyRound />} onClick={() => setLicenseOpen(true)} style={{ alignSelf: "flex-start" }}>
                       {t("platformAdmin.licenses.create")}
                     </Button>
-                    <Table
+                    <Table scroll={{ x: "max-content" }}
                       rowKey="id"
                       dataSource={data?.licenses ?? []}
                       pagination={{ pageSize: 10 }}
@@ -321,7 +339,7 @@ export function PlatformAdminPage() {
                 key: "feedback",
                 label: t("platformAdmin.tabs.feedback"),
                 children: (
-                  <Table
+                  <Table scroll={{ x: "max-content" }}
                     rowKey="id"
                     dataSource={data?.feedback ?? []}
                     pagination={{ pageSize: 10 }}
@@ -353,7 +371,7 @@ export function PlatformAdminPage() {
                 key: "notices",
                 label: t("platformAdmin.tabs.notices"),
                 children: (
-                  <Table
+                  <Table scroll={{ x: "max-content" }}
                     rowKey={(row) => `${row.householdId}-${row.daysBeforePause}`}
                     dataSource={data?.notices ?? []}
                     pagination={{ pageSize: 10 }}
@@ -396,11 +414,11 @@ export function PlatformAdminPage() {
           <Form.Item name="note" label={t("platformAdmin.note")}>
             <Input maxLength={120} />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block>
+          <Button type="primary" htmlType="submit" loading={busy} block>
             {t("platformAdmin.licenses.create")}
           </Button>
         </Form>
       </Modal>
-    </PublicLayout>
+    </OperatorLayout>
   );
 }

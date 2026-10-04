@@ -254,3 +254,10 @@ Validar antes de usar en producción: entrada con un operador permitido y MFA,
 rechazo de otro correo, sesión vencida, acceso directo a `/panel.js` sin sesión,
 rechazo de solicitudes desde otro sitio y operaciones auditadas con la identidad real.
 El panel y la configuración aún requieren despliegue manual; compilar no los activa.
+
+Pruebas del panel: `npm run build:operator` y
+`npx playwright test --config playwright.operator.config.ts`. Usan HTTPS local,
+un certificado temporal generado con OpenSSL y JWT firmados con claves efímeras.
+El gateway y el navegador son reales; los datos del backend son sintéticos. En
+Windows se usa OpenSSL de Git for Windows; `OPENSSL_BINARY` permite indicar otra
+instalación. Estas pruebas no sustituyen la validación de OTP/MFA en Cloudflare.

@@ -23,12 +23,13 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
   const response = await fetch(path, { method, credentials: "same-origin", redirect: "error", cache: "no-store", headers: { "X-OpenDomus-Operator": "browser", ...(body === undefined ? {} : { "Content-Type": "application/json" }) }, body: body === undefined ? undefined : JSON.stringify(body) });
 
   if (!response.ok) throw new CloudError(response.status);
+  if (!response.headers.get("Content-Type")?.includes("application/json")) throw new CloudError(401);
 
   return response.json() as Promise<T>;
 
 }
 
-export function PublicLayout({ children, width = 1200 }: { children: ReactNode; width?: number }) {
+export function OperatorLayout({ children, width = 1200 }: { children: ReactNode; width?: number }) {
 
   const { token } = theme.useToken();
 
