@@ -12,6 +12,7 @@ import { bodyLimit } from "hono/body-limit";
 import type { z } from "zod";
 import { opSigningData, SYNC_LIMITS } from "../../src/lib/sync/protocol";
 import { authOptions } from "./auth-options";
+import { enabledSocialProviders, socialProviders } from "./social-auth";
 import type { AppEnv, Env, SessionUser } from "./env";
 import { DAY, INACTIVITY_NOTICE_DAYS, inactivityNoticeWindow, inactiveBefore } from "./inactivity";
 import { PhotoStorageError, photoStorage } from "./photo-storage";
@@ -56,6 +57,7 @@ function createAuth(env: Env) {
       secret: env.BETTER_AUTH_SECRET,
       baseURL: env.APP_ORIGIN,
       trustedOrigins: allowedOrigins(env),
+      ...socialProviders(env),
     }),
   );
 }
@@ -128,6 +130,11 @@ app.use("/feedback", bodyLimit({ maxSize: 8 * 1024, onError: (c) => c.json({ err
 app.on(["GET", "POST"], "/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
 
 app.get("/health", (c) => c.json({ ok: true }));
+
+app.get("/social-providers", (c) => {
+  c.header("Cache-Control", "no-store");
+  return c.json({ providers: enabledSocialProviders(c.env) });
+});
 
 /** Exige sesión. */
 async function requireUser(c: Context<AppEnv>): Promise<SessionUser | null> {

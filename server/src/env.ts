@@ -1,7 +1,8 @@
 import type { HouseholdLog } from "./sync";
+import type { SocialAuthEnv } from "./social-auth";
 
 /** Lo que Cloudflare le da al Worker (ver `wrangler.jsonc` en la raíz y `.dev.vars` en desarrollo). */
-export interface Env {
+export interface Env extends SocialAuthEnv {
   DB: D1Database;
   /** Registro de cambios cifrados de cada casa (un Durable Object por casa). */
   HOUSEHOLD: DurableObjectNamespace<HouseholdLog>;
