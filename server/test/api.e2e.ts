@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
+import WebSocket from "ws";
 import {
   createIdentity,
   derivePasswordKeys,
@@ -84,7 +85,7 @@ async function adminCall(method: "GET" | "POST" | "PATCH" | "DELETE", path: stri
   return { status: response.status, body: await response.json().catch(() => null) };
 }
 
-test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () => {
+test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async (t) => {
   const anonymous = new Client();
   assert.equal((await anonymous.call("POST", "/api/auth/sign-in/email", { oversized: "x".repeat(17 * 1024) })).status, 413);
   assert.equal((await anonymous.call("POST", "/api/feedback", { message: "x".repeat(9 * 1024) })).status, 413);
@@ -271,8 +272,8 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
     new Promise<number | "rejected">((resolve) => {
       const headers: Record<string, string> = { Origin: origin };
       if (client) headers.Cookie = [...client.cookies].map(([name, value]) => `${name}=${value}`).join("; ");
-      // Node acepta encabezados al abrir un WebSocket (el navegador manda Origin y cookies solo).
-      const socket = new WebSocket(`${API.replace(/^http/, "ws")}/api/households/${householdId}/live`, { headers } as unknown as string[]);
+      // Cliente Node explícito: permite probar cookies y Origin del handshake del navegador.
+      const socket = new WebSocket(`${API.replace(/^http/, "ws")}/api/households/${householdId}/live`, { headers });
       socket.onmessage = (event) => {
         resolve(JSON.parse(String(event.data)).seq);
         socket.close();
@@ -283,6 +284,31 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal(await live(ORIGIN, null), "rejected");
   // Lo rechazado nunca llegó al registro: siguen siendo las tres operaciones de Ana.
   assert.equal(await live(ORIGIN, flor.client), florPull.body.head);
+  async function persistentLive(client: Client, extraHeaders: Record<string, string> = {}) {
+    const headers = { Origin: ORIGIN, Cookie: [...client.cookies].map(([name, value]) => `${name}=${value}`).join("; "), ...extraHeaders };
+    const socket = new WebSocket(`${API.replace(/^http/, "ws")}/api/households/${householdId}/live`, { headers });
+    t.after(() => socket.close());
+    const received: number[] = [];
+    const closed = new Promise<number>((resolve) => { socket.onclose = (event) => resolve(event.code); });
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => { socket.close(); reject(new Error("live handshake timed out")); }, 10_000);
+      socket.onmessage = (event) => {
+        received.push(JSON.parse(String(event.data)).seq);
+        clearTimeout(timeout);
+        resolve();
+      };
+      socket.onerror = () => { clearTimeout(timeout); reject(new Error("live handshake failed")); };
+    });
+    return {
+      socket, received,
+      closed: (label: string) => new Promise<number>((resolve, reject) => {
+        // El proxy local puede demorar en completar el cierre TCP; se exige el código de
+        // autorización y se verifica aparte que no se haya recibido ningún aviso posterior.
+        const timeout = setTimeout(() => reject(new Error(`${label} socket remained open; messages=${received.length}, state=${socket.readyState}`)), 35_000);
+        void closed.then((code) => { clearTimeout(timeout); resolve(code); });
+      }),
+    };
+  }
 
   // --- Recuperar con el kit (sin sesión, sin email) ---
   const recovery = (path: string, body: unknown) => new Client().call("POST", `/api/recovery/${path}`, body);
@@ -336,8 +362,22 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal(devices.body.devices.filter((device: { current: boolean }) => device.current).length, 1);
   assert.ok(devices.body.devices.every((device: Record<string, unknown>) => !("token" in device)));
   const other = devices.body.devices.find((device: { current: boolean }) => !device.current);
+  const currentDevice = devices.body.devices.find((device: { current: boolean }) => device.current);
+  // Los encabezados internos falsificados no pueden cambiar la identidad del socket.
+  const tabletLive = await persistentLive(tablet, { "X-OpenDomus-Session": currentDevice.id, "X-OpenDomus-User": flor.userId });
+  const retainedLive = await persistentLive(anaAgain);
+  assert.equal((await flor.client.call("DELETE", `/api/account/devices/${other.id}`)).status, 200);
+  assert.ok((await tablet.call("GET", "/api/me")).body.user); // Otra cuenta no puede revocarlo.
   assert.equal((await anaAgain.call("DELETE", `/api/account/devices/${other.id}`)).status, 200);
   assert.equal((await tablet.call("GET", "/api/me")).body.user, null);
+  const afterRevoke = await push({ client: anaAgain }, [await op(ana, "family", anaFamily, { changes: [] })]);
+  assert.equal(afterRevoke.status, 200);
+  assert.equal(await tabletLive.closed("tablet"), 1008);
+  assert.equal(tabletLive.received.length, 1); // Solo el aviso inicial, ninguno posterior a revocar.
+  assert.equal(retainedLive.socket.readyState, WebSocket.OPEN);
+  assert.equal(retainedLive.received.at(-1), afterRevoke.body.acks[0].seq);
+  retainedLive.socket.close();
+  await retainedLive.closed("retained");
 
   // --- Sacar a Flor: claves nuevas de Familia y Adultos para los que quedan ---
   const anaIdentity = await unlockIdentity(meAgain.body.keys, anaNew.encKey);
@@ -358,6 +398,9 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   const missingTomi = { ...removal, rotation: [{ ...removal.rotation[0], envelopes: removal.rotation[0].envelopes.filter((entry) => entry.userId !== kid.userId) }, removal.rotation[1]] };
   assert.equal((await anaAgain.call("POST", `/api/households/${householdId}/members/${flor.userId}/remove`, missingTomi)).status, 409);
   assert.equal((await flor.client.call("POST", `/api/households/${householdId}/members/${kid.userId}/remove`, removal)).status, 403);
+  const formerLive = await persistentLive(flor.client);
+  const otherTabs = await Promise.all([persistentLive(flor.client), persistentLive(flor.client), persistentLive(flor.client)]);
+  assert.equal(await live(ORIGIN, flor.client), "rejected"); // Cuatro conexiones por sesión.
   const removed = await anaAgain.call("POST", `/api/households/${householdId}/members/${flor.userId}/remove`, removal);
   assert.equal(removed.status, 200, JSON.stringify(removed.body));
   // Flor ya no entra a nada de la casa.
@@ -376,6 +419,12 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   const anaSigner = { identity: anaIdentity, userId: ana.userId, client: anaAgain };
   assert.equal((await push(anaSigner, [await op(anaSigner, "family", anaFamily, { changes: [] })])).status, 409);
   assert.equal((await push(anaSigner, [await op(anaSigner, "family", opened2.key, { changes: [] }, { keyVersion: 2 })])).status, 200);
+  assert.equal(await formerLive.closed("former"), 1008);
+  assert.equal(formerLive.received.length, 1);
+  for (const tab of otherTabs) {
+    assert.equal(await tab.closed("former tab"), 1008);
+    assert.equal(tab.received.length, 1);
+  }
 
   // --- Pasar a alguien a chico rota la clave de Adultos (ya la tenía) ---
   const membersPath = `/api/households/${householdId}/members/${kid.userId}`;
