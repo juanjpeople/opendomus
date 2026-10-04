@@ -9,7 +9,7 @@ import {
   useScroll,
   useSpring,
 } from "framer-motion";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
 import { House } from "@/components/illustrations/House";
@@ -17,7 +17,7 @@ import { HouseMark } from "@/components/illustrations/HouseMark";
 import { LanguageSwitch, ThemeModeSwitch } from "@/components/layout/HeaderActions";
 import { IconTile } from "@/components/ui";
 import { useT } from "@/i18n";
-import { GUIDELINES, ROADMAP, VALUES } from "./content";
+import { GUIDELINES, ROADMAP, TRANSPARENCY_STAGES, TRUST_PROOFS, VALUES } from "./content";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useDeviceStore } from "@/store/useDeviceStore";
 
@@ -31,6 +31,7 @@ export function Landing() {
       <LandingHeader />
       <Hero />
       <ValuesSection />
+      <TransparencySection />
       <GuidelinesSection />
       <RoadmapSection />
       <Closing />
@@ -300,6 +301,142 @@ function ValueItem({
         </Typography.Paragraph>
       </motion.div>
     </Flex>
+  );
+}
+
+function TransparencySection() {
+  const { token } = theme.useToken();
+  const t = useT();
+  const screens = Grid.useBreakpoint();
+  const isDesktop = !!screens.md;
+
+  return (
+    <section id="transparencia" style={{ paddingBlock: 96, background: token.colorBgContainer, scrollMarginTop: 64 }}>
+      <Container>
+        <SectionTitle
+          eyebrow={t("landing.transparency.eyebrow")}
+          title={t("landing.transparency.title")}
+          description={t("landing.transparency.description")}
+        />
+
+        <div
+          style={{
+            padding: isDesktop ? 32 : 20,
+            borderRadius: token.borderRadiusLG * 2,
+            border: `1px solid ${token.colorBorderSecondary}`,
+            background: `radial-gradient(circle at 50% 0%, ${token.colorPrimaryBg}, ${token.colorBgLayout} 58%)`,
+            boxShadow: token.boxShadowTertiary,
+          }}
+        >
+          <Flex vertical={!isDesktop} align="stretch" gap={isDesktop ? 12 : 8}>
+            {TRANSPARENCY_STAGES.map(({ key, icon: Icon }, index) => (
+              <div key={key} style={{ display: "contents" }}>
+                <motion.div
+                  initial={{ opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{ duration: 0.45, delay: index * 0.08 }}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    padding: 20,
+                    borderRadius: token.borderRadiusLG,
+                    border: `1px solid ${token.colorBorderSecondary}`,
+                    background: `color-mix(in srgb, ${token.colorBgContainer} 88%, transparent)`,
+                  }}
+                >
+                  <Flex align="center" justify="space-between" gap={12} style={{ marginBottom: 18 }}>
+                    <IconTile icon={Icon} solid={key === "encryption"} />
+                    <Typography.Text type="secondary" style={{ fontFamily: "var(--font-geist-mono)", fontSize: token.fontSizeSM }}>
+                      {String(index + 1).padStart(2, "0")}
+                    </Typography.Text>
+                  </Flex>
+                  <Typography.Title level={5} style={{ margin: "0 0 8px" }}>
+                    {t(`landing.transparency.stages.${key}.title`)}
+                  </Typography.Title>
+                  <Typography.Paragraph type="secondary" style={{ margin: 0, lineHeight: 1.55 }}>
+                    {t(`landing.transparency.stages.${key}.text`)}
+                  </Typography.Paragraph>
+                </motion.div>
+                {index < TRANSPARENCY_STAGES.length - 1 && (
+                  <Flex align="center" justify="center" aria-hidden style={{ color: token.colorPrimary, flex: "0 0 auto" }}>
+                    {isDesktop ? <ArrowRight size={18} /> : <ArrowDown size={18} />}
+                  </Flex>
+                )}
+              </div>
+            ))}
+          </Flex>
+          <Flex align="center" gap={10} style={{ marginTop: 24, color: token.colorTextSecondary }}>
+            <ShieldCheckMark />
+            <Typography.Text type="secondary">{t("landing.transparency.diagramNote")}</Typography.Text>
+          </Flex>
+        </div>
+
+        <div style={{ marginTop: 64 }}>
+          <Typography.Title level={3} style={{ marginBottom: 8, fontSize: "clamp(1.5rem, 3vw, 2rem)" }}>
+            {t("landing.transparency.proofTitle")}
+          </Typography.Title>
+          <Typography.Paragraph type="secondary" style={{ fontSize: token.fontSizeLG, maxWidth: 720, marginBottom: 28 }}>
+            {t("landing.transparency.proofDescription")}
+          </Typography.Paragraph>
+          <Row gutter={[16, 16]}>
+            {TRUST_PROOFS.map(({ key, icon, href }, index) => (
+              <Col key={key} xs={24} sm={12} lg={6}>
+                <motion.div
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.35 }}
+                  transition={{ duration: 0.45, delay: index * 0.06 }}
+                  style={{
+                    height: "100%",
+                    padding: 22,
+                    borderRadius: token.borderRadiusLG * 1.5,
+                    border: `1px solid ${token.colorBorderSecondary}`,
+                    background: token.colorBgLayout,
+                  }}
+                >
+                  <IconTile icon={icon} size={42} />
+                  <Typography.Title level={5} style={{ margin: "16px 0 8px" }}>
+                    {t(`landing.transparency.proofs.${key}.title`)}
+                  </Typography.Title>
+                  <Typography.Paragraph type="secondary" style={{ marginBottom: href ? 16 : 0 }}>
+                    {t(`landing.transparency.proofs.${key}.text`)}
+                  </Typography.Paragraph>
+                  {href && (
+                    <Typography.Link href={href} target="_blank" rel="noreferrer">
+                      <Flex component="span" align="center" gap={6}>
+                        {t(`landing.transparency.proofs.${key}.link`)}
+                        <ExternalLink size={14} aria-hidden />
+                      </Flex>
+                    </Typography.Link>
+                  )}
+                </motion.div>
+              </Col>
+            ))}
+          </Row>
+          <Typography.Paragraph type="secondary" style={{ margin: "20px 0 0", fontSize: token.fontSizeSM }}>
+            {t("landing.transparency.auditNote")}
+          </Typography.Paragraph>
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+function ShieldCheckMark() {
+  const { token } = theme.useToken();
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 10,
+        height: 10,
+        flex: "0 0 auto",
+        borderRadius: "50%",
+        background: token.colorSuccess,
+        boxShadow: `0 0 0 4px ${token.colorSuccessBg}`,
+      }}
+    />
   );
 }
 

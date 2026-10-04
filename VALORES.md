@@ -45,6 +45,21 @@ Los valores bajados a reglas concretas. Si una decisión de producto o de códig
 | **Sin patrones oscuros** | Nada de urgencias falsas ni avisos para retenerte. El sistema avisa solo lo que importa. |
 | **Corre en lo que tengas** | Un contenedor en una NAS o una Raspberry. Si es difícil de instalar, es un bug. |
 
+## 🔎 Transparencia verificable
+
+La confianza no se apoya solo en promesas:
+
+- la landing explica el recorrido conceptual de los datos sin publicar secretos operativos;
+- el código y el historial de cambios son públicos;
+- cada cambio pasa por tipos, tests, API, navegador y análisis automáticos de seguridad;
+- las dependencias nuevas se revisan antes de entrar;
+- existe un canal privado para reportar vulnerabilidades;
+- los datos se pueden exportar y el modo local no depende del servicio.
+
+CodeQL, Dependency Review, Dependabot y OpenSSF Scorecard dejan evidencia continua y
+pública. Reducen riesgos, pero no se presentan como una certificación ni reemplazan una
+auditoría de seguridad independiente.
+
 ---
 
 ## ✅ Antes de sumar una funcionalidad, preguntate

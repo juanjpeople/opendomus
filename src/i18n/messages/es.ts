@@ -1434,6 +1434,55 @@ export const es = {
         },
       },
     },
+    transparency: {
+      eyebrow: "Transparencia",
+      title: "Tus datos hacen este recorrido. Ninguno más.",
+      description: "OpenDomus funciona primero en tu dispositivo. La nube solo entra en escena si la elegís para compartir, y recibe el contenido después de que fue cifrado.",
+      stages: {
+        device: {
+          title: "Nacen en tu dispositivo",
+          text: "La casa funciona y guarda sus datos localmente, incluso sin conexión y sin crear una cuenta.",
+        },
+        encryption: {
+          title: "Se cifran antes de salir",
+          text: "El contenido se cierra en tu dispositivo con las claves de tu casa. No viaja en claro.",
+        },
+        cloud: {
+          title: "La nube guarda cajas cerradas",
+          text: "Si activás la sincronización, coordina cambios cifrados. No recibe las claves para leerlos.",
+        },
+        family: {
+          title: "Abre quien corresponde",
+          text: "Solo los dispositivos autorizados de tu familia reciben las claves del nivel que pueden ver.",
+        },
+      },
+      diagramNote: "El modo local no necesita nube. Activarla es una decisión explícita y reversible.",
+      proofTitle: "No hace falta creernos",
+      proofDescription: "El diseño, el código y sus controles están a la vista. Estas son pruebas que cualquiera puede revisar.",
+      proofs: {
+        source: {
+          title: "Código público",
+          text: "La implementación completa se puede leer, estudiar y ejecutar por cuenta propia.",
+          link: "Ver el repositorio",
+        },
+        checks: {
+          title: "Cada cambio se prueba",
+          text: "Tipos, tests, API, navegador y análisis de seguridad automáticos corren en cada cambio.",
+          link: "Ver los controles",
+        },
+        exit: {
+          title: "La salida queda abierta",
+          text: "Podés exportar tus datos y conservar tu kit de recuperación. La casa no queda atada al servicio.",
+          link: "",
+        },
+        report: {
+          title: "Reporte responsable",
+          text: "Hay un canal privado para avisar una vulnerabilidad sin exponer a las familias.",
+          link: "Cómo reportar",
+        },
+      },
+      auditNote: "Los controles automáticos reducen riesgos y dejan evidencia pública; no reemplazan una auditoría de seguridad independiente.",
+    },
     guidelines: {
       eyebrow: "Lineamientos",
       title: "Cómo construimos",
