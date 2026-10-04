@@ -29,6 +29,8 @@
     "bindings": [{ "name": "HOUSEHOLD", "class_name": "HouseholdLog" }],
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["HouseholdLog"] }],
+  // Fotos cifradas en el dispositivo (R2 guarda bytes que no puede leer). Ver server/src/index.ts.
+  "r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "opendomus-photos" }],
   "vars": {
     "APP_ORIGIN": "https://opendomus.juanjpeople.workers.dev",
     // Crear una casa en la nube pide una licencia (en desarrollo, `.dev.vars` puede poner `open`).

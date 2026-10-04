@@ -60,7 +60,7 @@ export async function setRecipeCover(actor: Actor | null, id: string, photoId: s
 /** Borra la receta con sus fotos y comentarios (no tienen sentido solos). */
 export async function deleteRecipe(actor: Actor | null, id: string) {
   assertCan(actor, "recipes.manage");
-  await db.transaction("rw", db.recipes, db.photos, db.comments, db.activity, async () => {
+  await db.transaction("rw", db.recipes, db.photos, db.comments, db.activity, db.photoDeletes, async () => {
     const recipe = await db.recipes.get(id);
     if (!recipe) return;
     await setActivityPrivacy("recipes", id, recipe.privacy ?? "family", recipe.createdBy);

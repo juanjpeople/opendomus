@@ -5,6 +5,8 @@ export interface Env {
   DB: D1Database;
   /** Registro de cambios cifrados de cada casa (un Durable Object por casa). */
   HOUSEHOLD: DurableObjectNamespace<HouseholdLog>;
+  /** Fotos, cifradas en el dispositivo antes de subir (R2). */
+  PHOTOS: R2Bucket;
   /** Los archivos estáticos de la app (out/). */
   ASSETS: Fetcher;
   /** Secreto de sesiones de Better Auth (`wrangler secret put BETTER_AUTH_SECRET`). */

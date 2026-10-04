@@ -274,6 +274,37 @@ describe("sincronización: niveles de privacidad", () => {
   });
 });
 
+describe("sincronización: fotos", () => {
+  test("la ficha viaja (con su clave) pero los bytes no; los bytes de acá no se pisan", () => {
+    const server = new Server();
+    const ana = new Device("ana");
+    const flor = new Device("flor");
+    const bytes = { size: 1234 };
+    ana.write("photos", "foto", () => ({ id: "foto", ownerType: "recipe", ownerId: "r1", width: 800, height: 600, key: "clave", mime: "image/webp", blob: bytes, thumb: bytes }));
+    ana.push(server);
+    const sent = server.log[0].change.f ?? {};
+    assert.equal("blob" in sent || "thumb" in sent, false);
+    assert.equal(sent.key, "clave");
+    flor.pull(server);
+    assert.equal(flor.get("photos", "foto")!.blob, undefined);
+    // Flor la baja (sus bytes, sin registrar) y después Ana la marca subida: los bytes de Flor quedan.
+    flor.rows.set(recordKey("photos", "foto"), { ...flor.get("photos", "foto")!, blob: bytes });
+    ana.write("photos", "foto", (row) => ({ ...row!, uploaded: true }));
+    ana.push(server);
+    flor.pull(server);
+    assert.equal(flor.get("photos", "foto")!.uploaded, true);
+    assert.equal(flor.get("photos", "foto")!.blob, bytes);
+  });
+
+  test("hereda el nivel de su receta y la maneja quien puede editar recetas", async () => {
+    const get = async (table: SyncTable, id: string) => (table === "recipes" && id === "r1" ? { id, privacy: "adults" } : undefined);
+    assert.equal(await resolveScope("photos", { id: "foto", ownerType: "recipe", ownerId: "r1" }, get), "adults");
+    const change: Change = { t: "photos", id: "foto", k: "put", full: true, f: { ownerType: "recipe", ownerId: "r1" } };
+    assert.equal(isAllowed({ userId: "tomi", role: "kid" }, change, undefined), false);
+    assert.equal(isAllowed({ userId: "flor", role: "adult" }, change, undefined), true);
+  });
+});
+
 describe("sincronización: permisos verificados en cada dispositivo", () => {
   const admin = { userId: "ana", role: "admin" as const };
   const adult = { userId: "flor", role: "adult" as const };

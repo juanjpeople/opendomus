@@ -8,7 +8,8 @@ import { useCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
 import { objectUrlFor, retainObjectUrl } from "@/lib/objectUrls";
-import type { PhotoOwner } from "./domain";
+import { ensurePhotoBytes } from "@/lib/sync/photos";
+import type { Photo, PhotoOwner } from "./domain";
 import { addPhotos, deletePhoto } from "./service";
 
 /** Fotos de algo, en el orden en que se subieron. */
@@ -19,9 +20,22 @@ export function usePhotos(ownerType: PhotoOwner, ownerId: string | null) {
   );
 }
 
-/** Una foto (o su miniatura) por id. */
+/**
+ * Una foto (o su miniatura) por id. Si vino de otro dispositivo y todavía no tiene los bytes, los
+ * baja de la nube (cifrados) y aparece sola cuando llegan.
+ */
 export function usePhoto(id: string | undefined, variant: "blob" | "thumb" = "thumb") {
-  return useLiveQuery(async () => (id ? ((await db.photos.get(id))?.[variant] ?? null) : null), [id, variant]);
+  const photo = useLiveQuery(async () => (id ? ((await db.photos.get(id)) ?? null) : null), [id]);
+  useEnsurePhoto(photo, variant);
+  return photo === undefined ? undefined : (photo?.[variant] ?? null);
+}
+
+/** Baja los bytes que le falten a una foto (de otro dispositivo), si ya están en la nube. */
+export function useEnsurePhoto(photo: Photo | null | undefined, ...variants: ("blob" | "thumb")[]) {
+  useEffect(() => {
+    if (photo) for (const variant of variants) ensurePhotoBytes(photo, variant);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- las variantes son fijas en cada uso
+  }, [photo]);
 }
 
 /**

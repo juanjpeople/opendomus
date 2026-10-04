@@ -29,6 +29,8 @@ const WRITE: Record<SyncTable, readonly Permission[]> = {
   shoppingCandidates: ["shopping.manage", "inventory.consume", "inventory.adjust"],
   events: ["calendar.manage"],
   recipes: ["recipes.manage"],
+  // Las fotos son de las recetas: las maneja quien puede editarlas.
+  photos: ["recipes.manage"],
   comments: ["comments.create"],
   // El historial lo escribe cada uno al hacer algo (lo que hizo sin permiso se descarta aparte).
   activity: [],

@@ -41,13 +41,14 @@ export function canSee(viewer: Viewer | null | undefined, record: { privacy?: un
   return !!record.createdBy && record.createdBy === viewer.id;
 }
 
+/** Dueños de comentarios y fotos (`ownerType`) → su tabla. */
 const COMMENT_OWNERS: Record<string, SyncTable> = { recipe: "recipes" };
 const ACTIVITY_OWNERS: Partial<Record<string, SyncTable>> = { lists: "shoppingLists", projects: "projects", recipes: "recipes", calendar: "events" };
 
 /** De quién hereda el nivel una fila, si hereda. */
 export function parentOf(table: SyncTable, row: Row): { table: SyncTable; id: string } | null {
   if (table === "shoppingList" && typeof row.listId === "string") return { table: "shoppingLists", id: row.listId };
-  if (table === "comments" && typeof row.ownerId === "string" && COMMENT_OWNERS[String(row.ownerType)]) {
+  if ((table === "comments" || table === "photos") && typeof row.ownerId === "string" && COMMENT_OWNERS[String(row.ownerType)]) {
     return { table: COMMENT_OWNERS[String(row.ownerType)], id: row.ownerId };
   }
   if (table === "activity") {

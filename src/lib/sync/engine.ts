@@ -22,6 +22,7 @@ import { db } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import { acknowledge, applyRemote, markRescope, outgoing, recordKey, type Change, type Row, type Sent, type SyncRecord } from "./merge";
 import { onLocalChange, untracked, type SyncLink } from "./middleware";
+import { flushPendingPhotoDeletes, uploadPendingPhotos } from "./photos";
 import { isAllowed } from "./policy";
 import { opContext, opSigningData, type PullResponse, type PushResponse, type StoredOp, type SyncScope, type WireOp } from "./protocol";
 import { PRIVACY_TABLES, resolveScope } from "./scope";
@@ -98,8 +99,11 @@ async function inheritorKeys(table: SyncTable, id: string): Promise<string[]> {
       return [...items.map((key) => recordKey("shoppingList", key)), ...entries.map((key) => recordKey("activity", key)), ...(await activity())];
     }
     case "recipes": {
-      const comments = await db.comments.where("[ownerType+ownerId]").equals(["recipe", id]).primaryKeys();
-      return [...comments.map((key) => recordKey("comments", key)), ...(await activity())];
+      const [comments, photos] = await Promise.all([
+        db.comments.where("[ownerType+ownerId]").equals(["recipe", id]).primaryKeys(),
+        db.photos.where("[ownerType+ownerId]").equals(["recipe", id]).primaryKeys(),
+      ]);
+      return [...comments.map((key) => recordKey("comments", key)), ...photos.map((key) => recordKey("photos", key)), ...(await activity())];
     }
     case "projects":
     case "events":
@@ -117,7 +121,7 @@ async function expandRescopes() {
     .filter((record) => PRIVACY_TABLES.has(record.t) && "privacy" in record.dirty)
     .toArray();
   if (owners.length === 0) return;
-  await db.transaction("rw", [db.syncRecords, db.shoppingList, db.activity, db.comments], async () => {
+  await db.transaction("rw", [db.syncRecords, db.shoppingList, db.activity, db.comments, db.photos], async () => {
     for (const owner of owners) {
       for (const key of await inheritorKeys(owner.t, owner.id)) {
         const [table, ...rest] = key.split("|");
@@ -484,6 +488,9 @@ class Engine {
       }
       await pull(this.ctx);
       if (paused) throw new SyncStop("paused");
+      await flushPendingPhotoDeletes(this.ctx.link.householdId).catch((error: unknown) => console.warn("[fotos] no se pudieron borrar", error));
+      // Las fotos que este dispositivo tiene y la nube todavía no (cifradas). Si falla, la próxima vuelta.
+      await uploadPendingPhotos(this.ctx.link.householdId).catch((error: unknown) => console.warn("[fotos] no se pudieron subir", error));
       this.failures = 0;
       status.update({ phase: "synced", error: null, lastSyncAt: Date.now() });
     } catch (error) {

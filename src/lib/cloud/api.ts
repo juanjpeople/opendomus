@@ -44,6 +44,26 @@ const CLOUD_ERRORS: Record<string, MessageKey> = {
   "plan-paused": "errors.cloud.planPaused",
 };
 
+/** Bytes (fotos cifradas): subir con PUT o bajar con GET. Los errores son los mismos que `api`. */
+export async function apiBytes(method: "GET" | "PUT", path: string, body?: Uint8Array<ArrayBuffer>): Promise<Uint8Array> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/api${path}`, {
+      method,
+      credentials: "include",
+      headers: body ? { "Content-Type": "application/octet-stream" } : undefined,
+      body,
+    });
+  } catch {
+    throw new CloudError("offline", 0);
+  }
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new CloudError(response.status === 429 ? "rate-limited" : (data?.error ?? "unknown"), response.status);
+  }
+  return new Uint8Array(await response.arrayBuffer());
+}
+
 export async function api<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<T> {
   let response: Response;
   try {

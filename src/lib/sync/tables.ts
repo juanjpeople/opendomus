@@ -1,6 +1,6 @@
 /**
  * Qué se sincroniza. Todo lo de la casa, salvo:
- * - las fotos (pesan: van aparte, cifradas, en una etapa siguiente);
+ * - los bytes de las fotos (pesan: van aparte, cifrados; acá viaja solo su ficha y su clave);
  * - el PIN y las huellas de cada perfil, que protegen el perfil EN ese dispositivo (un PIN de
  *   4 dígitos sincronizado se podría adivinar desde otro dispositivo de la casa).
  *
@@ -18,6 +18,7 @@ export const SYNC_TABLES = [
   "shoppingCandidates",
   "events",
   "recipes",
+  "photos",
   "comments",
   "activity",
 ] as const;
@@ -33,6 +34,8 @@ export function isSyncTable(name: string): name is SyncTable {
 /** Campos que no salen del dispositivo. */
 export const LOCAL_FIELDS: Partial<Record<SyncTable, readonly string[]>> = {
   members: ["pin", "credentials"],
+  // Los bytes de las fotos viajan aparte, cifrados (ver `src/lib/sync/photos.ts`).
+  photos: ["blob", "thumb"],
 };
 
 /** Cantidades: viajan como diferencias, así dos consumos simultáneos se suman en vez de pisarse. */

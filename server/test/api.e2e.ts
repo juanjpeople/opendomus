@@ -397,4 +397,35 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal(paused.body.error, "plan-paused");
   assert.equal((await adminCall("POST", `/households/${householdId}/resume`)).status, 200);
   assert.equal((await push(anaSigner, [await op(anaSigner, "family", opened2.key, { changes: [] }, { keyVersion: 2 })])).status, 200);
+
+  // --- Fotos (R2): bytes cifrados en el dispositivo; solo adultos administran, todos descargan ---
+  const bytes = async (client: Client | null, method: string, path: string, body?: Uint8Array, origin: string | null = ORIGIN) => {
+    const headers: Record<string, string> = { "Content-Type": "application/octet-stream" };
+    if (origin) headers.Origin = origin;
+    if (client) headers.Cookie = [...client.cookies].map(([name, value]) => `${name}=${value}`).join("; ");
+    const response = await fetch(API + path, { method, headers, body: body ? new Uint8Array(body) : undefined });
+    return { status: response.status, body: new Uint8Array(await response.arrayBuffer()) };
+  };
+  const photoPath = `/api/households/${householdId}/photos/${crypto.randomUUID()}`;
+  const sealedPhoto = crypto.getRandomValues(new Uint8Array(4_000));
+  assert.equal((await bytes(anaAgain, "PUT", `${photoPath}/thumb`, sealedPhoto)).status, 200);
+  const downloaded = await bytes(kid.client, "GET", `${photoPath}/thumb`);
+  assert.equal(downloaded.status, 200);
+  assert.deepEqual(downloaded.body, sealedPhoto);
+  // Quien ya no es de la casa, o sin sesión: nada. Una variante inventada tampoco.
+  assert.equal((await bytes(flor.client, "GET", `${photoPath}/thumb`)).status, 404);
+  assert.equal((await bytes(null, "GET", `${photoPath}/thumb`)).status, 401);
+  assert.equal((await bytes(anaAgain, "GET", `${photoPath}/original`)).status, 404);
+  // Un chico no administra fotos; sin Origin no se sube; más de 4 MB, tampoco.
+  assert.equal((await bytes(kid.client, "PUT", `${photoPath}/thumb`, sealedPhoto)).status, 403);
+  assert.equal((await bytes(anaAgain, "PUT", `${photoPath}/full`, sealedPhoto, null)).status, 403);
+  assert.equal((await bytes(anaAgain, "PUT", `${photoPath}/full`, new Uint8Array(4 * 1024 * 1024 + 1))).status, 413);
+  // En pausa no se sube.
+  await adminCall("POST", `/households/${householdId}/pause`);
+  assert.equal((await bytes(anaAgain, "PUT", `${photoPath}/full`, sealedPhoto)).status, 402);
+  await adminCall("POST", `/households/${householdId}/resume`);
+  // Borrar exige el mismo permiso de administración (Tomi no).
+  assert.equal((await bytes(kid.client, "DELETE", photoPath)).status, 403);
+  assert.equal((await bytes(anaAgain, "DELETE", photoPath)).status, 200);
+  assert.equal((await bytes(anaAgain, "GET", `${photoPath}/thumb`)).status, 404);
 });
