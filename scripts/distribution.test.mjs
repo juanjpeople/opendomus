@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import fs from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
 import { dirname, join } from "node:path";
 import { copyExport, writeManifest } from "./distribution.mjs";
 
@@ -49,4 +51,26 @@ test("rechaza enlaces a directorios fuera del export, incluso como raíz", (t) =
   symlinkSync(outside, link, process.platform === "win32" ? "junction" : "dir");
   assert.throws(() => copyExport(source, destination), /no permitido/);
   assert.throws(() => copyExport(link, destination), /directorio real/);
+});
+
+test("rechaza un archivo reemplazado entre la inspección y la apertura", (t) => {
+  const { source, destination } = fixture(t);
+  const target = join(source, "index.html");
+  writeFileSync(target, "public");
+  const original = fs.lstatSync;
+  const check = t.mock.method(fs, "lstatSync", (path, ...args) => {
+    const info = original(path, ...args);
+    if (path === target) {
+      fs.renameSync(target, join(source, "previous.html"));
+      writeFileSync(target, "replacement");
+    }
+    return info;
+  });
+  syncBuiltinESMExports();
+  try {
+    assert.throws(() => copyExport(source, destination), /archivo cambió/);
+  } finally {
+    check.mock.restore();
+    syncBuiltinESMExports();
+  }
 });
