@@ -4,7 +4,7 @@ import { Alert, Button, Card, Flex, Input, Space, Typography, theme } from "antd
 import { motion } from "framer-motion";
 import { Camera, CameraOff, ScanLine } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
 import { PageHeader } from "@/components/ui";
@@ -23,7 +23,7 @@ function getDetector(): BarcodeDetectorCtor | undefined {
   return typeof window !== "undefined" ? (window as Window & { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector : undefined;
 }
 
-type Status = "idle" | "scanning" | "denied" | "invalid";
+type Status = "idle" | "starting" | "scanning" | "denied" | "invalid";
 
 export function ScanPage() {
   const t = useT();
@@ -35,28 +35,51 @@ export function ScanPage() {
   const [manual, setManual] = useState("");
   const supported = !!getDetector() && !!navigator.mediaDevices?.getUserMedia;
 
-  function stop() {
+  const generationRef = useRef(0);
+  const pendingRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const release = useCallback(() => {
+    generationRef.current++;
+    pendingRef.current = false;
+    if (timerRef.current !== null) clearTimeout(timerRef.current);
+    timerRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
-    setStatus((current) => (current === "scanning" ? "idle" : current));
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
+
+  function stop() {
+    release();
+    setStatus("idle");
   }
 
   async function start() {
     const Detector = getDetector();
-    if (!Detector) return;
+    if (!Detector || pendingRef.current || streamRef.current) return;
+    const generation = ++generationRef.current;
+    const active = () => generation === generationRef.current;
+    pendingRef.current = true;
+    setStatus("starting");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      // El permiso puede resolverse después de cancelar o desmontar la pantalla.
+      if (!active()) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
-      setStatus("scanning");
-      const video = videoRef.current!;
+      const video = videoRef.current;
+      if (!video) { stop(); return; }
       video.srcObject = stream;
       await video.play();
-
+      if (!active()) return;
+      pendingRef.current = false;
+      setStatus("scanning");
       const detector = new Detector({ formats: ["qr_code"] });
-      // Unas 4 lecturas por segundo: suficiente para que se sienta instantáneo sin gastar batería.
       const tick = async () => {
-        if (!streamRef.current) return;
+        if (!active()) return;
         const [result] = await detector.detect(video).catch(() => []);
+        if (!active()) return;
         if (result) {
           const code = codeFromScan(result.rawValue);
           if (code) {
@@ -66,20 +89,21 @@ export function ScanPage() {
           }
           setStatus("invalid");
         }
-        setTimeout(tick, 250);
+        timerRef.current = setTimeout(tick, 250);
       };
-      tick();
+      void tick();
     } catch {
+      if (!active()) return;
+      release();
       setStatus("denied");
     }
   }
 
-  // Al salir de la página, se libera la cámara.
-  useEffect(() => () => streamRef.current?.getTracks().forEach((track) => track.stop()), []);
+  useEffect(() => release, [release]);
 
   const manualCode = normalizeContainerCode(manual);
   const openManual = () => isValidContainerCode(manualCode) && router.push(qrHref(manualCode));
-  const scanning = status === "scanning" || status === "invalid";
+  const scanning = status === "starting" || status === "scanning" || status === "invalid";
 
   return (
     <RequirePermission perform="inventory.view">
