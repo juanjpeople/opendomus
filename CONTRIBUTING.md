@@ -40,6 +40,10 @@ Reglas que no se negocian:
 - **URLs con id**: usá `containerHref`, `recipeHref`, `projectHref`, `qrHref` (`src/lib/navigation/routes.ts`). No hay rutas dinámicas: la app es un sitio estático.
 - **Nada sale sin permiso**: sin telemetría, sin llamadas externas que la persona no haya pedido.
 
+## Licencia
+
+OpenDomus es software libre bajo la [GNU AGPL v3](LICENSE) o posterior. Al contribuir, aceptás que tu aporte se publique bajo esa misma licencia.
+
 ## Commits
 
 [Conventional Commits](https://www.conventionalcommits.org/es/), en español: `feat: …`, `fix: …`, `docs: …`, `test: …`, `refactor: …`, `chore: …`. El cuerpo explica el porqué.

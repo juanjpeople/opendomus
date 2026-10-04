@@ -80,6 +80,12 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## License
+
+OpenDomus is free software under the [GNU AGPL v3](LICENSE) (or later): you can use,
+study, modify and share it. If you run a modified version as a service for others, you
+must offer them its source code too.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
