@@ -32,7 +32,14 @@ async function main() {
     policies: [policy],
   };
   if (!args.includes("--apply")) {
-    console.log(JSON.stringify({ action: "create-access-application", identityProvider: "onetimepin", application }, null, 2));
+    console.log(JSON.stringify({
+      action: "create-access-application",
+      host: input.host,
+      team: input.team,
+      allowedEmails: [...new Set(input.emails)],
+      authentication: "Email OTP + Security key o Authenticator app; segundo factor en cada login",
+      session: "1 hora",
+    }, null, 2));
     console.log("Plan solamente. Revisalo; --apply requiere un token Cloudflare con permisos Access y MFA habilitado en la organización.");
     return;
   }
