@@ -13,6 +13,13 @@ export interface Env {
   APP_ORIGIN: string;
   /** Orígenes extra separados por coma (en desarrollo: http://localhost:3000). */
   DEV_ORIGINS?: string;
+  /**
+   * Quién puede crear una casa en la nube: `codes` (con una licencia; producción) u `open` (sin
+   * licencia; solo para desarrollo). Cualquier otro valor, o ninguno, cuenta como `codes`.
+   */
+  HOUSEHOLD_ACCESS?: string;
+  /** Token de la API de administración (licencias, planes). Sin él, la API de administración no existe. */
+  ADMIN_TOKEN?: string;
 }
 
 export interface SessionUser {

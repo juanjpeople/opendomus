@@ -31,6 +31,8 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["HouseholdLog"] }],
   "vars": {
     "APP_ORIGIN": "https://opendomus.juanjpeople.workers.dev",
+    // Crear una casa en la nube pide una licencia (en desarrollo, `.dev.vars` puede poner `open`).
+    "HOUSEHOLD_ACCESS": "codes",
   },
   "observability": { "enabled": true },
 }

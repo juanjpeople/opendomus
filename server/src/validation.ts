@@ -70,10 +70,28 @@ export const envelopeInput = z.object({
   envelope,
 });
 
+/** Código de licencia, como lo escribe la persona (con o sin guiones, en minúscula o mayúscula). */
+export const licenseCode = z.string().trim().min(8).max(64);
+
 export const createHouseholdInput = z.object({
   id: uuid,
   encryptedName: box(1_024),
   envelopes: z.array(envelopeInput).min(1).max(3),
+  /** La licencia que habilita la casa en la nube (no hace falta con `HOUSEHOLD_ACCESS=open`). */
+  accessCode: licenseCode.optional(),
+});
+
+export const licenseCheckInput = z.object({ code: licenseCode });
+
+/** Administración: emitir licencias (a mano hoy; mañana, el webhook del cobro). */
+export const createLicensesInput = z.object({
+  count: z.number().int().min(1).max(50).default(1),
+  plan: z.string().regex(/^[a-z][a-z0-9-]{1,23}$/).default("beta"),
+  maxHouseholds: z.number().int().min(1).max(10).default(1),
+  expiresInDays: z.number().int().min(1).max(3650).optional(),
+  source: z.string().regex(/^[a-z][a-z0-9-]{1,23}$/).default("manual"),
+  externalId: z.string().max(128).optional(),
+  note: z.string().trim().max(120).optional(),
 });
 
 export const createInviteInput = z.object({
