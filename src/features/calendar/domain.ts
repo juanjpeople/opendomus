@@ -4,7 +4,7 @@
  */
 import { isAppearanceColor, isAppearanceIcon, type AppearanceColor, type AppearanceIcon } from "@/lib/appearance";
 import { ValidationError } from "@/lib/errors";
-import type { Privacy } from "@/lib/sync/scope";
+import { isPrivacy, type Privacy } from "@/lib/sync/scope";
 
 export const REPEATS = ["none", "daily", "weekly", "monthly", "yearly"] as const;
 export type Repeat = (typeof REPEATS)[number];
@@ -30,14 +30,16 @@ export interface CalendarEvent {
   updatedAt: number;
 }
 
-export type EventInput = Pick<CalendarEvent, "title" | "start" | "end" | "allDay" | "repeat" | "participantIds" | "color" | "icon" | "notes">;
+export type EventInput = Pick<CalendarEvent, "title" | "start" | "end" | "allDay" | "repeat" | "participantIds" | "color" | "icon" | "notes"> & { privacy?: Privacy };
 
 export const EVENT_LIMITS = { titleMaxLength: 80, notesMaxLength: 1000 } as const;
 
-export function parseEvent(input: EventInput): EventInput {
+export function parseEvent(input: EventInput): EventInput & { privacy: Privacy } {
   const title = input.title?.trim() ?? "";
+  const privacy = input.privacy ?? "family";
   if (!title) throw new ValidationError("errors.validation.nameRequired");
   if (title.length > EVENT_LIMITS.titleMaxLength) throw new ValidationError("errors.validation.nameTooLong", { max: EVENT_LIMITS.titleMaxLength });
+  if (!isPrivacy(privacy)) throw new ValidationError("errors.validation.kindInvalid");
   if (!Number.isFinite(input.start) || !Number.isFinite(input.end) || input.end < input.start) throw new ValidationError("errors.validation.dateInvalid");
   if (!REPEATS.includes(input.repeat)) throw new ValidationError("errors.validation.kindInvalid");
   if (!isAppearanceColor(input.color) || (input.icon !== undefined && !isAppearanceIcon(input.icon))) {
@@ -47,6 +49,7 @@ export function parseEvent(input: EventInput): EventInput {
   if (notes && notes.length > EVENT_LIMITS.notesMaxLength) throw new ValidationError("errors.validation.nameTooLong", { max: EVENT_LIMITS.notesMaxLength });
   return {
     title,
+    privacy,
     start: input.start,
     end: input.end,
     allDay: !!input.allDay,

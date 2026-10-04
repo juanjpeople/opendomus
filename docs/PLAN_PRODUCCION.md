@@ -1,6 +1,6 @@
 # OpenDomus: plan para llevarla a producción
 
-> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: servidor, cuentas, casas e invitaciones cifradas · 🔄 hito 2: ✅ sincronización cifrada, sigue elegir la privacidad de cada cosa y abrir la nube en producción). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
+> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: servidor, cuentas, casas e invitaciones cifradas · 🔄 hito 2: ✅ sincronización cifrada y privacidad por perfil, sigue abrir la nube en producción). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
 > Mantener este archivo al día al cerrar cada paso.
 
 ## Contexto
@@ -147,7 +147,9 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
    - ✅ "Crear mi casa" sube la casa de este dispositivo; unirse (o entrar en otro dispositivo) baja la casa y deja elegir un perfil libre ("Adulto" → Flor). El perfil queda atado a la cuenta y el dispositivo entra directo con él.
    - ✅ Indicador "Nube cifrada" con su estado (al día, sincronizando, sin conexión, problema) y Ajustes → Datos: última vez, sincronizar ahora, salir de la nube en este dispositivo (borrando o conservando la copia). Importar se bloquea con la casa en la nube.
    - ✅ Probado: tests de fusión, niveles y permisos; middleware con IndexedDB real (`fake-indexeddb`) y los servicios de verdad; API de punta a punta (incluye firmas falsas, operaciones alteradas, chico escribiendo en Adultos); dos navegadores (Ana y Flor) con consumo en vivo y simultáneo.
-   - Sigue: elegir el nivel (Familia, Adultos, Privado) en listas, proyectos, recetas y eventos, y una página de Privacidad; después, `NEXT_PUBLIC_CLOUD=1` en producción.
+   - ✅ Cada lista, proyecto, receta y evento permite elegir Familia, Adultos o Privado. Los perfiles filtran también búsqueda, contadores, detalle e historial; la página de Privacidad muestra qué se comparte con quién (cada nivel con quiénes lo ven) y una marca discreta señala lo que no es de Familia. La lista de la casa siempre es de Familia.
+   - ✅ Probado con tres cuentas (Ana admin, Flor adulta, Tomi chico), con la nube habilitada, en escritorio y celular: lo de Adultos y lo Privado de Ana nunca llega al navegador de Tomi (ni nombres, ni ítems, ni historial); lo Privado tampoco al de Flor; cambiar el nivel en vivo lo agrega o lo borra entero de cada dispositivo.
+   - Sigue: publicar `NEXT_PUBLIC_CLOUD=1` en producción (decisión: abrirla como beta antes de tener "olvidé mi contraseña", del hito 3).
 3. **Recuperación y dispositivos**: "olvidé mi contraseña" con el kit, aprobar un dispositivo nuevo por QR, revocar, rotación de claves al sacar a alguien, Google/GitHub/passkeys, emails (Resend).
 
 

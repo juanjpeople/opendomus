@@ -2,16 +2,18 @@
 
 import { Flex, Form, Input, InputNumber, Modal, Select, Space, Typography, theme } from "antd";
 import { useState } from "react";
-import { ColorSwatches, IconGrid, IconTile } from "@/components/ui";
+import { ColorSwatches, IconGrid, IconTile, PrivacySelect } from "@/components/ui";
 import { CURRENCIES, defaultCurrencyFor, type Currency } from "@/features/prices/domain";
 import { LIST_LIMITS } from "@/features/shopping/domain";
 import { useI18n } from "@/i18n";
 import { APPEARANCE_ICONS, type AppearanceColor, type AppearanceIcon } from "@/lib/appearance";
+import type { Privacy } from "@/lib/sync/scope";
 import { PROJECT_LIMITS, type Project } from "../domain";
 import { useProjectActions } from "../hooks";
 
 interface ProjectFormValues {
   name: string;
+  privacy?: Privacy;
   notes?: string;
   budget?: number | null;
   currency: Currency;
@@ -63,8 +65,8 @@ export function ProjectModal({ open, project, onClose, onSaved }: { open: boolea
         preserve={false}
         initialValues={
           project
-            ? { name: project.name, notes: project.notes, budget: project.budgetCents === undefined ? null : project.budgetCents / 100, currency: project.currency, color: project.color, icon: project.icon }
-            : { name: "", notes: "", budget: null, currency: defaultCurrencyFor(locale), color: DEFAULTS.color, icon: DEFAULTS.icon }
+            ? { name: project.name, privacy: project.privacy ?? "family", notes: project.notes, budget: project.budgetCents === undefined ? null : project.budgetCents / 100, currency: project.currency, color: project.color, icon: project.icon }
+            : { name: "", privacy: "family", notes: "", budget: null, currency: defaultCurrencyFor(locale), color: DEFAULTS.color, icon: DEFAULTS.icon }
         }
       >
         <Flex align="center" gap={12} style={{ padding: 12, marginBottom: 16, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
@@ -75,6 +77,9 @@ export function ProjectModal({ open, project, onClose, onSaved }: { open: boolea
         </Flex>
         <Form.Item name="name" label={t("projects.name")} rules={[{ required: true, whitespace: true, message: t("inventory.form.nameRequired") }]}>
           <Input maxLength={PROJECT_LIMITS.nameMaxLength} placeholder={t("projects.namePlaceholder")} autoFocus />
+        </Form.Item>
+        <Form.Item name="privacy" label={t("privacy.label")}>
+          <PrivacySelect />
         </Form.Item>
         <Form.Item label={t("projects.budget")} tooltip={t("projects.budgetHint")}>
           <Space.Compact style={{ width: "100%" }}>

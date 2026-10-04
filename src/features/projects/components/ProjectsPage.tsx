@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
-import { EmptyState, IconTile, PageHeader } from "@/components/ui";
+import { EmptyState, IconTile, PageHeader, PrivacyBadge } from "@/components/ui";
 import { BudgetBar } from "@/features/shopping/components/BudgetBar";
 import { useI18n } from "@/i18n";
 import { APPEARANCE_ICONS } from "@/lib/appearance";
@@ -95,9 +95,12 @@ function ProjectCard({ summary, index }: { summary: ProjectSummary; index: numbe
             <Flex align="center" gap={12}>
               <IconTile icon={APPEARANCE_ICONS[project.icon]} color={project.color} size={44} />
               <Flex vertical style={{ minWidth: 0, flex: 1 }}>
-                <Typography.Title level={5} style={{ margin: 0 }} ellipsis>
-                  {project.name}
-                </Typography.Title>
+                <Flex align="center" gap={6} style={{ minWidth: 0 }}>
+                  <Typography.Title level={5} style={{ margin: 0, minWidth: 0 }} ellipsis>
+                    {project.name}
+                  </Typography.Title>
+                  <PrivacyBadge privacy={project.privacy} />
+                </Flex>
                 <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
                   {t("projects.listCount", { count: lists.length })} · {t("shopping.lists.pendingCount", { count: pending })}
                 </Typography.Text>

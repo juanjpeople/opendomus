@@ -22,6 +22,25 @@ export function isPrivacy(value: unknown): value is Privacy {
   return typeof value === "string" && (PRIVACY_LEVELS as readonly string[]).includes(value);
 }
 
+/** Quién mira: el perfil que está usando el dispositivo. */
+export interface Viewer {
+  id: string;
+  role: "admin" | "adult" | "kid";
+}
+
+/**
+ * ¿Este perfil puede ver esta cosa? Además del cifrado (que decide qué llega a cada cuenta), en un
+ * dispositivo compartido (la tablet de la cocina) un chico no ve lo de Adultos y nadie ve lo
+ * Privado de otro.
+ */
+export function canSee(viewer: Viewer | null | undefined, record: { privacy?: unknown; createdBy?: string }): boolean {
+  const privacy = isPrivacy(record.privacy) ? record.privacy : "family";
+  if (privacy === "family") return true;
+  if (!viewer) return false;
+  if (privacy === "adults") return viewer.role !== "kid";
+  return !!record.createdBy && record.createdBy === viewer.id;
+}
+
 const COMMENT_OWNERS: Record<string, SyncTable> = { recipe: "recipes" };
 const ACTIVITY_OWNERS: Partial<Record<string, SyncTable>> = { lists: "shoppingLists", projects: "projects", recipes: "recipes", calendar: "events" };
 
@@ -49,6 +68,7 @@ export async function resolveScope(
   get: (table: SyncTable, id: string) => Promise<Row | undefined>,
   fallback: Privacy = "family",
 ): Promise<Privacy> {
+  if (table === "activity" && isPrivacy(row.privacy)) return row.privacy;
   let current: { table: SyncTable; row: Row } = { table, row };
   for (let depth = 0; depth < 4; depth++) {
     if (PRIVACY_TABLES.has(current.table)) return isPrivacy(current.row.privacy) ? current.row.privacy : "family";

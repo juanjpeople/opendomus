@@ -4,17 +4,19 @@ import { App, Button, Col, DatePicker, Flex, Form, Grid, Input, Modal, Row, Sele
 import dayjs, { type Dayjs } from "dayjs";
 import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ColorSwatches, IconGrid } from "@/components/ui";
+import { ColorSwatches, IconGrid, PrivacySelect } from "@/components/ui";
 import { MemberAvatar } from "@/components/ui/MemberAvatar";
 import { useMembers } from "@/features/members/hooks";
 import { useT } from "@/i18n";
 import type { AppearanceColor, AppearanceIcon } from "@/lib/appearance";
 import { usePermission } from "@/lib/auth/hooks";
+import type { Privacy } from "@/lib/sync/scope";
 import { EVENT_LIMITS, REPEATS, type CalendarEvent, type Repeat } from "../domain";
 import { useEventActions } from "../hooks";
 
 interface FormValues {
   title: string;
+  privacy?: Privacy;
   allDay: boolean;
   date: Dayjs;
   time: [Dayjs, Dayjs];
@@ -55,6 +57,7 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
       const end = dayjs(event.end);
       form.setFieldsValue({
         title: event.title,
+        privacy: event.privacy ?? "family",
         allDay: event.allDay,
         date: start,
         time: [start, end],
@@ -69,6 +72,7 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
       const base = (day ?? dayjs()).startOf("day");
       form.setFieldsValue({
         title: "",
+        privacy: "family",
         allDay: false,
         date: base,
         time: [base.hour(10), base.hour(11)],
@@ -89,6 +93,7 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
       : [values.date.hour(values.time[0].hour()).minute(values.time[0].minute()), values.date.hour(values.time[1].hour()).minute(values.time[1].minute())];
     const input = {
       title: values.title,
+      privacy: values.privacy,
       start: start.valueOf(),
       end: end.valueOf(),
       allDay: values.allDay,
@@ -151,6 +156,9 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
           rules={[{ required: true, whitespace: true, message: t("inventory.form.nameRequired") }, { max: EVENT_LIMITS.titleMaxLength }]}
         >
           <Input placeholder={t("calendar.fields.titlePlaceholder")} maxLength={EVENT_LIMITS.titleMaxLength} autoFocus />
+        </Form.Item>
+        <Form.Item name="privacy" label={t("privacy.label")}>
+          <PrivacySelect />
         </Form.Item>
         <Row gutter={12} align="bottom">
           <Col xs={24} md={4}>

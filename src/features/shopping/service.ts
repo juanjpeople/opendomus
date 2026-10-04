@@ -3,7 +3,7 @@
  * Comprar algo vinculado al inventario lo repone en la misma transacción (vía el servicio
  * de inventario), así la lista y el stock nunca quedan desfasados.
  */
-import { pruneActivity, recordActivity } from "@/features/activity/service";
+import { pruneActivity, recordActivity, setActivityPrivacy } from "@/features/activity/service";
 import { QUANTITY_TABLES, restockWithin } from "@/features/inventory/service";
 import { CURRENCIES, type Currency } from "@/features/prices/domain";
 import { addPriceWithin, PRICE_TABLES } from "@/features/prices/service";
@@ -40,7 +40,7 @@ async function getActiveList(id: string) {
 export async function addToListWithin(actor: Actor, raw: NewShoppingItem) {
   const { estimate, ...input } = parseNewShoppingItem(raw);
   const listId = input.listId ?? HOME_LIST_ID;
-  await getActiveList(listId);
+  const list = await getActiveList(listId);
   const existing = input.inventoryItemId
     ? await db.shoppingList
         .where("[listId+status]")
@@ -53,7 +53,7 @@ export async function addToListWithin(actor: Actor, raw: NewShoppingItem) {
     await db.shoppingList.update(existing.id, { quantity: Math.min(existing.quantity + input.quantity, SHOPPING_LIMITS.maxQuantity) });
   } else {
     await db.shoppingList.add({ ...input, listId, estimateCents: parseMoney(estimate), id: createId(), status: "pending", createdBy: actor.id, createdAt: Date.now() });
-    await recordActivity(actor, { module: "shopping", action: "create", entityId: input.inventoryItemId ?? input.name, entityName: input.name, listId });
+    await recordActivity(actor, { module: "shopping", action: "create", entityId: input.inventoryItemId ?? input.name, entityName: input.name, listId, privacy: list.privacy ?? "family", createdBy: list.createdBy });
   }
 
   // Si estaba esperando revisión, anotarlo a mano es confirmarlo.
@@ -104,7 +104,8 @@ export async function dismissSuggestion(actor: Actor | null, candidateId: string
     if (!item) return;
     // Preferencia del producto, no su stock: no pasa por el servicio de inventario.
     if (never) await db.inventory.update(item.id, { autoSuggest: false, updatedAt: Date.now() });
-    await recordActivity(actor, { module: "shopping", action: "dismiss", entityId: item.id, entityName: item.name, containerId: item.containerId, listId: HOME_LIST_ID });
+    const list = await getActiveList(HOME_LIST_ID);
+    await recordActivity(actor, { module: "shopping", action: "dismiss", entityId: item.id, entityName: item.name, containerId: item.containerId, listId: HOME_LIST_ID, privacy: list.privacy ?? "family", createdBy: list.createdBy });
   });
 }
 
@@ -134,14 +135,15 @@ export async function moveShoppingItem(actor: Actor | null, id: string, listId: 
  */
 export async function markBought(actor: Actor | null, id: string) {
   assertCan(actor, "shopping.manage");
-  await db.transaction("rw", [db.shoppingList, ...QUANTITY_TABLES()], async () => {
+  await db.transaction("rw", [db.shoppingList, db.shoppingLists, ...QUANTITY_TABLES()], async () => {
     const entry = await db.shoppingList.get(id);
     if (!entry || entry.status === "bought") return;
     const restocked = entry.inventoryItemId ? await restockWithin(actor, entry.inventoryItemId, entry.quantity) : 0;
     await db.shoppingList.update(id, { status: "bought", boughtAt: Date.now(), boughtBy: actor.id, restocked });
     // Lo que repone el inventario ya queda en su historial ("repuso"); lo suelto se registra acá.
     if (!entry.inventoryItemId) {
-      await recordActivity(actor, { module: "shopping", action: "bought", entityId: entry.id, entityName: entry.name, to: entry.quantity, unit: entry.unit, listId: entry.listId });
+      const list = await getActiveList(entry.listId);
+      await recordActivity(actor, { module: "shopping", action: "bought", entityId: entry.id, entityName: entry.name, to: entry.quantity, unit: entry.unit, listId: entry.listId, privacy: list.privacy ?? "family", createdBy: list.createdBy });
     }
   });
   await pruneActivity();
@@ -191,7 +193,8 @@ export async function removeShoppingItem(actor: Actor | null, id: string) {
     if (!entry) return;
     await db.shoppingList.delete(id);
     if (entry.status === "pending") {
-      await recordActivity(actor, { module: "shopping", action: "delete", entityId: entry.inventoryItemId ?? entry.id, entityName: entry.name, listId: entry.listId });
+      const list = await getActiveList(entry.listId);
+      await recordActivity(actor, { module: "shopping", action: "delete", entityId: entry.inventoryItemId ?? entry.id, entityName: entry.name, listId: entry.listId, privacy: list.privacy ?? "family", createdBy: list.createdBy });
     }
   });
 }
@@ -212,20 +215,25 @@ export async function createList(actor: Actor | null, input: ShoppingListInput) 
   await db.transaction("rw", db.shoppingLists, db.projects, db.activity, async () => {
     if (data.projectId && !(await db.projects.get(data.projectId))) throw new NotFoundError("errors.notFound.project");
     await db.shoppingLists.add({ ...data, id, createdBy: actor.id, createdAt: now, updatedAt: now });
-    await recordActivity(actor, { module: "lists", action: "create", entityId: id, entityName: data.name });
+    await recordActivity(actor, { module: "lists", action: "create", entityId: id, entityName: data.name, privacy: data.privacy, createdBy: actor.id });
   });
   return id;
 }
 
 export async function updateList(actor: Actor | null, id: string, input: ShoppingListInput) {
   assertCan(actor, "shopping.manage");
-  const data = parseListInput(input);
+  const parsed = parseListInput(input);
+  // La lista de la casa es de todos los días: no va a un proyecto ni deja de ser de la familia
+  // (ahí llegan las sugerencias; además no tiene dueño, así que como Privada no la vería nadie).
+  const home = id === HOME_LIST_ID;
+  const data = home ? { ...parsed, privacy: "family" as const, projectId: undefined } : parsed;
   await db.transaction("rw", db.shoppingLists, db.projects, db.activity, async () => {
-    if (!(await db.shoppingLists.get(id))) throw new NotFoundError("errors.notFound.list");
+    const list = await db.shoppingLists.get(id);
+    if (!list) throw new NotFoundError("errors.notFound.list");
     if (data.projectId && !(await db.projects.get(data.projectId))) throw new NotFoundError("errors.notFound.project");
-    // La lista de la casa no se mueve a un proyecto: es la de todos los días.
-    await db.shoppingLists.update(id, { ...data, projectId: id === HOME_LIST_ID ? undefined : data.projectId, updatedAt: Date.now() });
-    await recordActivity(actor, { module: "lists", action: "update", entityId: id, entityName: data.name });
+    await setActivityPrivacy("lists", id, data.privacy, list.createdBy);
+    await db.shoppingLists.update(id, { ...data, updatedAt: Date.now() });
+    await recordActivity(actor, { module: "lists", action: "update", entityId: id, entityName: data.name, privacy: data.privacy, createdBy: list.createdBy });
   });
 }
 
@@ -243,8 +251,9 @@ export async function deleteList(actor: Actor | null, id: string) {
   await db.transaction("rw", db.shoppingLists, db.shoppingList, db.activity, async () => {
     const list = await db.shoppingLists.get(id);
     if (!list) return;
+    await setActivityPrivacy("lists", id, list.privacy ?? "family", list.createdBy);
     await db.shoppingList.where("listId").equals(id).delete();
     await db.shoppingLists.delete(id);
-    await recordActivity(actor, { module: "lists", action: "delete", entityId: id, entityName: list.name });
+    await recordActivity(actor, { module: "lists", action: "delete", entityId: id, entityName: list.name, privacy: list.privacy ?? "family", createdBy: list.createdBy });
   });
 }

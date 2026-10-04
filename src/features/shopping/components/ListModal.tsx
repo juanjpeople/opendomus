@@ -2,16 +2,18 @@
 
 import { Flex, Form, Input, InputNumber, Modal, Select, Space, Typography, theme } from "antd";
 import { useState } from "react";
-import { ColorSwatches, IconGrid, IconTile } from "@/components/ui";
+import { ColorSwatches, IconGrid, IconTile, PrivacySelect } from "@/components/ui";
 import { CURRENCIES, defaultCurrencyFor, type Currency } from "@/features/prices/domain";
 import { useProjects } from "@/features/projects/hooks";
 import { useI18n } from "@/i18n";
 import { APPEARANCE_ICONS, type AppearanceColor, type AppearanceIcon } from "@/lib/appearance";
+import type { Privacy } from "@/lib/sync/scope";
 import { HOME_LIST_ID, LIST_LIMITS, type ShoppingList } from "../domain";
 import { listName, useShoppingActions } from "../hooks";
 
 interface ListFormValues {
   name: string;
+  privacy?: Privacy;
   projectId?: string;
   budget?: number | null;
   currency: Currency;
@@ -76,8 +78,8 @@ export function ListModal({ open, list, projectId, onClose, onSaved }: ListModal
         preserve={false}
         initialValues={
           list
-            ? { name: list.id === HOME_LIST_ID ? listName(list, t) : list.name, projectId: list.projectId, budget: list.budgetCents === undefined ? null : list.budgetCents / 100, currency: list.currency, color: list.color, icon: list.icon }
-            : { name: "", projectId, budget: null, currency: projects?.find((summary) => summary.project.id === projectId)?.project.currency ?? defaultCurrencyFor(locale), color: DEFAULTS.color, icon: DEFAULTS.icon }
+            ? { name: list.id === HOME_LIST_ID ? listName(list, t) : list.name, privacy: list.privacy ?? "family", projectId: list.projectId, budget: list.budgetCents === undefined ? null : list.budgetCents / 100, currency: list.currency, color: list.color, icon: list.icon }
+            : { name: "", privacy: "family", projectId, budget: null, currency: projects?.find((summary) => summary.project.id === projectId)?.project.currency ?? defaultCurrencyFor(locale), color: DEFAULTS.color, icon: DEFAULTS.icon }
         }
       >
         <Flex align="center" gap={12} style={{ padding: 12, marginBottom: 16, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
@@ -89,6 +91,12 @@ export function ListModal({ open, list, projectId, onClose, onSaved }: ListModal
         <Form.Item name="name" label={t("shopping.lists.name")} rules={[{ required: true, whitespace: true, message: t("inventory.form.nameRequired") }]}>
           <Input maxLength={LIST_LIMITS.nameMaxLength} placeholder={t("shopping.lists.namePlaceholder")} autoFocus={!home} disabled={home} />
         </Form.Item>
+        {/* La lista de la casa es de todos: ahí llegan las sugerencias del inventario. */}
+        {!home && (
+          <Form.Item name="privacy" label={t("privacy.label")}>
+            <PrivacySelect />
+          </Form.Item>
+        )}
         {!home && (
           <Form.Item name="projectId" label={t("shopping.lists.project")} tooltip={t("shopping.lists.projectHint")}>
             <Select

@@ -1,4 +1,4 @@
-import { Boxes, CalendarDays, ChefHat, HardHat, House, Palette, ScanLine, Settings, ShoppingCart, Sparkles, Users, type LucideIcon } from "lucide-react";
+import { Boxes, CalendarDays, ChefHat, HardHat, House, Palette, ScanLine, Settings, ShieldCheck, ShoppingCart, Sparkles, Users, type LucideIcon } from "lucide-react";
 import type { MessageKey } from "@/i18n/translate";
 import type { Permission } from "@/lib/auth/permissions";
 
@@ -39,6 +39,7 @@ export const APP_ROUTES: AppRoute[] = [
   { id: "recipe", href: "/recetas/ver", labelKey: "nav.routes.recipe", icon: ChefHat, permission: "recipes.view", section: "main", parent: "recipes", hidden: true, needsId: true },
   { id: "recipeEdit", href: "/recetas/editar", labelKey: "nav.routes.recipeEdit", icon: ChefHat, permission: "recipes.manage", section: "main", parent: "recipes", hidden: true, needsId: true },
   { id: "family", href: "/familia", labelKey: "nav.routes.family", icon: Users, section: "system" },
+  { id: "privacy", href: "/privacidad", labelKey: "nav.routes.privacy", icon: ShieldCheck, section: "system" },
   { id: "settings", href: "/ajustes", labelKey: "nav.routes.settings", icon: Settings, section: "system" },
   { id: "design", href: "/design", labelKey: "nav.routes.design", icon: Palette, permission: "settings.design", section: "system" },
   { id: "account", href: "/cuenta", labelKey: "nav.routes.account", icon: Sparkles, section: "system", external: true, hidden: true },

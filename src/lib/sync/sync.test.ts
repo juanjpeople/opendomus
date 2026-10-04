@@ -3,7 +3,7 @@ import { describe, test } from "node:test";
 import { acknowledge, applyRemote, markRescope, outgoing, recordKey, trackLocal, type Change, type Row, type SyncRecord } from "./merge";
 import { isAllowed } from "./policy";
 import type { SyncScope } from "./protocol";
-import { parentOf, resolveScope } from "./scope";
+import { canSee, parentOf, resolveScope } from "./scope";
 import type { SyncTable } from "./tables";
 
 /** Un servidor de mentira: guarda los cambios en orden, como el Durable Object. */
@@ -205,11 +205,27 @@ describe("sincronización: cómo se juntan los cambios", () => {
 describe("sincronización: niveles de privacidad", () => {
   const scopeOf = (device: Device) => (table: SyncTable, row: Row) => resolveScope(table, row, async (parent, id) => device.get(parent, id));
 
+  test("cada perfil ve Familia, solo los grandes ven Adultos y lo Privado es del autor", () => {
+    const ana = { id: "ana", role: "admin" } as const;
+    const flor = { id: "flor", role: "adult" } as const;
+    const tomi = { id: "tomi", role: "kid" } as const;
+
+    assert.equal(canSee(null, { privacy: "family" }), true);
+    assert.equal(canSee(null, { privacy: "adults" }), false);
+    assert.equal(canSee(tomi, { privacy: "adults" }), false);
+    assert.equal(canSee(ana, { privacy: "adults" }), true);
+    assert.equal(canSee(flor, { privacy: "private", createdBy: "ana" }), false);
+    assert.equal(canSee(ana, { privacy: "private", createdBy: "ana" }), true);
+    assert.equal(canSee(ana, { privacy: "private" }), false);
+    assert.equal(canSee(tomi, { privacy: "invalid" }), true);
+  });
+
   test("lo de una lista hereda su nivel; el historial de compras, el de su lista", async () => {
     const rows: Record<string, Row> = { "shoppingLists|regalos": { id: "regalos", privacy: "adults" } };
     const get = async (table: SyncTable, id: string) => rows[`${table}|${id}`];
     assert.equal(await resolveScope("shoppingList", { id: "i", listId: "regalos" }, get), "adults");
     assert.equal(await resolveScope("activity", { id: "a", module: "shopping", entityId: "Bici", listId: "regalos" }, get), "adults");
+    assert.equal(await resolveScope("activity", { id: "b", module: "recipes", entityId: "borrada", privacy: "private" }, get), "private");
     assert.equal(await resolveScope("inventory", { id: "x" }, get), "family");
     assert.equal(await resolveScope("recipes", { id: "r", privacy: "rara" }, get), "family");
     assert.deepEqual(parentOf("comments", { id: "c", ownerType: "recipe", ownerId: "r1" }), { table: "recipes", id: "r1" });

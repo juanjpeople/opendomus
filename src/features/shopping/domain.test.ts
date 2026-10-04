@@ -153,8 +153,10 @@ describe("listas", () => {
 
   test("valida nombre, moneda y apariencia", () => {
     const base = { name: "Sanitarios", currency: "ARS" as const, color: "blue" as const, icon: "bath" as const };
-    assert.deepEqual(parseListInput({ ...base, budget: 1000 }), { ...base, projectId: undefined, budgetCents: 100000 });
+    assert.deepEqual(parseListInput({ ...base, budget: 1000 }), { ...base, privacy: "family", projectId: undefined, budgetCents: 100000 });
+    assert.equal(parseListInput({ ...base, privacy: "private" }).privacy, "private");
     assert.throws(() => parseListInput({ ...base, name: " " }), ValidationError);
     assert.throws(() => parseListInput({ ...base, icon: "inventado" as never }), ValidationError);
+    assert.throws(() => parseListInput({ ...base, privacy: "inventada" as never }), ValidationError);
   });
 });
