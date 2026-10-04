@@ -19,6 +19,7 @@ import { SPRING } from "@/lib/motion";
 import { usePageCrumbs } from "@/store/useBreadcrumbStore";
 import { RECIPE_LIMITS, RECIPE_TAGS, type Recipe, type RecipeTag } from "../domain";
 import { useRecipe, useRecipeActions } from "../hooks";
+import { recipeHref } from "@/lib/navigation/routes";
 
 interface IngredientDraft {
   key: string;
@@ -64,7 +65,7 @@ function EditorForm({ recipe }: { recipe: Recipe | null }) {
   const [steps, setSteps] = useState<StepDraft[]>(recipe?.steps.map((text) => ({ key: nextKey(), text })) ?? [{ key: nextKey(), text: "" }]);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
-  usePageCrumbs(recipe ? [{ label: recipe.name, href: `/recetas/ver?id=${recipe.id}` }, { label: t("recipes.editTitle") }] : [{ label: t("recipes.newTitle") }]);
+  usePageCrumbs(recipe ? [{ label: recipe.name, href: recipeHref(recipe.id) }, { label: t("recipes.editTitle") }] : [{ label: t("recipes.newTitle") }]);
 
   const updateIngredient = (key: string, patch: Partial<IngredientDraft>) =>
     setIngredients((current) => current.map((ingredient) => (ingredient.key === key ? { ...ingredient, ...patch } : ingredient)));
@@ -95,7 +96,7 @@ function EditorForm({ recipe }: { recipe: Recipe | null }) {
       if (photoIds?.length) await setCover(savedId, photoIds[0]);
     }
     setSaving(false);
-    if (savedId) router.push(`/recetas/ver?id=${savedId}`);
+    if (savedId) router.push(recipeHref(savedId));
   }
 
   const saveButton = (
@@ -111,7 +112,7 @@ function EditorForm({ recipe }: { recipe: Recipe | null }) {
         title={recipe ? t("recipes.editTitle") : t("recipes.newTitle")}
         extra={
           <>
-            <Link href={recipe ? `/recetas/ver?id=${recipe.id}` : "/recetas"}>
+            <Link href={recipe ? recipeHref(recipe.id) : "/recetas"}>
               <Button size="large">{t("common.cancel")}</Button>
             </Link>
             {saveButton}

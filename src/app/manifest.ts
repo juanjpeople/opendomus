@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { ICON_BRAND } from "@/lib/pwa/icon";
 
+export const dynamic = "force-static";
+
 /** Manifest de la PWA: se instala como app y abre sin barra del navegador. */
 export default function manifest(): MetadataRoute.Manifest {
   return {

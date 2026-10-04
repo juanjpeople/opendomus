@@ -7,14 +7,16 @@ import { APP_ROUTES } from "@/lib/navigation/routes";
  * Estrategia (offline-first de verdad: los datos ya viven en IndexedDB, falta la app):
  * - Archivos de `/_next/static` e íconos: caché primero (tienen hash, no cambian).
  * - Páginas: red primero (con tope de espera) y, sin conexión, la última copia guardada.
- * - Al instalarse, guarda todas las páginas fijas y sus archivos; la app le pide además las
- *   páginas de cada contenedor (`warm`), que dependen de los datos de cada casa.
+ * - Al instalarse, guarda todas las páginas y sus archivos. Son fijas (los ids van en `?id=`),
+ *   así que con eso alcanza para abrir cualquier contenedor, receta o proyecto sin conexión.
+ * - Las URLs viejas (`/c/<código>` de las etiquetas impresas) se resuelven también sin conexión.
  * - Nunca toma el control solo: avisa que hay versión nueva y espera `skip-waiting`.
  */
 export const dynamic = "force-static";
 
 const VERSION = `${process.env.NEXT_PUBLIC_APP_VERSION ?? "dev"}-${Date.now().toString(36)}`;
-const PAGES = ["/", ...APP_ROUTES.filter((route) => route.href !== "/").map((route) => route.href)];
+// Todas las páginas del registro, más el destino de los QR (que no está en el menú).
+const PAGES = ["/", "/c", ...APP_ROUTES.filter((route) => route.href !== "/").map((route) => route.href)];
 
 /** Lo que se muestra al abrir sin conexión una página que nunca se guardó. */
 const OFFLINE_HTML = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sin conexión · OpenDomus</title>
@@ -79,16 +81,16 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("message", (event) => {
   const data = event.data || {};
   if (data.type === "skip-waiting") self.skipWaiting();
-  if (data.type === "warm" && Array.isArray(data.urls)) {
-    event.waitUntil(
-      caches.open(PAGES_CACHE).then(async (cache) => {
-        for (const url of data.urls.slice(0, 300)) {
-          if (typeof url === "string" && url.startsWith("/") && !(await cache.match(url))) await cachePage(url).catch(() => {});
-        }
-      }),
-    );
-  }
 });
+
+/** Mismas reglas que \`legacyRedirect\` (src/lib/navigation/routes.ts), para cuando no hay conexión. */
+function legacyTarget(pathname) {
+  const qr = pathname.match(/^\/c\/([^/]+)\/?$/);
+  if (qr) return "/c?code=" + qr[1];
+  const container = pathname.match(/^\/inventario\/([^/]+)\/?$/);
+  if (container && container[1] !== "ver" && container[1] !== "escanear") return "/inventario/ver?id=" + container[1];
+  return null;
+}
 
 function withTimeout(promise, ms) {
   return new Promise((resolve, reject) => {
@@ -106,8 +108,12 @@ async function navigate(request) {
     if (response.ok && !response.redirected) cache.put(key, response.clone());
     return response;
   } catch {
+    const cached = await cache.match(key);
+    if (cached) return cached;
+    const target = legacyTarget(url.pathname);
+    if (target) return Response.redirect(new URL(target, self.location.origin).href, 302);
     // Una página que nunca se abrió no se puede inventar (otra mostraría datos equivocados).
-    return (await cache.match(key)) || new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    return new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
   }
 }
 

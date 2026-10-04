@@ -24,6 +24,7 @@ import { ListSwitcher } from "./ListSwitcher";
 import { QuickAdd } from "./QuickAdd";
 import { EstimatePrice, QuickPrice } from "./QuickPrice";
 import { ReviewPanel } from "./ReviewPanel";
+import { projectHref } from "@/lib/navigation/routes";
 
 export function ShoppingPage() {
   const { t } = useI18n();
@@ -93,7 +94,7 @@ export function ShoppingPage() {
       <PageHeader
         eyebrow={
           summary?.project ? (
-            <Link href={`/proyectos/ver?id=${summary.project.id}`} style={{ color: "inherit" }}>
+            <Link href={projectHref(summary.project.id)} style={{ color: "inherit" }}>
               {t("shopping.eyebrow")} · {summary.project.name}
             </Link>
           ) : (
@@ -275,7 +276,7 @@ function BudgetCard({ summary, budget, onEdit }: { summary?: ListSummary; budget
           </Typography.Text>
         )}
         {summary?.project && (
-          <Link href={`/proyectos/ver?id=${summary.project.id}`}>
+          <Link href={projectHref(summary.project.id)}>
             <Button block icon={<FolderOpen />}>
               {t("shopping.lists.openProject", { name: summary.project.name })}
             </Button>

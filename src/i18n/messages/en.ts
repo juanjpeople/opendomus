@@ -125,6 +125,7 @@ export const en: Messages = {
       family: "Family",
       inventory: "Inventory",
       scan: "Scan QR",
+      container: "Container",
       compras: "Shopping",
       recipes: "Recipes",
       recipe: "Recipe",
@@ -842,6 +843,10 @@ export const en: Messages = {
       saved: "Changes saved",
       deleted: "Project deleted",
     },
+  },
+  notFound: {
+    title: "We couldn't find this page",
+    text: "The link may be old, or what it showed may have been deleted.",
   },
   forbidden: {
     title: "No access",

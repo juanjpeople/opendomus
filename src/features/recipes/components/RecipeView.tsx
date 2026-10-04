@@ -17,6 +17,8 @@ import { PhotoGallery } from "@/features/media/components/PhotoGallery";
 import { useI18n } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
 import { SPRING } from "@/lib/motion";
+import { useTrackVisit } from "@/components/layout/useShell";
+import { recipeHref } from "@/lib/navigation/routes";
 import { usePageCrumbs } from "@/store/useBreadcrumbStore";
 import { averageRating, checkAvailability, RECIPE_LIMITS, type IngredientCheck, type IngredientState } from "../domain";
 import { useRecipe, useRecipeActions } from "../hooks";
@@ -38,6 +40,7 @@ export function RecipeView() {
   const [cooking, setCooking] = useState(false);
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
   usePageCrumbs(data ? [{ label: data.recipe.name }] : null);
+  useTrackVisit(data ? recipeHref(data.recipe.id) : null);
 
   if (data === undefined) return <Skeleton active />;
   if (data === null) {

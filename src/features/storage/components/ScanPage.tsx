@@ -10,6 +10,7 @@ import { Reveal } from "@/components/motion";
 import { PageHeader } from "@/components/ui";
 import { useT } from "@/i18n";
 import { isValidContainerCode, normalizeContainerCode, STORAGE_LIMITS } from "../domain";
+import { qrHref } from "@/lib/navigation/routes";
 
 /** API nativa de lectura de códigos (Chromium/Android). No está en los tipos de TypeScript. */
 interface BarcodeDetectorLike {
@@ -21,11 +22,12 @@ function getDetector(): BarcodeDetectorCtor | undefined {
   return typeof window !== "undefined" ? (window as Window & { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector : undefined;
 }
 
-/** Extrae el código de un QR de OpenDomus (URL `/c/<código>` o el código solo). */
+/** Extrae el código de un QR de OpenDomus (URL `/c/<código>`, `/c?code=<código>` o el código solo). */
 export function codeFromScan(raw: string): string | null {
   const candidate = (() => {
     try {
-      return new URL(raw).pathname.match(/\/c\/([^/]+)\/?$/)?.[1] ?? "";
+      const url = new URL(raw);
+      return url.pathname.match(/\/c\/([^/]+)\/?$/)?.[1] ?? (url.pathname.replace(/\/$/, "") === "/c" ? (url.searchParams.get("code") ?? "") : "");
     } catch {
       return raw;
     }
@@ -72,7 +74,7 @@ export function ScanPage() {
           const code = codeFromScan(result.rawValue);
           if (code) {
             stop();
-            router.push(`/c/${code}`);
+            router.push(qrHref(code));
             return;
           }
           setStatus("invalid");
@@ -89,7 +91,7 @@ export function ScanPage() {
   useEffect(() => () => streamRef.current?.getTracks().forEach((track) => track.stop()), []);
 
   const manualCode = normalizeContainerCode(manual);
-  const openManual = () => isValidContainerCode(manualCode) && router.push(`/c/${manualCode}`);
+  const openManual = () => isValidContainerCode(manualCode) && router.push(qrHref(manualCode));
   const scanning = status === "scanning" || status === "invalid";
 
   return (

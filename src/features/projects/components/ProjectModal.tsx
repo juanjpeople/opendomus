@@ -52,16 +52,21 @@ export function ProjectModal({ open, project, onClose, onSaved }: { open: boolea
       confirmLoading={saving}
       onOk={() => form.submit()}
       destroyOnHidden
-      afterOpenChange={(visible) => {
-        if (!visible) return;
-        form.setFieldsValue(
+    >
+      {/* Valores iniciales al montar (el contenido se destruye al cerrar): lo que se escriba
+          apenas se abre no se pisa al terminar la animación. */}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        requiredMark={false}
+        preserve={false}
+        initialValues={
           project
             ? { name: project.name, notes: project.notes, budget: project.budgetCents === undefined ? null : project.budgetCents / 100, currency: project.currency, color: project.color, icon: project.icon }
-            : { name: "", notes: "", budget: null, currency: defaultCurrencyFor(locale), color: DEFAULTS.color, icon: DEFAULTS.icon },
-        );
-      }}
-    >
-      <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false} preserve={false}>
+            : { name: "", notes: "", budget: null, currency: defaultCurrencyFor(locale), color: DEFAULTS.color, icon: DEFAULTS.icon }
+        }
+      >
         <Flex align="center" gap={12} style={{ padding: 12, marginBottom: 16, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
           <IconTile icon={APPEARANCE_ICONS[icon]} color={color} size={44} />
           <Typography.Text strong style={{ fontSize: token.fontSizeLG }} ellipsis>

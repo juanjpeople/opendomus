@@ -21,6 +21,7 @@ export const metadata: Metadata = {
   title: { default: "OpenDomus", template: "%s · OpenDomus" },
   description: "Sistema operativo para tu casa",
   applicationName: "OpenDomus",
+  icons: { apple: { url: "/icons/apple-180.png", sizes: "180x180", type: "image/png" } },
   // iOS: se abre como app (sin barra de Safari) al agregarla a la pantalla de inicio.
   appleWebApp: { capable: true, title: "OpenDomus", statusBarStyle: "default" },
 };

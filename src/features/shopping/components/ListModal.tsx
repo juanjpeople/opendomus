@@ -65,16 +65,21 @@ export function ListModal({ open, list, projectId, onClose, onSaved }: ListModal
       confirmLoading={saving}
       onOk={() => form.submit()}
       destroyOnHidden
-      afterOpenChange={(visible) => {
-        if (!visible) return;
-        form.setFieldsValue(
+    >
+      {/* Valores iniciales al montar (el contenido se destruye al cerrar): lo que se escriba
+          apenas se abre no se pisa al terminar la animación. */}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        requiredMark={false}
+        preserve={false}
+        initialValues={
           list
             ? { name: list.id === HOME_LIST_ID ? listName(list, t) : list.name, projectId: list.projectId, budget: list.budgetCents === undefined ? null : list.budgetCents / 100, currency: list.currency, color: list.color, icon: list.icon }
-            : { name: "", projectId, budget: null, currency: projects?.find((summary) => summary.project.id === projectId)?.project.currency ?? defaultCurrencyFor(locale), color: DEFAULTS.color, icon: DEFAULTS.icon },
-        );
-      }}
-    >
-      <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false} preserve={false}>
+            : { name: "", projectId, budget: null, currency: projects?.find((summary) => summary.project.id === projectId)?.project.currency ?? defaultCurrencyFor(locale), color: DEFAULTS.color, icon: DEFAULTS.icon }
+        }
+      >
         <Flex align="center" gap={12} style={{ padding: 12, marginBottom: 16, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
           <IconTile icon={APPEARANCE_ICONS[icon]} color={color} size={44} />
           <Typography.Text strong style={{ fontSize: token.fontSizeLG }} ellipsis>

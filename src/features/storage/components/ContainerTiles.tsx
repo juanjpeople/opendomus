@@ -10,6 +10,7 @@ import { tint } from "@/lib/appearance";
 import { SPRING } from "@/lib/motion";
 import { containerAppearance } from "../domain";
 import type { ContainerOverview } from "../hooks";
+import { containerHref } from "@/lib/navigation/routes";
 
 /** Tarjeta de un contenedor (o compartimento): ícono y color propios, totales y barra de stock. */
 export function ContainerTile({ container, onLabel }: { container: ContainerOverview; onLabel: () => void }) {
@@ -27,7 +28,7 @@ export function ContainerTile({ container, onLabel }: { container: ContainerOver
       transition={SPRING.snappy}
       style={{ position: "relative" }}
     >
-      <Link href={`/inventario/${container.id}`} style={{ display: "block", color: "inherit" }}>
+      <Link href={containerHref(container.id)} style={{ display: "block", color: "inherit" }}>
         <motion.div
           variants={{ rest: { borderColor: token.colorBorderSecondary }, hover: { borderColor: palette.solid } }}
           style={{

@@ -5,6 +5,8 @@ const ICONS: Record<string, { size: number; maskable?: boolean }> = {
   "192.png": { size: 192 },
   "512.png": { size: 512 },
   "maskable-512.png": { size: 512, maskable: true },
+  // iOS redondea las esquinas por su cuenta: va a sangre. (Con extensión: cualquier hosting estático lo sirve como PNG.)
+  "apple-180.png": { size: 180, maskable: true },
 };
 
 export const dynamic = "force-static";

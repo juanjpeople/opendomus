@@ -28,6 +28,7 @@ export interface AppRoute {
 export const APP_ROUTES: AppRoute[] = [
   { id: "home", href: "/", labelKey: "nav.routes.home", icon: House, section: "main" },
   { id: "inventory", href: "/inventario", labelKey: "nav.routes.inventory", icon: Boxes, permission: "inventory.view", section: "main" },
+  { id: "container", href: "/inventario/ver", labelKey: "nav.routes.container", icon: Boxes, permission: "inventory.view", section: "main", parent: "inventory", hidden: true, needsId: true },
   { id: "scan", href: "/inventario/escanear", labelKey: "nav.routes.scan", icon: ScanLine, permission: "inventory.view", section: "main", parent: "inventory", hidden: true },
   { id: "calendar", href: "/calendario", labelKey: "nav.routes.calendar", icon: CalendarDays, permission: "calendar.view", section: "main" },
   { id: "compras", href: "/compras", labelKey: "nav.routes.compras", icon: ShoppingCart, permission: "shopping.view", section: "main" },
@@ -42,6 +43,29 @@ export const APP_ROUTES: AppRoute[] = [
   { id: "design", href: "/design", labelKey: "nav.routes.design", icon: Palette, permission: "settings.design", section: "system" },
   { id: "values", href: "/bienvenida", labelKey: "nav.routes.values", icon: Sparkles, section: "system", external: true },
 ];
+
+// --- URLs con id ---------------------------------------------------------------------
+// Páginas fijas que leen el id de la URL (`?id=`): sin rutas dinámicas, la app se publica como
+// sitio estático (Cloudflare Pages, la NAS, Android). Siempre armarlas con estas funciones.
+
+export const containerHref = (id: string) => `/inventario/ver?id=${encodeURIComponent(id)}`;
+export const recipeHref = (id: string) => `/recetas/ver?id=${encodeURIComponent(id)}`;
+export const projectHref = (id: string) => `/proyectos/ver?id=${encodeURIComponent(id)}`;
+/** Destino de un QR leído en la app. (Las etiquetas impresas usan `/c/<código>`: ver `not-found.tsx`.) */
+export const qrHref = (code: string) => `/c?code=${encodeURIComponent(code)}`;
+
+/**
+ * URLs viejas o "lindas" que ya no son páginas: `/c/<código>` (etiquetas QR impresas),
+ * `/inventario/<id>` (antes de ser sitio estático), `/alacena`, `/taller`. Devuelve la nueva o `null`.
+ */
+export function legacyRedirect(pathname: string): string | null {
+  const qr = pathname.match(/^\/c\/([^/]+)\/?$/);
+  if (qr) return qrHref(decodeURIComponent(qr[1]));
+  const container = pathname.match(/^\/inventario\/([^/]+)\/?$/);
+  if (container && container[1] !== "ver" && container[1] !== "escanear") return containerHref(decodeURIComponent(container[1]));
+  if (pathname === "/alacena" || pathname === "/taller") return "/inventario";
+  return null;
+}
 
 const BY_ID = new Map(APP_ROUTES.map((route) => [route.id, route]));
 

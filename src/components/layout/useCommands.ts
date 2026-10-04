@@ -13,7 +13,7 @@ import { useSetPreference } from "@/hooks/usePreferences";
 import { LOCALE_META, LOCALES, useI18n } from "@/i18n";
 import { can } from "@/lib/auth/permissions";
 import { useCurrentUser, useSessionStore } from "@/lib/auth/session";
-import { findRoute } from "@/lib/navigation/routes";
+import { containerHref, findRoute, projectHref, recipeHref } from "@/lib/navigation/routes";
 import { useNavigationStore } from "@/store/useNavigationStore";
 import { useVisibleRoutes } from "./Navigation";
 
@@ -50,14 +50,24 @@ export function useCommands(): Command[] {
 
     const containerById = new Map((containers ?? []).map((container) => [container.id, container]));
 
-    // Un reciente puede ser una página o un contenedor puntual (/inventario/<id>).
+    const recipeById = new Map((recipes ?? []).map((recipe) => [recipe.id, recipe]));
+    const projectById = new Map((projects ?? []).map((summary) => [summary.project.id, summary.project]));
+
+    // Un reciente puede ser una página o algo puntual con `?id=` (un contenedor, una receta, un proyecto).
     const recentCommands: Command[] = (recent ?? []).flatMap((visit): Command[] => {
-      const route = findRoute(visit.href);
-      if (!route || !visible.has(route.id) || route.needsId) return [];
-      const container = containerById.get(visit.href.split("/")[2] ?? "");
-      if (route.id === "inventory" && visit.href !== route.href) {
-        if (!container) return [];
-        return [{ id: `recent:${visit.href}`, group: "recent", label: container.name, icon: containerAppearance(container).Icon, run: () => router.push(visit.href) }];
+      const [path, query = ""] = visit.href.split("?");
+      const route = findRoute(path);
+      if (!route || !visible.has(route.id)) return [];
+      if (route.needsId) {
+        const id = new URLSearchParams(query).get("id") ?? "";
+        const go = () => router.push(visit.href);
+        const container = route.id === "container" ? containerById.get(id) : undefined;
+        if (container) return [{ id: `recent:${visit.href}`, group: "recent", label: container.name, icon: containerAppearance(container).Icon, run: go }];
+        const recipe = route.id === "recipe" ? recipeById.get(id) : undefined;
+        if (recipe) return [{ id: `recent:${visit.href}`, group: "recent", label: recipe.name, icon: ChefHat, run: go }];
+        const project = route.id === "project" ? projectById.get(id) : undefined;
+        if (project) return [{ id: `recent:${visit.href}`, group: "recent", label: project.name, icon: HardHat, run: go }];
+        return [];
       }
       return [{ id: `recent:${visit.href}`, group: "recent", label: t(route.labelKey), icon: route.icon, run: () => router.push(route.href) }];
     }).slice(0, 4);
@@ -69,7 +79,7 @@ export function useCommands(): Command[] {
           label: `${container.path} · ${container.spaceName}`,
           icon: containerAppearance(container).Icon,
           keywords: container.code,
-          run: () => router.push(`/inventario/${container.id}`),
+          run: () => router.push(containerHref(container.id)),
         }))
       : [];
 
@@ -84,7 +94,7 @@ export function useCommands(): Command[] {
               group: "items",
               label: `${item.name} · ${container.spaceName} › ${container.path}`,
               icon: Package,
-              run: () => router.push(`/inventario/${item.containerId}`),
+              run: () => router.push(containerHref(item.containerId)),
             },
           ];
         })
@@ -97,7 +107,7 @@ export function useCommands(): Command[] {
           label: recipe.name,
           icon: ChefHat,
           keywords: recipe.keywords,
-          run: () => router.push(`/recetas/ver?id=${recipe.id}`),
+          run: () => router.push(recipeHref(recipe.id)),
         }))
       : [];
 
@@ -120,7 +130,7 @@ export function useCommands(): Command[] {
             group: "lists",
             label: summary.project.name,
             icon: HardHat,
-            run: () => router.push(`/proyectos/ver?id=${summary.project.id}`),
+            run: () => router.push(projectHref(summary.project.id)),
           }))
         : []),
     ];

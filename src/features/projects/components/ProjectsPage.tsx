@@ -15,6 +15,7 @@ import { APPEARANCE_ICONS } from "@/lib/appearance";
 import { SPRING } from "@/lib/motion";
 import { useProjects, type ProjectSummary } from "../hooks";
 import { ProjectModal } from "./ProjectModal";
+import { projectHref } from "@/lib/navigation/routes";
 
 type Show = "active" | "done";
 
@@ -68,7 +69,7 @@ export function ProjectsPage() {
         </>
       )}
 
-      <ProjectModal open={creating} onClose={() => setCreating(false)} onSaved={(id) => router.push(`/proyectos/ver?id=${id}`)} />
+      <ProjectModal open={creating} onClose={() => setCreating(false)} onSaved={(id) => router.push(projectHref(id))} />
     </RequirePermission>
   );
 }
@@ -88,7 +89,7 @@ function ProjectCard({ summary, index }: { summary: ProjectSummary; index: numbe
       whileHover={{ y: -4 }}
       style={{ height: "100%" }}
     >
-      <Link href={`/proyectos/ver?id=${project.id}`} style={{ display: "block", height: "100%" }}>
+      <Link href={projectHref(project.id)} style={{ display: "block", height: "100%" }}>
         <Card hoverable style={{ height: "100%" }}>
           <Flex vertical gap={14}>
             <Flex align="center" gap={12}>

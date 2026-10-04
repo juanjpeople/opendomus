@@ -5,16 +5,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { RefreshCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/i18n";
-import { db } from "@/lib/db";
 import { SPRING } from "@/lib/motion";
 import { usePwaStore, type InstallPromptEvent } from "@/store/usePwaStore";
-
-/** Le pide al service worker que guarde las páginas de cada contenedor (y su QR) para usarlas sin conexión. */
-async function warmContainerPages(worker: ServiceWorker) {
-  const containers = await db.containers.toArray();
-  const urls = containers.flatMap((container) => [`/inventario/${container.id}`, `/c/${container.code}`]);
-  worker.postMessage({ type: "warm", urls });
-}
 
 /**
  * Conecta la app con el navegador: registra el service worker (solo en producción), sigue la
@@ -74,11 +66,6 @@ export function PwaBridge() {
         // Revisa si hay versión nueva cada vez que se vuelve a la pestaña.
         onVisible = checkForUpdate(registration);
         document.addEventListener("visibilitychange", onVisible);
-        return navigator.serviceWorker.ready;
-      })
-      .then((registration) => {
-        const active = registration?.active;
-        if (!cancelled && active) setTimeout(() => warmContainerPages(active).catch(() => {}), 4000);
       })
       .catch((error: unknown) => console.warn("OpenDomus: service worker not registered", error));
 

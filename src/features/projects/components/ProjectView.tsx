@@ -17,6 +17,8 @@ import { useI18n } from "@/i18n";
 import { APPEARANCE_ICONS } from "@/lib/appearance";
 import { usePermission } from "@/lib/auth/hooks";
 import { SPRING } from "@/lib/motion";
+import { useTrackVisit } from "@/components/layout/useShell";
+import { projectHref } from "@/lib/navigation/routes";
 import { usePageCrumbs } from "@/store/useBreadcrumbStore";
 import { useProject, useProjectActions } from "../hooks";
 import { ProjectModal } from "./ProjectModal";
@@ -33,6 +35,7 @@ export function ProjectView() {
   const canManageLists = usePermission("shopping.manage");
   const [dialog, setDialog] = useState<"edit" | "list" | null>(null);
   usePageCrumbs(summary ? [{ label: summary.project.name }] : null);
+  useTrackVisit(summary ? projectHref(summary.project.id) : null);
 
   if (summary === undefined) return <Skeleton active />;
   if (summary === null) {

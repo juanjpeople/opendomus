@@ -14,6 +14,7 @@ import { SPRING } from "@/lib/motion";
 import { RECIPE_TAGS, type RecipeTag } from "../domain";
 import { useRecipes, type RecipeSummary } from "../hooks";
 import { AvailabilityTag, RatingBadge, RecipeCover } from "./RecipeBits";
+import { recipeHref } from "@/lib/navigation/routes";
 
 type Show = "all" | "ready";
 
@@ -146,7 +147,7 @@ function RecipeCard({ recipe, index }: { recipe: RecipeSummary; index: number })
       whileHover="hover"
       style={{ height: "100%" }}
     >
-      <Link href={`/recetas/ver?id=${recipe.id}`} style={{ display: "block", height: "100%" }}>
+      <Link href={recipeHref(recipe.id)} style={{ display: "block", height: "100%" }}>
         <motion.div variants={{ hover: { y: -4 } }} transition={SPRING.snappy} style={{ height: "100%" }}>
           <Card hoverable style={{ height: "100%", overflow: "hidden" }} styles={{ body: { padding: 16 } }} cover={
             <div style={{ position: "relative", overflow: "hidden" }}>

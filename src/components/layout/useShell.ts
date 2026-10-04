@@ -63,7 +63,7 @@ export function useNavigationTracking() {
   const tail = useBreadcrumbStore((s) => s.tail);
   const route = findRoute(pathname);
 
-  // Se guarda la URL real (ej. /inventario/<id>), así "Recientes" lleva al contenedor exacto.
+  // Las páginas con `?id=` registran su visita ellas mismas (ver `useTrackVisit`), con el id.
   useEffect(() => {
     if (user && route && !route.needsId) visit(user.id, pathname);
   }, [user, route, pathname, visit]);
@@ -110,4 +110,16 @@ export function useAutoLock() {
       clearInterval(interval);
     };
   }, [secured, autoLockMinutes, touch, lock]);
+}
+
+/**
+ * Para páginas con `?id=` (contenedor, receta, proyecto): registran en "Recientes" la URL completa,
+ * así se vuelve a lo exacto. `null` mientras no hay datos (no se registra lo que no existe).
+ */
+export function useTrackVisit(href: string | null) {
+  const user = useCurrentUser();
+  const visit = useNavigationStore((s) => s.visit);
+  useEffect(() => {
+    if (user && href) visit(user.id, href);
+  }, [user, href, visit]);
 }

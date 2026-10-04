@@ -3,7 +3,7 @@
 import { App, Button, Card, Flex, Skeleton, Tooltip, Typography, theme } from "antd";
 import { ArrowLeft, PackageX, Pencil, Printer, QrCode, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
@@ -19,6 +19,8 @@ import { useContainer, useStorageActions } from "@/features/storage/hooks";
 import { useT } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
 import { tint } from "@/lib/appearance";
+import { useTrackVisit } from "@/components/layout/useShell";
+import { containerHref } from "@/lib/navigation/routes";
 import { usePageCrumbs } from "@/store/useBreadcrumbStore";
 import { InventoryForm } from "./InventoryForm";
 import { InventoryList } from "./InventoryList";
@@ -30,7 +32,7 @@ export function ContainerPage() {
   const t = useT();
   const router = useRouter();
   const { modal } = App.useApp();
-  const { containerId } = useParams<{ containerId: string }>();
+  const containerId = useSearchParams().get("id") ?? undefined;
   const container = useContainer(containerId);
   const { deleteContainer } = useStorageActions();
   const [openItem, setOpenItem] = useState<string | null>(null);
@@ -38,8 +40,9 @@ export function ContainerPage() {
   const [labels, setLabels] = useState<LabelData[] | null>(null);
   const canManage = usePermission("storage.manage");
   const { token } = theme.useToken();
+  useTrackVisit(container ? containerHref(container.id) : null);
   usePageCrumbs(
-    container ? [...container.ancestors.map((ancestor) => ({ label: ancestor.name, href: `/inventario/${ancestor.id}` })), { label: container.name }] : null,
+    container ? [...container.ancestors.map((ancestor) => ({ label: ancestor.name, href: containerHref(ancestor.id) })), { label: container.name }] : null,
   );
 
   if (container === undefined) return <Skeleton active />;
@@ -68,7 +71,7 @@ export function ContainerPage() {
       cancelText: t("common.cancel"),
       onOk: async () => {
         const parent = container.ancestors.at(-1);
-        if (await deleteContainer(container.id)) router.push(parent ? `/inventario/${parent.id}` : "/inventario");
+        if (await deleteContainer(container.id)) router.push(parent ? containerHref(parent.id) : "/inventario");
       },
     });
 

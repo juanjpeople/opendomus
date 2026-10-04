@@ -130,6 +130,7 @@ export const es = {
       family: "Familia",
       inventory: "Inventario",
       scan: "Escanear QR",
+      container: "Contenedor",
       compras: "Compras",
       recipes: "Recetas",
       recipe: "Receta",
@@ -847,6 +848,10 @@ export const es = {
       saved: "Cambios guardados",
       deleted: "Proyecto eliminado",
     },
+  },
+  notFound: {
+    title: "No encontramos esta página",
+    text: "Puede que el enlace sea viejo o que se haya borrado lo que mostraba.",
   },
   forbidden: {
     title: "Sin acceso",

@@ -1,0 +1,5 @@
+# Cloudflare Pages (y Netlify): redirecciones antes de servir la app.
+# Las etiquetas QR impresas apuntan a /c/<código>; la página es /c?code=<código>.
+/c/:code  /c?code=:code  302
+/alacena  /inventario  301
+/taller   /inventario  301
