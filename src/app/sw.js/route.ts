@@ -131,6 +131,10 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  // La administración no forma parte del sitio público, tampoco como fallback offline.
+  if (url.pathname === "/admin" || url.pathname === "/admin.html" || url.pathname.startsWith("/admin/")) {
+    return event.respondWith(new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } }));
+  }
   // Datos de navegación de Next (RSC): siempre a la red. Sin conexión, Next cae a una
   // navegación completa, que la resuelve "navigate" desde la caché.
   if (request.headers.get("RSC") || url.searchParams.has("_rsc")) return;

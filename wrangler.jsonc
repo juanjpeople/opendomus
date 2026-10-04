@@ -35,7 +35,7 @@
     "SUPABASE_URL": "https://qaeqyeadwijphhlqcrku.supabase.co",
     "SUPABASE_PHOTOS_BUCKET": "opendomus-photos",
     "PHOTO_STORAGE": "supabase",
-    "PLATFORM_ADMIN_EMAILS": "juanjpeople@gmail.com",
+    // OPERATOR_ACCESS_ISSUER, OPERATOR_ACCESS_AUD y OPERATOR_EMAILS se configuran fuera del repo.
     // Crear una casa en la nube pide una licencia (en desarrollo, `.dev.vars` puede poner `open`).
     "HOUSEHOLD_ACCESS": "codes",
   },

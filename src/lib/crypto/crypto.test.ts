@@ -67,7 +67,9 @@ describe("cajas", () => {
     const key = await importScopeKey(newScopeKey());
     const box = await seal(key, "Leche");
     const [iv, ct] = box.split(".");
-    const tampered = `${iv}.${ct.slice(0, -2)}${ct.endsWith("A") ? "B" : "A"}${ct.slice(-1)}`;
+    const bytes = Buffer.from(ct, "base64url");
+    bytes[0] ^= 1;
+    const tampered = `${iv}.${bytes.toString("base64url")}`;
     await assert.rejects(open(key, tampered));
   });
 });

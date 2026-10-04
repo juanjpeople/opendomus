@@ -66,7 +66,7 @@ async function signUp(name: string, email: string, password: string) {
 }
 
 const unique = Date.now().toString(36);
-const anaEmail = "admin@casa.test";
+const anaEmail = `admin+${unique}@casa.test`;
 
 /** Token de administración del Worker local (de `.dev.vars`, o del entorno en CI). */
 function adminToken() {
@@ -75,7 +75,7 @@ function adminToken() {
   return vars.match(/^ADMIN_TOKEN=(.+)$/m)?.[1].trim() ?? "";
 }
 
-async function adminCall(method: "GET" | "POST", path: string, body?: unknown, token = adminToken()) {
+async function adminCall(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown, token = adminToken()) {
   const response = await fetch(`${API}/api/admin${path}`, {
     method,
     headers: { Authorization: `Bearer ${token}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
@@ -85,6 +85,9 @@ async function adminCall(method: "GET" | "POST", path: string, body?: unknown, t
 }
 
 test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () => {
+  const anonymous = new Client();
+  assert.equal((await anonymous.call("POST", "/api/auth/sign-in/email", { oversized: "x".repeat(17 * 1024) })).status, 413);
+  assert.equal((await anonymous.call("POST", "/api/feedback", { message: "x".repeat(9 * 1024) })).status, 413);
   // Ana: cuenta + casa con sus tres claves de nivel.
   const ana = await signUp("Ana", anaEmail, "una frase larga para ana");
   const householdId = crypto.randomUUID();
@@ -99,9 +102,9 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
     })),
   );
   // --- Licencias: la nube es opcional y crear una casa pide una (la emite Juan, o mañana el cobro) ---
-  assert.equal((await adminCall("GET", "/licenses", undefined, "")).status, 401);
-  assert.equal((await adminCall("GET", "/licenses", undefined, "x".repeat(48))).status, 401);
-  const issued = await adminCall("POST", "/licenses", { count: 2, note: `prueba ${unique}` });
+  assert.equal((await adminCall("GET", "/platform/licenses", undefined, "")).status, 404);
+  assert.equal((await adminCall("GET", "/platform/licenses", undefined, "x".repeat(48))).status, 404);
+  const issued = await adminCall("POST", "/platform/licenses", { count: 2, note: `prueba ${unique}` });
   assert.equal(issued.status, 201, JSON.stringify(issued.body));
   const [license, spare] = issued.body.licenses as { id: string; code: string }[];
   assert.match(license.code, /^OD(-[A-Z2-9]{4}){4}$/);
@@ -112,7 +115,7 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal((await createWith()).status, 403);
   assert.equal((await createWith("OD-AAAA-AAAA-AAAA-AAAA")).status, 403);
   // Una licencia revocada no sirve.
-  assert.equal((await adminCall("POST", `/licenses/${spare.id}/revoke`)).status, 200);
+  assert.equal((await adminCall("POST", `/platform/licenses/${spare.id}/revoke`)).status, 200);
   assert.equal((await createWith(spare.code)).status, 403);
   const created = await createWith(license.code);
   assert.equal(created.status, 201, JSON.stringify(created.body));
@@ -385,17 +388,17 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal((await anaAgain.call("GET", "/api/me")).body.households[0].adultsKeyVersion, 3);
 
   // --- Pausa (plan vencido o pausado): se baja todo, no se sube. Nadie queda sin sus datos. ---
-  const listed = (await adminCall("GET", "/households")).body.households as { id: string; members: number; licenseNote: string }[];
+  const listed = (await adminCall("GET", "/platform/households")).body.households as { id: string; members: number; licenseNote: string }[];
   const mine = listed.find((household) => household.id === householdId)!;
   assert.equal(mine.licenseNote, `prueba ${unique}`);
   assert.ok(!("encryptedName" in mine));
-  assert.equal((await adminCall("POST", `/households/${householdId}/pause`)).status, 200);
+  assert.equal((await adminCall("POST", `/platform/households/${householdId}/pause`)).status, 200);
   assert.equal((await anaAgain.call("GET", "/api/me")).body.households[0].planStatus, "paused");
   assert.equal((await pull(anaSigner)).status, 200);
   const paused = await push(anaSigner, [await op(anaSigner, "family", opened2.key, { changes: [] }, { keyVersion: 2 })]);
   assert.equal(paused.status, 402);
   assert.equal(paused.body.error, "plan-paused");
-  assert.equal((await adminCall("POST", `/households/${householdId}/resume`)).status, 200);
+  assert.equal((await adminCall("POST", `/platform/households/${householdId}/resume`)).status, 200);
   assert.equal((await push(anaSigner, [await op(anaSigner, "family", opened2.key, { changes: [] }, { keyVersion: 2 })])).status, 200);
 
   // --- Fotos: bytes cifrados en el dispositivo; solo adultos administran, todos descargan ---
@@ -421,9 +424,9 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal((await bytes(anaAgain, "PUT", `${photoPath}/full`, sealedPhoto, null)).status, 403);
   assert.equal((await bytes(anaAgain, "PUT", `${photoPath}/full`, new Uint8Array(4 * 1024 * 1024 + 1))).status, 413);
   // En pausa no se sube.
-  await adminCall("POST", `/households/${householdId}/pause`);
+  await adminCall("POST", `/platform/households/${householdId}/pause`);
   assert.equal((await bytes(anaAgain, "PUT", `${photoPath}/full`, sealedPhoto)).status, 402);
-  await adminCall("POST", `/households/${householdId}/resume`);
+  await adminCall("POST", `/platform/households/${householdId}/resume`);
   // Borrar exige el mismo permiso de administración (Tomi no).
   assert.equal((await bytes(kid.client, "DELETE", photoPath)).status, 403);
   assert.equal((await bytes(anaAgain, "DELETE", photoPath)).status, 200);
@@ -436,41 +439,34 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
     message: "Sería útil poder ordenar mejor las recetas favoritas.",
   });
   assert.equal(publicFeedback.status, 201, JSON.stringify(publicFeedback.body));
-  assert.equal((await flor.client.call("GET", "/api/platform-admin/overview")).status, 403);
-
-  // Ni siquiera un correo permitido autodeclarado puede administrar sin habilitación explícita.
-  assert.equal((await anaAgain.call("GET", "/api/platform-admin/overview")).status, 403);
-  const lookup = await adminCall("GET", `/accounts?email=${encodeURIComponent(anaEmail)}`);
-  assert.equal(lookup.status, 200);
-  const adminUserId = lookup.body.accounts[0].id as string;
-  const grant = { userId: adminUserId, email: anaEmail, enabled: true };
-  assert.equal((await anaAgain.call("POST", "/api/admin/administrators", grant)).status, 401);
-  assert.equal((await adminCall("POST", "/administrators", { ...grant, email: "otra@casa.test" })).status, 404);
-  assert.equal((await adminCall("POST", "/administrators", grant)).status, 200);
-  const overview = await anaAgain.call("GET", "/api/platform-admin/overview");
+  // Las cuentas domésticas nunca obtienen administración, incluso con un correo conocido.
+  assert.equal((await flor.client.call("GET", "/api/platform-admin/overview")).status, 404);
+  assert.equal((await anaAgain.call("GET", "/api/platform-admin/overview")).status, 404);
+  assert.equal((await anaAgain.call("GET", "/api/admin/platform/overview")).status, 404);
+  assert.equal((await anaAgain.call("POST", "/api/admin/administrators", {})).status, 404);
+  const overview = await adminCall("GET", "/platform/overview");
   assert.equal(overview.status, 200, JSON.stringify(overview.body));
   assert.ok(overview.body.metrics.users >= 3);
   assert.equal(overview.body.credentials.supabaseConfigured, false);
+  assert.ok(overview.body.recentAudit.some((entry: { actorEmail: string }) => entry.actorEmail === "operator@localhost.test"));
 
-  const users = await anaAgain.call("GET", "/api/platform-admin/users");
+  const users = await adminCall("GET", "/platform/users");
   assert.equal(users.status, 200);
-  assert.ok(users.body.users.some((entry: { email: string }) => entry.email === "admin@casa.test"));
+  assert.ok(users.body.users.some((entry: { email: string }) => entry.email === anaEmail));
 
-  const feedback = await anaAgain.call("GET", "/api/platform-admin/feedback");
+  const feedback = await adminCall("GET", "/platform/feedback");
   assert.equal(feedback.status, 200);
   const feedbackId = feedback.body.feedback[0].id as string;
-  assert.equal((await anaAgain.call("PATCH", `/api/platform-admin/feedback/${feedbackId}`, { status: "resolved" })).status, 200);
+  assert.equal((await adminCall("PATCH", `/platform/feedback/${feedbackId}`, { status: "resolved" })).status, 200);
 
-  const platformLicense = await anaAgain.call("POST", "/api/platform-admin/licenses", { count: 1, note: "panel" });
+  const platformLicense = await adminCall("POST", "/platform/licenses", { count: 1, note: "panel" });
   assert.equal(platformLicense.status, 201);
   const platformLicenseId = platformLicense.body.licenses[0].id as string;
-  assert.equal((await anaAgain.call("POST", `/api/platform-admin/licenses/${platformLicenseId}/revoke`)).status, 200);
+  assert.equal((await adminCall("POST", `/platform/licenses/${platformLicenseId}/revoke`)).status, 200);
 
-  assert.equal((await anaAgain.call("POST", `/api/platform-admin/households/${householdId}/pause`)).status, 200);
+  assert.equal((await adminCall("POST", `/platform/households/${householdId}/pause`)).status, 200);
   // Aunque esté pausada, una casa reciente no se puede borrar.
-  assert.equal((await anaAgain.call("DELETE", `/api/platform-admin/households/${householdId}`, { confirm: householdId })).status, 409);
-  assert.equal((await anaAgain.call("POST", `/api/platform-admin/households/${householdId}/resume`)).status, 200);
-  assert.equal((await anaAgain.call("GET", "/api/platform-admin/notices")).status, 200);
-  assert.equal((await adminCall("POST", "/administrators", { ...grant, enabled: false })).status, 200);
-  assert.equal((await anaAgain.call("GET", "/api/platform-admin/overview")).status, 403);
+  assert.equal((await adminCall("DELETE", `/platform/households/${householdId}`, { confirm: householdId })).status, 409);
+  assert.equal((await adminCall("POST", `/platform/households/${householdId}/resume`)).status, 200);
+  assert.equal((await adminCall("GET", "/platform/notices")).status, 200);
 });

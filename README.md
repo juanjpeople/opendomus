@@ -90,40 +90,74 @@ currently includes 1 GB of file storage plus 5 GB each of direct and cached egre
 bucket independently limits every encrypted object to 4 MB and accepts only
 `application/octet-stream`.
 
-### Platform administration
+### Administración privada (CLI + Cloudflare Access)
 
-Register at `/cuenta?modo=crear&volver=/admin` (no invitation is needed for an account),
-choose your own password and save the recovery kit. Sign in at
-`/cuenta?modo=entrar&volver=/admin`; password recovery is at
-`/cuenta?modo=recuperar&volver=/admin` and requires that kit. The allowed email setting
-does not create an account, set a password or prove ownership of an email address.
+La app pública **no compila ni publica `/admin`**. Sus cuentas domésticas no otorgan
+permisos globales. El antiguo `/api/platform-admin/*` deja de existir, y las operaciones
+`/api/admin/*` solo funcionan desde el hostname del gateway privado, con una identidad
+firmada por Access, un correo explícitamente permitido y el secreto administrativo.
+Sin configuración, responden 404 antes de consultar D1. La tabla histórica de grants
+permanece para no alterar migraciones aplicadas, pero ya no autoriza a nadie.
 
-Apply migration `0006_platform_admin_grants.sql` before deploying this version. Existing
-administrators also need an explicit grant. With `OPENDOMUS_ADMIN_TOKEN` configured only
-in the terminal environment or the ignored `.env.admin`, the operator runs:
+`wrangler.operator.jsonc` define un segundo Worker sin páginas ni assets y sin URLs de
+preview. Su service binding conecta con el Worker principal. Access debe proteger **todo
+el hostname** del gateway, incluyendo cualquier alias, antes de habilitar la operación.
+El sitio público sigue accesible para las familias; no se protege todo el sitio con Access.
 
-```bash
-npm run admin -- cuenta juanjpeople@gmail.com
-npm run admin -- administrador ACCOUNT_ID --email juanjpeople@gmail.com --accion habilitar
-```
+#### Preparación manual, sin desplegar desde este chat
 
-Confirm the returned account ID belongs to the person being authorized before granting
-access; email alone is not verified. To revoke, use the same command with
-`--accion revocar`. Grants and revocations are audited and take effect on the next API
-request. Without a grant the panel denies access, including for allowed emails.
+1. En Zero Trust, habilitar Independent MFA (Security key y Authenticator app). No
+   deshabilitar los factores existentes ni cambiar otras aplicaciones.
+2. Preparar la aplicación Access desde CLI; este comando solo muestra el plan:
 
-`/admin` uses the normal cloud-account session and authorizes only the comma-separated
-emails in `PLATFORM_ADMIN_EMAILS` whose specific account ID has also been explicitly
-granted access by the operator; it never sends `ADMIN_TOKEN` or storage credentials to
-the browser. The panel shows application metrics, users, active sessions, homes,
-licenses, feedback, inactivity notices, risk signals and an audit trail. It can pause or
-resume a home, generate or revoke invitation licenses, resolve feedback and manually
-delete a home only after it has been inactive and paused for at least 90 days.
+   ```bash
+   npm run admin:access -- --host opendomus-operator.TU-SUBDOMINIO.workers.dev --team TU-EQUIPO --emails operador@example.com,otro@example.com
+   ```
 
-A daily Worker cron queues inactivity notices 30, 7 and 1 days before pausing a home at
-90 days. Notices remain in the administration queue until an email provider is connected;
-homes are never deleted automatically. Public feedback is available at `/feedback` and
-is rate-limited without collecting product telemetry.
+   Usar los correos exactos del operador. No usar dominios completos, comodines ni
+   permitir todos los usuarios de GitHub. Para aplicar, configurar
+   `CLOUDFLARE_ACCOUNT_ID` y un `CLOUDFLARE_API_TOKEN` con permisos Access adecuados
+   en el entorno y repetir con `--apply`. El script no despliega Workers, no sobrescribe
+   aplicaciones existentes ni imprime el token. Crea una allowlist, un proveedor OTP y
+   exige MFA en cada login. Si falla a mitad, revisar la aplicación existente antes de
+   reintentar; no borrar políticas como workaround.
+3. Cargar los cuatro valores devueltos (`OPERATOR_HOST`, `OPERATOR_ACCESS_ISSUER`,
+   `OPERATOR_ACCESS_AUD`, `OPERATOR_EMAILS`) en **ambos** Workers, mediante
+   `wrangler secret put NOMBRE` y el mismo comando con `--config wrangler.operator.jsonc`.
+   Mantener `ADMIN_TOKEN` únicamente en el Worker principal y en la terminal del operador.
+   Nunca configurar `OPERATOR_LOCAL_TEST` en producción.
+4. Aplicar migraciones pendientes manualmente y compilar: `npm run build`. Desplegar el
+   Worker principal con `npx wrangler deploy` y el gateway con
+   `npx wrangler deploy --config wrangler.operator.jsonc`. Si Cloudflare necesita crear el
+   Worker antes de asociarlo con Access, crearlo sin los cuatro valores: rechaza todo hasta
+   terminar la política. Confirmar en Domains & Routes que Access cubra su workers.dev.
+5. Instalar `cloudflared` desde Cloudflare y configurar en el entorno o `.env.admin`
+   (ignorado por Git): `OPENDOMUS_API=https://HOST-DEL-GATEWAY` y
+   `OPENDOMUS_ADMIN_TOKEN`. Ejecutar `npm run admin -- login`, ingresar el OTP recibido
+   y enrolar/completar el segundo factor. No pegar tokens, OTP ni códigos de recuperación
+   en chats o issues. El login usa la identidad de Access; no crea una cuenta doméstica.
+6. Verificar correo permitido + MFA, rechazo de otro correo, token vencido, peticiones
+   directas al hostname público y `/admin` ausente. **OTP/MFA no se considera operativo
+   hasta completar estas pruebas reales.** Revocar sesiones de Access al retirar un operador
+   y quitar su correo en Access y ambos Workers. Rotar `ADMIN_TOKEN` si se expuso.
+
+Comandos disponibles: `npm run admin -- metricas`, `usuarios`, `feedback`, `avisos`,
+`cuenta EMAIL`, `licencias`, `licencia nueva`, `revocar ID`, `casas`, `pausar ID`,
+`reanudar ID` y `resolver-feedback ID`. Las escrituras dejan la identidad verificada del
+operador en el registro de auditoría; no descifran contenido doméstico. El borrado de
+casas conserva sus validaciones de antigüedad y confirmación y no tiene un comando CLI
+abreviado. No hay borrado automático.
+
+Los OTP administrativos los envía Cloudflare Access y no requieren comprar un dominio.
+Google y GitHub se pueden integrar como proveedores de Access, conservando allowlist y
+MFA; necesitan configurar sus aplicaciones y verificar identidades. No están activados
+por este cambio. Para correos de las cuentas domésticas y avisos de inactividad hace
+falta un proveedor/remitente verificado separado: hoy esos avisos siguen en cola y la
+recuperación de datos usa el kit, no un email que prometa abrir claves cifradas.
+
+Fuentes: [OTP de Access](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/),
+[MFA independiente](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/independent-mfa/),
+[validación de JWT](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/).
 
 Any static host works the same way (Netlify, GitHub Pages, nginx/Caddy on a NAS): serve
 `out/`. Household data stays on each device until sync exists (see `OPENDOMUS_PLAN.md`).
