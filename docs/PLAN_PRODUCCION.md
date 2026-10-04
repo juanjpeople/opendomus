@@ -1,6 +1,6 @@
 # OpenDomus: plan para llevarla a producción
 
-> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: servidor, cuentas, casas e invitaciones cifradas · 🔄 hito 2: ✅ sincronización cifrada y privacidad por perfil, sigue abrir la nube en producción). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
+> Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: cuentas, casas e invitaciones cifradas · ✅ hito 2: sincronización cifrada y privacidad · ✅ hito 3a: recuperación con el kit, contraseña, dispositivos y rotación de claves · sigue abrir la nube en producción y el 3b). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
 > Mantener este archivo al día al cerrar cada paso.
 
 ## Contexto
@@ -150,7 +150,16 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
    - ✅ Cada lista, proyecto, receta y evento permite elegir Familia, Adultos o Privado. Los perfiles filtran también búsqueda, contadores, detalle e historial; la página de Privacidad muestra qué se comparte con quién (cada nivel con quiénes lo ven) y una marca discreta señala lo que no es de Familia. La lista de la casa siempre es de Familia.
    - ✅ Probado con tres cuentas (Ana admin, Flor adulta, Tomi chico), con la nube habilitada, en escritorio y celular: lo de Adultos y lo Privado de Ana nunca llega al navegador de Tomi (ni nombres, ni ítems, ni historial); lo Privado tampoco al de Flor; cambiar el nivel en vivo lo agrega o lo borra entero de cada dispositivo.
    - Sigue: publicar `NEXT_PUBLIC_CLOUD=1` en producción (decisión: abrirla como beta antes de tener "olvidé mi contraseña", del hito 3).
-3. **Recuperación y dispositivos**: "olvidé mi contraseña" con el kit, aprobar un dispositivo nuevo por QR, revocar, rotación de claves al sacar a alguien, Google/GitHub/passkeys, emails (Resend).
+3. 🔄 **Recuperación y dispositivos.** Se divide en dos: 3a (lo necesario para abrir la nube) y 3b (otros métodos de entrada, que dependen de cuentas externas).
+   - ✅ **3a**:
+     - **"Olvidé mi contraseña" con el kit, sin email.** Del código del kit salen, en el dispositivo, la clave que abre la copia de las claves y una prueba independiente; el servidor guarda solo el hash de la prueba. Recuperar cambia la contraseña, re-cifra las claves, entrega un kit nuevo (el usado deja de servir) y cierra todas las sesiones, todo en una sola transacción. Tiene límite de intentos y la misma respuesta para un email inexistente.
+     - **Cambiar la contraseña** (re-cifra las claves y cierra las otras sesiones) y **generar un kit nuevo** (pide la contraseña).
+     - **Tus dispositivos** en Ajustes → Cuenta: dónde está abierta la cuenta (sin exponer tokens) y cerrar la sesión de uno.
+     - **Sacar a alguien de la casa**: claves nuevas de Familia (y de Adultos, si no era chico) para los que quedan, el nombre de la casa re-cifrado y las invitaciones pendientes anuladas. Su perfil queda sin cuenta, con su historial. Sus cambios viejos se siguen verificando (ex miembros con su clave de firma). **Pasar a alguien a chico** también rota Adultos.
+     - **Motor**: si las claves cambiaron, pide las nuevas y reintenta sin perder nada (no avanza el cursor sobre lo que no puede abrir). A quien sacaron le muestra que ya no es parte de la casa. Volver a entrar en un dispositivo que ya tenía la casa no la baja de nuevo ni pierde lo no subido.
+     - Probado con tests de cifrado, la API de punta a punta (incluye kit equivocado, contraseña vieja, sobres incompletos, versión vieja) y tres navegadores: recuperar en un teléfono nuevo, volver a entrar sin perder lo no subido, cerrar un dispositivo, cambiar la contraseña, sacar a Flor y que lo escrito con claves viejas igual llegue.
+   - **3b** (siguiente): aprobar un dispositivo nuevo por QR desde otro, passkeys (PRF para abrir las claves), Google, GitHub, enlace mágico y emails (Resend). Necesitan apps OAuth y un dominio para los emails.
+   - Con 3a, la nube se puede abrir en producción (`NEXT_PUBLIC_CLOUD=1`), aplicando antes la migración `0003_recovery.sql` en la base de producción.
 
 
 - `apps/server`:

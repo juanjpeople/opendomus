@@ -3,7 +3,8 @@
  * (nombres de casas, claves de nivel) se cifra o descifra acá, en el dispositivo; a la API van
  * claves públicas y cajas cifradas.
  */
-import { api } from "@/lib/cloud/api";
+import { api, CloudError } from "@/lib/cloud/api";
+import { ValidationError } from "@/lib/errors";
 import { clearVault, loadIdentity, saveIdentity } from "@/lib/cloud/vault";
 import {
   createIdentity,
@@ -11,10 +12,14 @@ import {
   envelopeContext,
   importScopeKey,
   inviteSecrets,
+  newRecoveryKit,
   newScopeKey,
   open,
   openEnvelope,
   openText,
+  recoverIdentity,
+  recoveryProof,
+  rewrapIdentity,
   seal,
   sealEnvelope,
   sha256,
@@ -22,7 +27,7 @@ import {
   type Identity,
   type Scope,
 } from "@/lib/crypto";
-import type { CloudHousehold, CloudInvite, CloudMember, CloudRole, CloudUser, InvitePreview } from "./domain";
+import type { CloudDevice, CloudHousehold, CloudInvite, CloudMember, CloudRole, CloudUser, FormerMember, InvitePreview } from "./domain";
 
 interface MeResponse {
   /** `null` si no hay sesión. */
@@ -205,8 +210,104 @@ export async function acceptInvite(session: CloudSession, id: string, secret: st
   return preview.householdId;
 }
 
+/** Miembros actuales y los que se fueron (estos, para verificar sus cambios viejos). */
+export function listRoster(householdId: string) {
+  return api<{ members: CloudMember[]; former: FormerMember[] }>("GET", `/households/${householdId}/members`);
+}
+
 export function listMembers(householdId: string) {
-  return api<{ members: CloudMember[] }>("GET", `/households/${householdId}/members`).then((result) => result.members);
+  return listRoster(householdId).then((result) => result.members);
+}
+
+/**
+ * Sacar a alguien de la casa: claves NUEVAS de los niveles que tenía (Familia siempre; Adultos si
+ * no era chico), ensobradas para cada uno de los que quedan, y el nombre de la casa cifrado con la
+ * Familia nueva. Lo que se escriba desde ahora, esa persona no lo puede abrir.
+ */
+export async function removeMember(household: CloudHousehold, member: CloudMember) {
+  const remaining = (await listMembers(household.id)).filter((entry) => entry.userId !== member.userId);
+  if (remaining.some((entry) => !entry.encPublicKey)) throw new CloudError("members-changed", 409);
+  const scopes: Exclude<Scope, "private">[] = member.role === "kid" ? ["family"] : ["family", "adults"];
+  let familyKey: CryptoKey | null = null;
+  const rotation = [];
+  for (const scope of scopes) {
+    const raw = newScopeKey();
+    const version = (scope === "family" ? household.familyKeyVersion : household.adultsKeyVersion) + 1;
+    const recipients = remaining.filter((entry) => scopesFor(entry.role).includes(scope));
+    const envelopes = await Promise.all(
+      recipients.map(async (entry) => ({ userId: entry.userId, envelope: await sealEnvelope(raw, entry.encPublicKey!, envelopeContext(household.id, scope, version, entry.userId)) })),
+    );
+    rotation.push({ scope, version, envelopes });
+    if (scope === "family") familyKey = await importScopeKey(raw);
+  }
+  const encryptedName = await seal(familyKey!, household.name, nameContext(household.id));
+  await api("POST", `/households/${household.id}/members/${member.userId}/remove`, { encryptedName, rotation });
+}
+
+// --- Recuperación, contraseña, kit y dispositivos ------------------------------------------
+
+/**
+ * "Olvidé mi contraseña": el kit abre una copia de las claves, se vuelven a cifrar con la
+ * contraseña nueva y se arma un kit nuevo (el usado deja de servir). Se cierran todas las sesiones.
+ * Devuelve la sesión ya abierta en este dispositivo y el código del kit nuevo (se muestra una vez).
+ */
+export async function recoverAccount(input: { email: string; recoveryCode: string; password: string }): Promise<{ session: CloudSession; recoveryCode: string }> {
+  const email = input.email.trim();
+  let recoveryAuth: string;
+  try {
+    recoveryAuth = await recoveryProof(input.recoveryCode);
+  } catch {
+    throw new ValidationError("errors.cloud.badKit");
+  }
+  const keys = await api<{ encPublicKey: string; signPublicKey: string; recoveryPrivateKeys: string }>("POST", "/recovery/start", { email, recoveryAuth });
+  const fresh = await derivePasswordKeys(email, input.password);
+  const recovered = await recoverIdentity(keys, input.recoveryCode, fresh.encKey);
+  await api("POST", "/recovery/complete", {
+    email,
+    recoveryAuth,
+    newPassword: fresh.authKey,
+    privateKeys: recovered.privateKeys,
+    recoveryPrivateKeys: recovered.kit.recoveryPrivateKeys,
+    recoveryVerifier: recovered.kit.recoveryVerifier,
+  });
+  await api("POST", "/auth/sign-in/email", { email, password: fresh.authKey });
+  const me = await api<MeResponse>("GET", "/me");
+  return { session: await sessionFrom(me, recovered.identity), recoveryCode: recovered.kit.recoveryCode };
+}
+
+/** Cambiar la contraseña sabiendo la actual: mismas claves, cifradas con la nueva. Cierra las otras sesiones. */
+export async function changePassword(session: CloudSession, input: { current: string; next: string }) {
+  const [current, next] = await Promise.all([derivePasswordKeys(session.user.email, input.current), derivePasswordKeys(session.user.email, input.next)]);
+  const me = await api<MeResponse>("GET", "/me");
+  let privateKeys: string;
+  try {
+    privateKeys = await rewrapIdentity(me.keys!.privateKeys, current.encKey, next.encKey);
+  } catch {
+    throw new CloudError("wrong-password", 403);
+  }
+  await api("POST", "/account/password", { currentPassword: current.authKey, newPassword: next.authKey, privateKeys });
+}
+
+/** Un kit de recuperación nuevo (el anterior deja de servir). Devuelve el código para mostrarlo una vez. */
+export async function regenerateRecoveryKit(session: CloudSession, password: string): Promise<string> {
+  const keys = await derivePasswordKeys(session.user.email, password);
+  const me = await api<MeResponse>("GET", "/me");
+  let kit;
+  try {
+    kit = await newRecoveryKit(me.keys!.privateKeys, keys.encKey);
+  } catch {
+    throw new CloudError("wrong-password", 403);
+  }
+  await api("POST", "/account/recovery-kit", { password: keys.authKey, recoveryPrivateKeys: kit.recoveryPrivateKeys, recoveryVerifier: kit.recoveryVerifier });
+  return kit.recoveryCode;
+}
+
+export function listDevices() {
+  return api<{ devices: CloudDevice[] }>("GET", "/account/devices").then((result) => result.devices);
+}
+
+export function revokeDevice(id: string) {
+  return api("DELETE", `/account/devices/${id}`);
 }
 
 export function listInvites(householdId: string) {
@@ -219,9 +320,20 @@ export function revokeInvite(householdId: string, inviteId: string) {
 
 /**
  * Cambiar el rol. Si alguien pasa a poder ver "Adultos", quien hace el cambio le entrega esa
- * clave (ensobrada para él). Bajar a "chico" sin rotar la clave queda para el hito de rotación.
+ * clave (ensobrada para él). Si pasa a chico, la clave de Adultos se rota para los que quedan.
  */
 export async function changeRole(session: CloudSession, household: CloudHousehold, member: CloudMember, role: CloudRole) {
+  if (role === "kid" && member.role !== "kid") {
+    // Deja de ver "Adultos": como ya tenía esa clave, se rota para los adultos que quedan.
+    const adults = (await listMembers(household.id)).filter((entry) => entry.userId !== member.userId && entry.role !== "kid");
+    const raw = newScopeKey();
+    const version = household.adultsKeyVersion + 1;
+    const envelopes = await Promise.all(
+      adults.map(async (entry) => ({ userId: entry.userId, envelope: await sealEnvelope(raw, entry.encPublicKey!, envelopeContext(household.id, "adults", version, entry.userId)) })),
+    );
+    await api("PATCH", `/households/${household.id}/members/${member.userId}`, { role, rotation: { version, envelopes } });
+    return;
+  }
   await api("PATCH", `/households/${household.id}/members/${member.userId}`, { role });
   if (role !== "kid" && member.role === "kid" && member.encPublicKey) {
     const { raw } = await openScopeKey(session.identity, session.user.id, household, "adults");

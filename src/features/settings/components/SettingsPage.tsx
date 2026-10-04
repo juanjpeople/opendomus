@@ -2,16 +2,18 @@
 
 import { Anchor, Button, Card, Col, ColorPicker, Flex, Grid, Row, Segmented, Slider, Typography, theme } from "antd";
 import { motion } from "framer-motion";
-import { Check, Database, Info, Keyboard, Languages, MonitorDown, Paintbrush, PanelLeft, Sparkles, type LucideIcon } from "lucide-react";
+import { Check, Database, Info, Keyboard, Languages, MonitorDown, Paintbrush, PanelLeft, Sparkles, UserRound, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { FONT_SIZES } from "@/components/providers/ThemeProvider";
 import { ChoiceCards, PageHeader } from "@/components/ui";
+import { AccountSettings } from "@/features/cloud/components/AccountSettings";
 import { usePreferences, useSetPreference } from "@/hooks/usePreferences";
 import { LOCALE_META, LOCALES, useI18n } from "@/i18n";
 import { detectBrowserLocale } from "@/i18n/config";
 import { useCurrentUser } from "@/lib/auth/session";
+import { CLOUD_ENABLED } from "@/lib/cloud/api";
 import { SPRING } from "@/lib/motion";
 import {
   BRAND_PRESETS,
@@ -33,11 +35,15 @@ const SECTIONS = [
   { id: "idioma", key: "language", icon: Languages },
   { id: "navegacion", key: "navigation", icon: PanelLeft },
   { id: "atajos", key: "shortcuts", icon: Keyboard },
+  { id: "cuenta", key: "account", icon: UserRound },
   { id: "datos", key: "data", icon: Database },
   { id: "acerca", key: "about", icon: Info },
 ] as const;
 
 type SectionKey = (typeof SECTIONS)[number]["key"];
+
+/** La cuenta de la nube solo aparece con la nube habilitada. */
+const VISIBLE_SECTIONS = SECTIONS.filter((section) => section.key !== "account" || CLOUD_ENABLED);
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -48,6 +54,7 @@ export function SettingsPage() {
     language: <LanguageSettings />,
     navigation: <NavigationSettings />,
     shortcuts: <ShortcutsSettings />,
+    account: <AccountSettings />,
     data: <DataSettings />,
     about: <AboutSettings />,
   };
@@ -59,13 +66,13 @@ export function SettingsPage() {
         <Col xs={0} lg={5}>
           <Anchor
             offsetTop={88}
-            items={SECTIONS.map(({ id, key }) => ({ key: id, href: `#${id}`, title: t(`settings.sections.${key}`) }))}
+            items={VISIBLE_SECTIONS.map(({ id, key }) => ({ key: id, href: `#${id}`, title: t(`settings.sections.${key}`) }))}
           />
         </Col>
         <Col xs={24} lg={19}>
           <Stagger delay={0.1}>
             <Flex vertical gap={24}>
-              {SECTIONS.map(({ id, key, icon }) => (
+              {VISIBLE_SECTIONS.map(({ id, key, icon }) => (
                 <StaggerItem key={id}>
                   <SettingsCard id={id} icon={icon} title={t(`settings.sections.${key}`)}>
                     {content[key]}

@@ -219,6 +219,9 @@ async function push(ctx: SyncContext, onProgress?: Progress) {
       // Rechazado por el servidor (no por la red): ese lote no entró, se descarta y se vuelve a armar.
       if (error instanceof CloudError && error.status >= 400 && error.status < 500 && error.status !== 401 && error.status !== 429) {
         await db.syncState.delete(STATE.inflight);
+        // Las claves de la casa cambiaron (alguien salió): se vuelve a armar con las nuevas.
+        if (error.code === "stale-key") throw new SyncStop("stale-key");
+        if (error.status === 404) throw new SyncStop("removed");
         throw new SyncStop("server");
       }
       throw error;
@@ -277,13 +280,13 @@ function isChange(value: unknown): value is Change {
 }
 
 /** Verifica y abre una operación. `null` si no hay que aplicarla (propia, o inválida: se cuenta). */
-async function decode(ctx: SyncContext, op: StoredOp): Promise<{ payload: OpPayload; author: { userId: string; role: Role } } | "own" | "invalid"> {
+async function decode(ctx: SyncContext, op: StoredOp): Promise<{ payload: OpPayload; author: { userId: string; role: Role } } | "own" | "invalid" | "missing-key"> {
   let member = (await loadRoster(ctx)).get(op.author);
   if (!member) member = (await loadRoster(ctx, true)).get(op.author);
   if (!member?.signPublicKey) return "invalid";
   if (!(await verify(member.signPublicKey, opSigningData(ctx.link.householdId, op, op.author), op.sig).catch(() => false))) return "invalid";
   const key = await ctx.readKey(op.scope, op.keyVersion).catch(() => null);
-  if (!key) return "invalid";
+  if (!key) return "missing-key";
   let payload: OpPayload;
   try {
     payload = JSON.parse(await openText(key, op.body, opContext(ctx.link.householdId, op, op.author))) as OpPayload;
@@ -301,8 +304,16 @@ async function pull(ctx: SyncContext, onProgress?: Progress) {
     const page = await api<PullResponse>("GET", `/households/${ctx.link.householdId}/ops?since=${cursor}`);
     const decoded: { op: StoredOp; payload: OpPayload; author: { userId: string; role: Role } }[] = [];
     let rejected = 0;
+    // Hasta dónde se puede avanzar: si falta una clave, se aplica lo anterior y se frena ahí.
+    let next = page.next;
+    let missingKey = false;
     for (const op of page.ops) {
       const result = await decode(ctx, op);
+      if (result === "missing-key") {
+        next = op.seq - 1;
+        missingKey = true;
+        break;
+      }
       if (result === "invalid") rejected++;
       else if (result !== "own") decoded.push({ op, ...result });
     }
@@ -330,10 +341,11 @@ async function pull(ctx: SyncContext, onProgress?: Progress) {
           }
         }
       }
-      await db.syncState.put({ key: STATE.cursor, value: page.next });
+      await db.syncState.put({ key: STATE.cursor, value: next });
     });
 
     if (rejected) useSyncStatus.getState().update({ rejected: useSyncStatus.getState().rejected + rejected });
+    if (missingKey) throw new SyncStop("stale-key");
     cursor = page.next;
     onProgress?.(cursor, page.head);
     if (cursor >= page.head) return;
@@ -364,7 +376,8 @@ function errorPhase(error: unknown): { phase: "offline" | "error"; error: SyncEr
   if (error instanceof SyncStop) return { phase: "error", error: error.code };
   if (error instanceof CloudError) {
     if (error.code === "offline" || error.status === 0) return { phase: "offline", error: null };
-    if (error.status === 401 || error.status === 404) return { phase: "error", error: "session" };
+    if (error.status === 401) return { phase: "error", error: "session" };
+    if (error.status === 404) return { phase: "error", error: "removed" };
   }
   return { phase: "error", error: "server" };
 }
@@ -466,7 +479,7 @@ class Engine {
     } catch (error) {
       const next = errorPhase(error);
       status.update(next);
-      if (next.error === "keys-changed" || next.error === "session") return;
+      if (next.error === "keys-changed" || next.error === "session" || next.error === "removed" || next.error === "stale-key") return;
       // Reintento con espera creciente (2 s, 4 s, 8 s… hasta 1 min).
       this.failures++;
       this.schedule(Math.min(60_000, 2_000 * 2 ** (this.failures - 1)));

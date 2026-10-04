@@ -128,6 +128,16 @@ export interface IdentityUpload {
   signPublicKey: string;
   privateKeys: string;
   recoveryPrivateKeys: string;
+  recoveryVerifier: string;
+}
+
+/** Un kit de recuperación: el código (se le muestra a la persona) y lo que se guarda en el servidor. */
+export interface RecoveryKit {
+  recoveryCode: string;
+  /** Las claves privadas cifradas con la clave del kit. */
+  recoveryPrivateKeys: string;
+  /** Hash de la prueba de que se tiene el kit: el servidor lo compara, no puede abrir nada con él. */
+  recoveryVerifier: string;
 }
 
 async function importPrivate(plain: PrivateKeysPlain, encPublicKey: string, signPublicKey: string): Promise<Identity> {
@@ -141,6 +151,24 @@ async function importPrivate(plain: PrivateKeysPlain, encPublicKey: string, sign
 /** Clave AES a partir del código del kit de recuperación. */
 async function recoveryAesKey(recoveryCode: string) {
   return aesKey(await hkdf(decodeRecoveryCode(recoveryCode), "opendomus/recovery/v1"));
+}
+
+/**
+ * Prueba de que se tiene el kit, para el servidor. Sale del mismo código que la clave del kit,
+ * pero por otro camino (HKDF con otro uso): con la prueba no se puede obtener la clave.
+ */
+export async function recoveryProof(recoveryCode: string): Promise<string> {
+  return toB64u(await hkdf(decodeRecoveryCode(recoveryCode), "opendomus/recovery-auth/v1"));
+}
+
+/** Un kit nuevo para las claves privadas (en claro, solo dentro de este módulo). */
+async function kitFor(privateKeysJson: string): Promise<RecoveryKit> {
+  const recoveryCode = encodeRecoveryCode(randomBytes(32));
+  return {
+    recoveryCode,
+    recoveryPrivateKeys: await seal(await recoveryAesKey(recoveryCode), privateKeysJson, "identity/recovery"),
+    recoveryVerifier: await sha256(await recoveryProof(recoveryCode)),
+  };
 }
 
 /**
@@ -161,13 +189,14 @@ export async function createIdentity(encKey: CryptoKey): Promise<{ identity: Ide
   ]);
   const plain: PrivateKeysPlain = { enc: toB64u(encPriv), sign: toB64u(signPriv) };
   const json = JSON.stringify(plain);
-  const recoveryCode = encodeRecoveryCode(randomBytes(32));
+  const { recoveryCode, recoveryPrivateKeys, recoveryVerifier } = await kitFor(json);
   const upload: IdentityUpload = {
     kdfVersion: KDF_VERSION,
     encPublicKey: toB64u(encPub),
     signPublicKey: toB64u(signPub),
     privateKeys: await seal(encKey, json, "identity/password"),
-    recoveryPrivateKeys: await seal(await recoveryAesKey(recoveryCode), json, "identity/recovery"),
+    recoveryPrivateKeys,
+    recoveryVerifier,
   };
   // A partir de acá, solo versiones no exportables.
   const identity = await importPrivate(plain, upload.encPublicKey, upload.signPublicKey);
@@ -180,11 +209,29 @@ export async function unlockIdentity(keys: { encPublicKey: string; signPublicKey
   return importPrivate(plain, keys.encPublicKey, keys.signPublicKey);
 }
 
-/** Abre la identidad con el kit de recuperación (y permite volver a cifrarla con una contraseña nueva). */
+/**
+ * Abre la identidad con el kit de recuperación y la vuelve a cifrar con la clave de una contraseña
+ * nueva. Además arma un kit nuevo: el usado deja de servir (pudo haber quedado a la vista).
+ */
 export async function recoverIdentity(keys: { encPublicKey: string; signPublicKey: string; recoveryPrivateKeys: string }, recoveryCode: string, newEncKey: CryptoKey) {
   const json = await openText(await recoveryAesKey(recoveryCode), keys.recoveryPrivateKeys, "identity/recovery");
   const plain = JSON.parse(json) as PrivateKeysPlain;
-  return { identity: await importPrivate(plain, keys.encPublicKey, keys.signPublicKey), privateKeys: await seal(newEncKey, json, "identity/password") };
+  return {
+    identity: await importPrivate(plain, keys.encPublicKey, keys.signPublicKey),
+    privateKeys: await seal(newEncKey, json, "identity/password"),
+    kit: await kitFor(json),
+  };
+}
+
+/** Contraseña nueva: las mismas claves privadas, cifradas con la clave nueva. Lanza si la actual no es la correcta. */
+export async function rewrapIdentity(privateKeys: string, currentEncKey: CryptoKey, newEncKey: CryptoKey): Promise<string> {
+  const json = await openText(currentEncKey, privateKeys, "identity/password");
+  return seal(newEncKey, json, "identity/password");
+}
+
+/** Un kit de recuperación nuevo (el anterior deja de servir). Pide la clave de la contraseña. */
+export async function newRecoveryKit(privateKeys: string, encKey: CryptoKey): Promise<RecoveryKit> {
+  return kitFor(await openText(encKey, privateKeys, "identity/password"));
 }
 
 // --- Kit de recuperación -------------------------------------------------------------------

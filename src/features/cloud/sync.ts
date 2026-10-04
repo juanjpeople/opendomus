@@ -16,7 +16,7 @@ import { SYNC_META_TABLES, SYNC_TABLES } from "@/lib/sync/tables";
 import { useSessionStore } from "@/lib/auth/session";
 import { useDeviceStore } from "@/store/useDeviceStore";
 import type { CloudHousehold, CloudRole } from "./domain";
-import { listMembers, openScopeKey, scopesFor, type CloudSession } from "./service";
+import { listRoster, openScopeKey, scopesFor, type CloudSession } from "./service";
 
 function currentVersion(household: CloudHousehold, scope: Scope) {
   return scope === "family" ? household.familyKeyVersion : scope === "adults" ? household.adultsKeyVersion : 1;
@@ -49,8 +49,12 @@ export async function syncContextFor(session: CloudSession, household: CloudHous
     }
     return opened.get(id)!;
   };
-  const fetchRoster = async () =>
-    new Map<string, RosterEntry>((await listMembers(household.id)).map((member) => [member.userId, { role: member.role, signPublicKey: member.signPublicKey }]));
+  // También quienes se fueron: sus cambios viejos siguen en el registro y se verifican con su
+  // clave y su rol de entonces (lo nuevo, el servidor ya no se lo acepta).
+  const fetchRoster = async () => {
+    const { members, former } = await listRoster(household.id);
+    return new Map<string, RosterEntry>([...former, ...members].map((member) => [member.userId, { role: member.role, signPublicKey: member.signPublicKey }]));
+  };
   return { link, identity: session.identity, writeKeys, readKey, fetchRoster };
 }
 
