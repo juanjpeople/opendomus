@@ -12,6 +12,7 @@ import type { z } from "zod";
 import { opSigningData, SYNC_LIMITS } from "../../src/lib/sync/protocol";
 import { authOptions } from "./auth-options";
 import type { AppEnv, Env, SessionUser } from "./env";
+import { DAY, INACTIVITY_NOTICE_DAYS, inactivityNoticeWindow, inactiveBefore } from "./inactivity";
 import { PhotoStorageError, photoStorage } from "./photo-storage";
 import { OP_CONFLICT } from "./sync";
 import {
@@ -21,7 +22,11 @@ import {
   createHouseholdInput,
   createInviteInput,
   createLicensesInput,
+  deleteHouseholdInput,
   envelopeInput,
+  feedbackInput,
+  feedbackStatusInput,
+  inactivityNoticeStatusInput,
   inviteTokenInput,
   licenseCheckInput,
   pullQuery,
@@ -38,8 +43,6 @@ import {
 } from "./validation";
 
 export { HouseholdLog } from "./sync";
-
-const DAY = 86_400_000;
 
 function allowedOrigins(env: Env) {
   return [env.APP_ORIGIN, ...(env.DEV_ORIGINS ?? "").split(",").map((origin) => origin.trim()).filter(Boolean)];
@@ -176,6 +179,52 @@ async function membership(env: Env, householdId: string, userId: string) {
   return env.DB.prepare("select role from memberships where household_id = ? and user_id = ?").bind(householdId, userId).first<{ role: Role }>();
 }
 
+async function touchHousehold(env: Env, householdId: string, now = Date.now()) {
+  await env.DB.batch([
+    env.DB.prepare("update households set last_activity_at = ? where id = ? and coalesce(last_activity_at, 0) < ?").bind(now, householdId, now - DAY),
+    env.DB.prepare("update inactivity_notices set status = 'cancelled', updated_at = ? where household_id = ? and status = 'pending'").bind(now, householdId),
+  ]);
+}
+
+async function processInactivity(env: Env, now = Date.now()) {
+  const statements = INACTIVITY_NOTICE_DAYS.map((daysBeforePause, index) => {
+    const window = inactivityNoticeWindow(daysBeforePause, index, now);
+    return env.DB
+      .prepare(
+      `insert into inactivity_notices (household_id, days_before_pause, due_at, status, created_at, updated_at)
+       select h.id, ?, coalesce(h.last_activity_at, h.created_at) + ?, 'pending', ?, ?
+         from households h join household_plans p on p.household_id = h.id
+        where p.status = 'active'
+          and coalesce(h.last_activity_at, h.created_at) <= ?
+          and coalesce(h.last_activity_at, h.created_at) > ?
+       on conflict (household_id, days_before_pause) do nothing`,
+      )
+      .bind(
+        daysBeforePause,
+        window.dueAtOffset,
+        now,
+        now,
+        window.activeBefore,
+        window.activeAfter,
+      );
+  });
+  const results = await env.DB.batch([
+    ...statements,
+    env.DB.prepare(
+      `update household_plans
+          set status = 'paused', updated_at = ?
+        where status = 'active'
+          and household_id in (
+            select id from households where coalesce(last_activity_at, created_at) <= ?
+          )`,
+    ).bind(now, inactiveBefore(now)),
+  ]);
+  return {
+    noticesQueued: results.slice(0, INACTIVITY_NOTICE_DAYS.length).reduce((total, result) => total + result.meta.changes, 0),
+    householdsPaused: results[results.length - 1].meta.changes,
+  };
+}
+
 // --- Mis claves ------------------------------------------------------------------------
 
 app.post("/keys", async (c) => {
@@ -205,17 +254,19 @@ app.get("/me", async (c) => {
     .first();
   const households = await c.env.DB.prepare(
     `select h.id, h.encrypted_name as encryptedName, h.family_key_version as familyKeyVersion, h.adults_key_version as adultsKeyVersion, m.role,
+            coalesce(h.last_activity_at, h.created_at) as lastActivityAt,
             coalesce(p.plan, 'beta') as plan, coalesce(p.status, 'active') as planStatus
        from memberships m join households h on h.id = m.household_id left join household_plans p on p.household_id = h.id
       where m.user_id = ? order by m.joined_at`,
   )
     .bind(user.id)
-    .all<{ id: string; encryptedName: string; familyKeyVersion: number; adultsKeyVersion: number; role: Role; plan: string; planStatus: "active" | "paused" }>();
+    .all<{ id: string; encryptedName: string; familyKeyVersion: number; adultsKeyVersion: number; role: Role; lastActivityAt: number; plan: string; planStatus: "active" | "paused" }>();
   const envelopes = await c.env.DB.prepare(
     "select household_id as householdId, scope, version, envelope from key_envelopes where recipient_user_id = ?",
   )
     .bind(user.id)
     .all<{ householdId: string; scope: Scope; version: number; envelope: string }>();
+  await Promise.all(households.results.map((household) => touchHousehold(c.env, household.id)));
   return c.json({
     user,
     keys,
@@ -706,6 +757,7 @@ app.post("/households/:id/ops", async (c) => {
   if (!uuid.safeParse(householdId).success) return c.json({ error: "not-found" }, 404);
   const member = await membership(c.env, householdId, user.id);
   if (!member) return c.json({ error: "not-found" }, 404);
+  await touchHousehold(c.env, householdId);
   if (Number(c.req.header("Content-Length") ?? 0) > SYNC_LIMITS.pushBytes) return c.json({ error: "too-large" }, 413);
   const input = await parse(c, pushInput);
   if (!input) return c.json({ error: "invalid" }, 400);
@@ -770,6 +822,7 @@ async function photoAccess(c: Context<AppEnv>) {
   }
   const member = await membership(c.env, householdId, user.id);
   if (!member) return { error: c.json({ error: "not-found" }, 404) };
+  await touchHousehold(c.env, householdId);
   return { user, member, householdId, photoId, variant: variant ?? "full" };
 }
 
@@ -829,6 +882,7 @@ app.get("/households/:id/ops", async (c) => {
   if (!uuid.safeParse(householdId).success) return c.json({ error: "not-found" }, 404);
   const member = await membership(c.env, householdId, user.id);
   if (!member) return c.json({ error: "not-found" }, 404);
+  await touchHousehold(c.env, householdId);
   const query = pullQuery.safeParse(c.req.query());
   if (!query.success) return c.json({ error: "invalid" }, 400);
   return c.json(await householdLog(c.env, householdId).pull({ userId: user.id, adults: member.role !== "kid", ...query.data }));
@@ -858,23 +912,42 @@ function newLicenseCode() {
   return `OD-${chars.match(/.{4}/g)!.join("-")}`;
 }
 
-admin.post("/licenses", async (c) => {
-  const input = await parse(c, createLicensesInput);
-  if (!input) return c.json({ error: "invalid" }, 400);
+async function issueLicenses(env: Env, input: z.infer<typeof createLicensesInput>) {
   const now = Date.now();
   const expiresAt = input.expiresInDays ? now + input.expiresInDays * DAY : null;
   const licenses = Array.from({ length: input.count }, () => ({ id: crypto.randomUUID(), code: newLicenseCode() }));
-  await c.env.DB.batch(
+  await env.DB.batch(
     await Promise.all(
       licenses.map(async ({ id, code }) =>
-        c.env.DB.prepare(
+        env.DB.prepare(
           "insert into cloud_licenses (id, code_hash, plan, max_households, expires_at, source, external_id, note, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         ).bind(id, await sha256(normalizeLicenseCode(code)), input.plan, input.maxHouseholds, expiresAt, input.source, input.externalId ?? null, input.note ?? null, now),
       ),
     ),
   );
+  return licenses.map(({ id, code }) => ({ id, code, plan: input.plan, expiresAt }));
+}
+
+async function audit(env: Env, actorUserId: string, action: string, targetType: string, targetId: string, details?: Record<string, unknown>) {
+  await env.DB.prepare("insert into admin_audit (id, actor_user_id, action, target_type, target_id, details, created_at) values (?, ?, ?, ?, ?, ?, ?)")
+    .bind(crypto.randomUUID(), actorUserId, action, targetType, targetId, details ? JSON.stringify(details) : null, Date.now())
+    .run();
+}
+
+async function setHouseholdStatus(env: Env, householdId: string, status: "active" | "paused") {
+  return env.DB.prepare(
+    `insert into household_plans (household_id, plan, status, updated_at) select id, 'beta', ?, ? from households where id = ?
+       on conflict (household_id) do update set status = excluded.status, updated_at = excluded.updated_at`,
+  )
+    .bind(status, Date.now(), householdId)
+    .run();
+}
+
+admin.post("/licenses", async (c) => {
+  const input = await parse(c, createLicensesInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
   // Los códigos se ven UNA vez: acá no se guardan en claro.
-  return c.json({ licenses: licenses.map(({ id, code }) => ({ id, code, plan: input.plan, expiresAt })) }, 201);
+  return c.json({ licenses: await issueLicenses(c.env, input) }, 201);
 });
 
 admin.get("/licenses", async (c) => {
@@ -905,17 +978,241 @@ for (const [action, status] of [
 ] as const) {
   admin.post(`/households/:id/${action}`, async (c) => {
     const householdId = c.req.param("id");
-    const result = await c.env.DB.prepare(
-      `insert into household_plans (household_id, plan, status, updated_at) select id, 'beta', ?, ? from households where id = ?
-         on conflict (household_id) do update set status = excluded.status, updated_at = excluded.updated_at`,
-    )
-      .bind(status, Date.now(), householdId)
-      .run();
+    const result = await setHouseholdStatus(c.env, householdId, status);
     return result.meta.changes ? c.json({ ok: true, status }) : c.json({ error: "not-found" }, 404);
   });
 }
 
 app.route("/admin", admin);
+
+// --- Feedback y panel administrativo con sesión ---------------------------------------------
+
+app.post("/feedback", async (c) => {
+  const input = await parse(c, feedbackInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+  if (await tooMany(c.env, `feedback:ip:${clientIp(c)}`, 5, DAY)) return c.json({ error: "rate-limited" }, 429);
+  const user = await requireUser(c);
+  const now = Date.now();
+  await c.env.DB.prepare("insert into feedback (id, user_id, email, category, message, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)")
+    .bind(crypto.randomUUID(), user?.id ?? null, user?.email ?? input.email ?? null, input.category, input.message, now, now)
+    .run();
+  return c.json({ ok: true }, 201);
+});
+
+const platformAdmin = new Hono<AppEnv>();
+
+platformAdmin.use("*", async (c, next) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const allowed = (c.env.PLATFORM_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  if (!allowed.includes(user.email.toLowerCase())) return c.json({ error: "forbidden" }, 403);
+  return next();
+});
+
+platformAdmin.get("/overview", async (c) => {
+  await processInactivity(c.env);
+  const nowIso = new Date().toISOString();
+  const [users, households, sessions, licenses, feedback, notices, rateSignals, sessionSignals, auditRows] = await Promise.all([
+    c.env.DB.prepare(`select count(*) as count from "user"`).first<{ count: number }>(),
+    c.env.DB.prepare(
+      `select count(*) as total,
+              sum(case when coalesce(p.status, 'active') = 'active' then 1 else 0 end) as active,
+              sum(case when p.status = 'paused' then 1 else 0 end) as paused
+         from households h left join household_plans p on p.household_id = h.id`,
+    ).first<{ total: number; active: number; paused: number }>(),
+    c.env.DB.prepare(`select count(*) as count from "session" where "expiresAt" > ?`).bind(nowIso).first<{ count: number }>(),
+    c.env.DB.prepare(
+      `select count(*) as total,
+              sum(case when status = 'active' and used < max_households and (expires_at is null or expires_at > ?) then 1 else 0 end) as available
+         from cloud_licenses`,
+    ).bind(Date.now()).first<{ total: number; available: number }>(),
+    c.env.DB.prepare("select count(*) as count from feedback where status = 'open'").first<{ count: number }>(),
+    c.env.DB.prepare("select count(*) as count from inactivity_notices where status = 'pending'").first<{ count: number }>(),
+    c.env.DB.prepare(
+      `select case
+                when key like 'recovery:ip:%' then 'recovery-ip'
+                when key like 'recovery:email:%' then 'recovery-email'
+                when key like 'license-check:%' then 'license-check'
+                when key like 'feedback:ip:%' then 'feedback'
+                when key like 'password:%' then 'password'
+                else 'other'
+              end as type,
+              count(*) as sources,
+              max(count) as maxCount
+         from attempts where window_start >= ? and count >= 5 group by type order by maxCount desc`,
+    ).bind(Date.now() - DAY).all<{ type: string; sources: number; maxCount: number }>(),
+    c.env.DB.prepare(
+      `select u.id as userId, u.email, count(s.id) as sessions
+         from "user" u join "session" s on s."userId" = u.id and s."expiresAt" > ?
+        group by u.id, u.email having count(s.id) > 5 order by sessions desc`,
+    ).bind(nowIso).all<{ userId: string; email: string; sessions: number }>(),
+    c.env.DB.prepare(
+      `select a.action, a.target_type as targetType, a.target_id as targetId, a.created_at as createdAt, u.email as actorEmail
+         from admin_audit a left join "user" u on u.id = a.actor_user_id order by a.created_at desc limit 20`,
+    ).all(),
+  ]);
+  return c.json({
+    metrics: {
+      users: users?.count ?? 0,
+      households: households?.total ?? 0,
+      activeHouseholds: households?.active ?? 0,
+      pausedHouseholds: households?.paused ?? 0,
+      activeSessions: sessions?.count ?? 0,
+      licenses: licenses?.total ?? 0,
+      availableLicenses: licenses?.available ?? 0,
+      openFeedback: feedback?.count ?? 0,
+      pendingNotices: notices?.count ?? 0,
+    },
+    risks: [...rateSignals.results, ...sessionSignals.results.map((signal) => ({ type: "many-sessions", ...signal }))],
+    credentials: {
+      adminTokenConfigured: Boolean(c.env.ADMIN_TOKEN && c.env.ADMIN_TOKEN.length >= 32),
+      supabaseConfigured: Boolean(c.env.SUPABASE_SERVICE_ROLE_KEY),
+    },
+    recentAudit: auditRows.results,
+  });
+});
+
+platformAdmin.get("/users", async (c) => {
+  const rows = await c.env.DB.prepare(
+    `select u.id, u.name, u.email, u."createdAt" as createdAt,
+            count(distinct m.household_id) as households,
+            count(distinct case when s."expiresAt" > ? then s.id end) as activeSessions,
+            max(s."updatedAt") as lastSessionAt
+       from "user" u
+       left join memberships m on m.user_id = u.id
+       left join "session" s on s."userId" = u.id
+      group by u.id, u.name, u.email, u."createdAt"
+      order by u."createdAt" desc`,
+  )
+    .bind(new Date().toISOString())
+    .all();
+  return c.json({ users: rows.results });
+});
+
+platformAdmin.get("/households", async (c) => {
+  const rows = await c.env.DB.prepare(
+    `select h.id, h.created_at as createdAt, coalesce(h.last_activity_at, h.created_at) as lastActivityAt,
+            coalesce(p.plan, 'beta') as plan, coalesce(p.status, 'active') as status,
+            (select count(*) from memberships m where m.household_id = h.id) as members,
+            l.note as licenseNote,
+            case when coalesce(p.status, 'active') = 'paused' and coalesce(h.last_activity_at, h.created_at) <= ? then 1 else 0 end as deletionEligible
+       from households h
+       left join household_plans p on p.household_id = h.id
+       left join cloud_licenses l on l.id = p.license_id
+      order by coalesce(h.last_activity_at, h.created_at) asc`,
+  )
+    .bind(inactiveBefore(Date.now()))
+    .all();
+  return c.json({ households: rows.results });
+});
+
+platformAdmin.get("/licenses", async (c) => {
+  const rows = await c.env.DB.prepare(
+    "select id, plan, max_households as maxHouseholds, used, status, expires_at as expiresAt, source, note, created_at as createdAt from cloud_licenses order by created_at desc",
+  ).all();
+  return c.json({ licenses: rows.results });
+});
+
+platformAdmin.post("/licenses", async (c) => {
+  const input = await parse(c, createLicensesInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+  const licenses = await issueLicenses(c.env, input);
+  await audit(c.env, c.var.user.id, "licenses.create", "license", licenses.map((license) => license.id).join(","), { count: licenses.length });
+  return c.json({ licenses }, 201);
+});
+
+platformAdmin.post("/licenses/:id/revoke", async (c) => {
+  const id = c.req.param("id");
+  const result = await c.env.DB.prepare("update cloud_licenses set status = 'revoked' where id = ?").bind(id).run();
+  if (!result.meta.changes) return c.json({ error: "not-found" }, 404);
+  await audit(c.env, c.var.user.id, "license.revoke", "license", id);
+  return c.json({ ok: true });
+});
+
+for (const [action, status] of [
+  ["pause", "paused"],
+  ["resume", "active"],
+] as const) {
+  platformAdmin.post(`/households/:id/${action}`, async (c) => {
+    const id = c.req.param("id");
+    const result = await setHouseholdStatus(c.env, id, status);
+    if (!result.meta.changes) return c.json({ error: "not-found" }, 404);
+    await audit(c.env, c.var.user.id, `household.${action}`, "household", id);
+    return c.json({ ok: true, status });
+  });
+}
+
+platformAdmin.delete("/households/:id", async (c) => {
+  const id = c.req.param("id");
+  const input = await parse(c, deleteHouseholdInput);
+  if (!input || input.confirm !== id) return c.json({ error: "confirmation-required" }, 400);
+  const eligible = await c.env.DB.prepare(
+    `select h.id from households h join household_plans p on p.household_id = h.id
+      where h.id = ? and p.status = 'paused' and coalesce(h.last_activity_at, h.created_at) <= ?`,
+  )
+    .bind(id, inactiveBefore(Date.now()))
+    .first();
+  if (!eligible) return c.json({ error: "not-eligible" }, 409);
+  try {
+    await photoStorage(c.env).deletePrefix(`households/${id}/photos`);
+    await householdLog(c.env, id).purge();
+  } catch (error) {
+    return photoStorageFailure(c, error);
+  }
+  const result = await c.env.DB.prepare("delete from households where id = ?").bind(id).run();
+  if (!result.meta.changes) return c.json({ error: "not-found" }, 404);
+  await audit(c.env, c.var.user.id, "household.delete", "household", id);
+  return c.json({ ok: true });
+});
+
+platformAdmin.get("/feedback", async (c) => {
+  const rows = await c.env.DB.prepare(
+    "select id, email, category, message, status, created_at as createdAt, updated_at as updatedAt from feedback order by created_at desc limit 200",
+  ).all();
+  return c.json({ feedback: rows.results });
+});
+
+platformAdmin.patch("/feedback/:id", async (c) => {
+  const input = await parse(c, feedbackStatusInput);
+  if (!input) return c.json({ error: "invalid" }, 400);
+  const id = c.req.param("id");
+  const result = await c.env.DB.prepare("update feedback set status = ?, updated_at = ? where id = ?").bind(input.status, Date.now(), id).run();
+  if (!result.meta.changes) return c.json({ error: "not-found" }, 404);
+  await audit(c.env, c.var.user.id, "feedback.status", "feedback", id, { status: input.status });
+  return c.json({ ok: true });
+});
+
+platformAdmin.get("/notices", async (c) => {
+  await processInactivity(c.env);
+  const rows = await c.env.DB.prepare(
+    `select n.household_id as householdId, n.days_before_pause as daysBeforePause, n.due_at as dueAt, n.status, n.created_at as createdAt,
+            group_concat(u.email) as memberEmails
+       from inactivity_notices n
+       join memberships m on m.household_id = n.household_id
+       join "user" u on u.id = m.user_id
+      group by n.household_id, n.days_before_pause, n.due_at, n.status, n.created_at
+      order by case n.status when 'pending' then 0 else 1 end, n.due_at`,
+  ).all();
+  return c.json({ notices: rows.results });
+});
+
+platformAdmin.patch("/notices/:householdId/:days", async (c) => {
+  const input = await parse(c, inactivityNoticeStatusInput);
+  const days = Number(c.req.param("days"));
+  if (!input || !INACTIVITY_NOTICE_DAYS.includes(days as (typeof INACTIVITY_NOTICE_DAYS)[number])) return c.json({ error: "invalid" }, 400);
+  const householdId = c.req.param("householdId");
+  const result = await c.env.DB.prepare("update inactivity_notices set status = ?, updated_at = ? where household_id = ? and days_before_pause = ?")
+    .bind(input.status, Date.now(), householdId, days)
+    .run();
+  if (!result.meta.changes) return c.json({ error: "not-found" }, 404);
+  await audit(c.env, c.var.user.id, "notice.status", "household", householdId, { days, status: input.status });
+  return c.json({ ok: true });
+});
+
+app.route("/platform-admin", platformAdmin);
 
 app.notFound((c) => c.json({ error: "not-found" }, 404));
 app.onError((error, c) => {
@@ -947,5 +1244,12 @@ export default {
     // `run_worker_first` manda acá solo /api/*; lo demás son los archivos de la app.
     if (url.pathname.startsWith("/api/")) return app.fetch(request, env, ctx);
     return env.ASSETS.fetch(request);
+  },
+  scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(
+      processInactivity(env)
+        .then((result) => console.log(`[inactivity] notices=${result.noticesQueued} paused=${result.householdsPaused}`))
+        .catch((error) => console.error("[inactivity] failed", error)),
+    );
   },
 } satisfies ExportedHandler<Env>;

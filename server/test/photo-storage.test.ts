@@ -49,6 +49,34 @@ test("Supabase borra ambas variantes en una sola operación", async () => {
   assert.deepEqual(JSON.parse(String(request?.body)), { prefixes: keys });
 });
 
+test("Supabase lista y borra por prefijo hasta dejar la casa vacía", async () => {
+  const calls: { url: string; method: string; body?: string }[] = [];
+  const responses = [
+    new Response(JSON.stringify([{ id: null, name: "a" }]), { status: 200 }),
+    new Response(JSON.stringify([{ id: "full-id", name: "full" }, { id: "thumb-id", name: "thumb" }]), { status: 200 }),
+    new Response("[]", { status: 200 }),
+  ];
+  const storage = new SupabasePhotoStorage("https://project.supabase.co", KEY, BUCKET, async (input, init) => {
+    calls.push({ url: String(input), method: init?.method ?? "GET", body: typeof init?.body === "string" ? init.body : undefined });
+    return responses.shift()!;
+  });
+
+  await storage.deletePrefix("households/home/photos");
+
+  assert.match(calls[0].url, /\/object\/list\/opendomus-photos$/);
+  assert.equal(calls[0].method, "POST");
+  assert.deepEqual(JSON.parse(calls[1].body!), {
+    prefix: "households/home/photos/a",
+    limit: 100,
+    offset: 0,
+    sortBy: { column: "name", order: "asc" },
+  });
+  assert.deepEqual(JSON.parse(calls[2].body!), {
+    prefixes: ["households/home/photos/a/full", "households/home/photos/a/thumb"],
+  });
+  assert.equal(calls[2].method, "DELETE");
+});
+
 test("Supabase propaga límites y fallos sin aparentar éxito", async () => {
   const storage = new SupabasePhotoStorage("https://project.supabase.co", KEY, BUCKET, async () => new Response("quota", { status: 429 }));
 

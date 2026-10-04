@@ -28,6 +28,8 @@ export interface Env {
   HOUSEHOLD_ACCESS?: string;
   /** Token de la API de administración (licencias, planes). Sin él, la API de administración no existe. */
   ADMIN_TOKEN?: string;
+  /** Correos, separados por coma, autorizados para el panel global con su sesión normal. */
+  PLATFORM_ADMIN_EMAILS?: string;
 }
 
 export interface SessionUser {

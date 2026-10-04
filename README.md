@@ -90,6 +90,20 @@ currently includes 1 GB of file storage plus 5 GB each of direct and cached egre
 bucket independently limits every encrypted object to 4 MB and accepts only
 `application/octet-stream`.
 
+### Platform administration
+
+`/admin` uses the normal cloud-account session and authorizes only the comma-separated
+emails in `PLATFORM_ADMIN_EMAILS`; it never sends `ADMIN_TOKEN` or storage credentials to
+the browser. The panel shows application metrics, users, active sessions, homes,
+licenses, feedback, inactivity notices, risk signals and an audit trail. It can pause or
+resume a home, generate or revoke invitation licenses, resolve feedback and manually
+delete a home only after it has been inactive and paused for at least 90 days.
+
+A daily Worker cron queues inactivity notices 30, 7 and 1 days before pausing a home at
+90 days. Notices remain in the administration queue until an email provider is connected;
+homes are never deleted automatically. Public feedback is available at `/feedback` and
+is rate-limited without collecting product telemetry.
+
 Any static host works the same way (Netlify, GitHub Pages, nginx/Caddy on a NAS): serve
 `out/`. Household data stays on each device until sync exists (see `OPENDOMUS_PLAN.md`).
 

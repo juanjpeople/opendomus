@@ -1,4 +1,4 @@
-import { Boxes, CalendarDays, ChefHat, HardHat, House, Palette, ScanLine, Settings, ShieldCheck, ShoppingCart, Sparkles, Users, type LucideIcon } from "lucide-react";
+import { Boxes, CalendarDays, ChefHat, Gauge, HardHat, House, MessageSquare, Palette, ScanLine, Settings, ShieldCheck, ShoppingCart, Sparkles, Users, type LucideIcon } from "lucide-react";
 import type { MessageKey } from "@/i18n/translate";
 import type { Permission } from "@/lib/auth/permissions";
 
@@ -43,6 +43,8 @@ export const APP_ROUTES: AppRoute[] = [
   { id: "settings", href: "/ajustes", labelKey: "nav.routes.settings", icon: Settings, section: "system" },
   { id: "design", href: "/design", labelKey: "nav.routes.design", icon: Palette, permission: "settings.design", section: "system" },
   { id: "account", href: "/cuenta", labelKey: "nav.routes.account", icon: Sparkles, section: "system", external: true, hidden: true },
+  { id: "feedback", href: "/feedback", labelKey: "nav.routes.feedback", icon: MessageSquare, section: "system", external: true, hidden: true },
+  { id: "platformAdmin", href: "/admin", labelKey: "nav.routes.platformAdmin", icon: Gauge, section: "system", external: true, hidden: true },
   { id: "join", href: "/unirme", labelKey: "nav.routes.join", icon: Sparkles, section: "system", external: true, hidden: true },
   { id: "start", href: "/empezar", labelKey: "nav.routes.start", icon: Sparkles, section: "system", external: true, hidden: true },
   { id: "values", href: "/bienvenida", labelKey: "nav.routes.values", icon: Sparkles, section: "system", external: true },

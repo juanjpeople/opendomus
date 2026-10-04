@@ -66,6 +66,7 @@ async function signUp(name: string, email: string, password: string) {
 }
 
 const unique = Date.now().toString(36);
+const anaEmail = "admin@casa.test";
 
 /** Token de administración del Worker local (de `.dev.vars`, o del entorno en CI). */
 function adminToken() {
@@ -85,7 +86,7 @@ async function adminCall(method: "GET" | "POST", path: string, body?: unknown, t
 
 test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () => {
   // Ana: cuenta + casa con sus tres claves de nivel.
-  const ana = await signUp("Ana", `ana-${unique}@casa.test`, "una frase larga para ana");
+  const ana = await signUp("Ana", anaEmail, "una frase larga para ana");
   const householdId = crypto.randomUUID();
   const raw: Record<Scope, Uint8Array> = { family: newScopeKey(), adults: newScopeKey(), private: newScopeKey() };
   const familyKey = await importScopeKey(raw.family);
@@ -281,7 +282,6 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal(await live(ORIGIN, flor.client), florPull.body.head);
 
   // --- Recuperar con el kit (sin sesión, sin email) ---
-  const anaEmail = `ana-${unique}@casa.test`;
   const recovery = (path: string, body: unknown) => new Client().call("POST", `/api/recovery/${path}`, body);
   const otherKit = (await createIdentity((await derivePasswordKeys("x@x.test", "x", FAST)).encKey)).recoveryCode;
   // Kit equivocado o email sin cuenta: la misma respuesta (no revela qué emails existen).
@@ -428,4 +428,38 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async () 
   assert.equal((await bytes(kid.client, "DELETE", photoPath)).status, 403);
   assert.equal((await bytes(anaAgain, "DELETE", photoPath)).status, 200);
   assert.equal((await bytes(anaAgain, "GET", `${photoPath}/thumb`)).status, 404);
+
+  // --- Administración global: sesión normal + correo permitido, nunca el token maestro en el navegador ---
+  const publicFeedback = await new Client().call("POST", "/api/feedback", {
+    category: "idea",
+    email: "persona@casa.test",
+    message: "Sería útil poder ordenar mejor las recetas favoritas.",
+  });
+  assert.equal(publicFeedback.status, 201, JSON.stringify(publicFeedback.body));
+  assert.equal((await flor.client.call("GET", "/api/platform-admin/overview")).status, 403);
+
+  const overview = await anaAgain.call("GET", "/api/platform-admin/overview");
+  assert.equal(overview.status, 200, JSON.stringify(overview.body));
+  assert.ok(overview.body.metrics.users >= 3);
+  assert.equal(overview.body.credentials.supabaseConfigured, false);
+
+  const users = await anaAgain.call("GET", "/api/platform-admin/users");
+  assert.equal(users.status, 200);
+  assert.ok(users.body.users.some((entry: { email: string }) => entry.email === "admin@casa.test"));
+
+  const feedback = await anaAgain.call("GET", "/api/platform-admin/feedback");
+  assert.equal(feedback.status, 200);
+  const feedbackId = feedback.body.feedback[0].id as string;
+  assert.equal((await anaAgain.call("PATCH", `/api/platform-admin/feedback/${feedbackId}`, { status: "resolved" })).status, 200);
+
+  const platformLicense = await anaAgain.call("POST", "/api/platform-admin/licenses", { count: 1, note: "panel" });
+  assert.equal(platformLicense.status, 201);
+  const platformLicenseId = platformLicense.body.licenses[0].id as string;
+  assert.equal((await anaAgain.call("POST", `/api/platform-admin/licenses/${platformLicenseId}/revoke`)).status, 200);
+
+  assert.equal((await anaAgain.call("POST", `/api/platform-admin/households/${householdId}/pause`)).status, 200);
+  // Aunque esté pausada, una casa reciente no se puede borrar.
+  assert.equal((await anaAgain.call("DELETE", `/api/platform-admin/households/${householdId}`, { confirm: householdId })).status, 409);
+  assert.equal((await anaAgain.call("POST", `/api/platform-admin/households/${householdId}/resume`)).status, 200);
+  assert.equal((await anaAgain.call("GET", "/api/platform-admin/notices")).status, 200);
 });

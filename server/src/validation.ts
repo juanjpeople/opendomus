@@ -94,6 +94,18 @@ export const createLicensesInput = z.object({
   note: z.string().trim().max(120).optional(),
 });
 
+export const feedbackInput = z.object({
+  category: z.enum(["idea", "problem", "question", "other"]),
+  message: z.string().trim().min(10).max(2_000),
+  email: email.optional(),
+});
+
+export const feedbackStatusInput = z.object({ status: z.enum(["open", "resolved"]) });
+
+export const deleteHouseholdInput = z.object({ confirm: uuid });
+
+export const inactivityNoticeStatusInput = z.object({ status: z.enum(["sent", "cancelled"]) });
+
 export const createInviteInput = z.object({
   id: uuid,
   role: z.enum(ROLES),

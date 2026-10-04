@@ -14,6 +14,7 @@ export interface PhotoStorage {
   put(key: string, body: ArrayBuffer): Promise<void>;
   get(key: string): Promise<Response | null>;
   delete(keys: string[]): Promise<void>;
+  deletePrefix(prefix: string): Promise<void>;
 }
 
 interface PhotoStorageEnv {
@@ -79,6 +80,34 @@ export class SupabasePhotoStorage implements PhotoStorage {
     });
     if (!response.ok) throw new PhotoStorageError("delete", response.status);
   }
+
+  private async listFiles(prefix: string): Promise<string[]> {
+    const files: string[] = [];
+    for (let offset = 0; ; offset += 100) {
+      const listed = await this.fetcher(`${this.baseUrl}/storage/v1/object/list/${encodeURIComponent(this.bucket)}`, {
+        method: "POST",
+        headers: { ...this.headers(), "Content-Type": "application/json" },
+        body: JSON.stringify({ prefix, limit: 100, offset, sortBy: { column: "name", order: "asc" } }),
+      });
+      if (!listed.ok) throw new PhotoStorageError("delete", listed.status);
+      const entries = (await listed.json()) as { id?: string | null; name?: string }[];
+      for (const entry of entries) {
+        if (!entry.name) continue;
+        const path = `${prefix}/${entry.name}`;
+        if (entry.id) files.push(path);
+        else files.push(...(await this.listFiles(path)));
+      }
+      if (entries.length < 100) return files;
+    }
+  }
+
+  async deletePrefix(prefix: string) {
+    const normalized = prefix.replace(/^\/+|\/+$/g, "");
+    const keys = await this.listFiles(normalized);
+    for (let index = 0; index < keys.length; index += 100) {
+      await this.delete(keys.slice(index, index + 100));
+    }
+  }
 }
 
 const localPhotos = new Map<string, Uint8Array>();
@@ -93,6 +122,11 @@ const localPhotoStorage: PhotoStorage = {
   },
   async delete(keys) {
     for (const key of keys) localPhotos.delete(key);
+  },
+  async deletePrefix(prefix) {
+    for (const key of localPhotos.keys()) {
+      if (key.startsWith(`${prefix.replace(/\/+$/, "")}/`)) localPhotos.delete(key);
+    }
   },
 };
 
