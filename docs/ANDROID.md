@@ -28,9 +28,13 @@ El APK queda en `android/app/build/outputs/apk/debug/app-debug.apk`.
 Con `ANDROID_HOME` apuntando al SDK, `npm run android:build` hace el build web,
 la sincronización y la compilación debug en un solo comando, en Windows o Linux/macOS.
 El workflow Android compila y adjunta un APK de prueba, sin publicar ni desplegar.
-`bash scripts/test-android.sh` ejecuta dos fases sobre un emulador conectado y limpio:
+`bash scripts/test-android.sh` usa GNU `timeout` (Linux CI) y ejecuta dos fases
+sobre un emulador conectado y limpio:
 el recorrido de la app, y después una instalación con `versionCode=2` sobre la primera.
-La segunda fase comprueba sesión, anotación y foto sin desinstalar. No ejecutarlo
+La segunda fase comprueba sesión, anotación y foto sin desinstalar. Cada prueba nativa tiene un máximo de tres minutos (90 segundos para actualizar). La primera
+fase falla si supera ocho minutos y la instrumentación de actualización si supera
+dos; los logs del emulador y capturas sintéticas se conservan para diagnosticar
+incluso una espera que impida generar el reporte JUnit. No ejecutarlo
 contra un teléfono con datos reales: usa fixtures e importa una casa de prueba.
 Para compilar una versión con un código distinto: desde `android/`,
 `./gradlew assembleDebug -PappVersionCode=2` (en Windows, `./gradlew.bat`).
@@ -87,8 +91,10 @@ Se reemplazó por el lector local compartido: seis regresiones de navegador pasa
 incluida la primera lectura sin conexión tras instalar la PWA, sin visitar antes
 el escáner y con `BarcodeDetector` deshabilitado. El video de esa prueba es sintético;
 la decodificación, navegación y cierre del stream son reales. La regresión Android
-usa el mismo QR y la pantalla real con Wi-Fi y datos apagados; su nueva ejecución
-sigue pendiente. Estas comprobaciones no reemplazan una cámara física en Android.
+usa el mismo QR y la pantalla real con Wi-Fi y datos apagados. La ejecución
+`37243268831` completó cuatro pruebas y quedó esperando en el onboarding de la
+quinta, antes del QR; se canceló y se recuperaron sus logs. El siguiente intento
+agrega límites y diagnóstico, sin considerar aprobada la lectura nativa todavía. Estas comprobaciones no reemplazan una cámara física en Android.
 
 Pendiente antes de distribuir:
 

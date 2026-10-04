@@ -32,12 +32,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 @RunWith(AndroidJUnit4.class)
 public class NativeFlowTest {
+    @Rule public final Timeout testTimeout = Timeout.seconds(180);
+
     private void screenshot(String name) throws Exception {
         Context context = ApplicationProvider.getApplicationContext();
         File folder = new File(context.getExternalFilesDir(null), "test-screenshots");

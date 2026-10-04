@@ -11,11 +11,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 
 /** Second phase only: scripts/test-android.sh installs version 2 over the populated version 1. */
 @RunWith(AndroidJUnit4.class)
 public class UpgradeFlowTest {
+    @Rule public final Timeout testTimeout = Timeout.seconds(90);
+
     private String evaluate(ActivityScenario<MainActivity> scenario, String script) throws Exception {
         CountDownLatch done = new CountDownLatch(1);
         AtomicReference<String> value = new AtomicReference<>();
