@@ -1,6 +1,6 @@
 /**
- * Fotos, genéricas: pertenecen a algo (`ownerType` + `ownerId`). Hoy, recetas; mañana, la
- * bóveda, los productos o lo que haga falta, sin tablas nuevas. Se guardan como Blob en el
+ * Fotos, genéricas: pertenecen a recetas o contenedores (`ownerType` + `ownerId`),
+ * sin tablas duplicadas. Se guardan como Blob en el
  * dispositivo, comprimidas antes de guardar.
  *
  * Con la casa en la nube, los datos de la foto se sincronizan como cualquier cosa, pero los bytes
@@ -8,7 +8,7 @@
  * los bajan cuando la ven (ver `src/lib/sync/photos.ts`).
  */
 
-export type PhotoOwner = "recipe";
+export type PhotoOwner = "recipe" | "container";
 
 export interface Photo {
   id: string;

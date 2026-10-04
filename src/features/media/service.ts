@@ -4,14 +4,14 @@
  */
 import { assertCan, type Actor, type Permission } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
-import { ValidationError } from "@/lib/errors";
+import { NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
 import { compressImage } from "@/lib/images";
 import { getSyncLink } from "@/lib/sync/middleware";
 import { newPhotoKey, queuePhotoDeletes } from "@/lib/sync/photos";
 import { PHOTO_LIMITS, type PhotoOwner } from "./domain";
 
-const MANAGE: Record<PhotoOwner, Permission> = { recipe: "recipes.manage" };
+const MANAGE: Record<PhotoOwner, Permission> = { recipe: "recipes.manage", container: "storage.manage" };
 
 /** Comprime y guarda fotos. Devuelve los ids, en el mismo orden. */
 export async function addPhotos(actor: Actor | null, ownerType: PhotoOwner, ownerId: string, files: File[]) {
@@ -44,7 +44,14 @@ export async function addPhotos(actor: Actor | null, ownerType: PhotoOwner, owne
     createdBy: actor.id,
     createdAt: now + index,
   }));
-  await db.photos.bulkAdd(photos);
+  await db.transaction("rw", db.photos, db.recipes, db.containers, async () => {
+    const owner = ownerType === "container" ? await db.containers.get(ownerId) : await db.recipes.get(ownerId);
+    if (!owner) throw new NotFoundError(ownerType === "container" ? "errors.notFound.container" : "errors.notFound.recipe");
+    // Revalidar dentro de la transacción: otra pestaña pudo agregar fotos mientras se comprimían.
+    const count = await db.photos.where("[ownerType+ownerId]").equals([ownerType, ownerId]).count();
+    if (count + photos.length > PHOTO_LIMITS.maxPerOwner) throw new ValidationError("errors.validation.tooManyPhotos", { max: PHOTO_LIMITS.maxPerOwner });
+    await db.photos.bulkAdd(photos);
+  });
   return photos.map((photo) => photo.id);
 }
 

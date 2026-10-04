@@ -111,6 +111,25 @@ export interface Container {
 }
 
 export type NewSpace = Pick<Space, "name" | "kind" | "color" | "icon">;
+/** Descripción libre de algo guardado, sin stock, precios ni sugerencias de compra. */
+export interface ContainerContent {
+  id: string;
+  containerId: string;
+  text: string;
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export const CONTENT_LIMITS = { textMaxLength: 160, maxPerContainer: 200 } as const;
+
+export function parseContentText(input: string): string {
+  const text = typeof input === "string" ? input.trim() : "";
+  if (!text) throw new ValidationError("errors.validation.nameRequired");
+  if (text.length > CONTENT_LIMITS.textMaxLength) throw new ValidationError("errors.validation.nameTooLong", { max: CONTENT_LIMITS.textMaxLength });
+  return text;
+}
+
 export type NewContainer = Pick<Container, "name" | "kind" | "spaceId" | "parentId" | "color" | "icon">;
 
 /** `maxDepth`: niveles de anidamiento (1 = directo en el recinto; 3 = placard → puerta → cajón). */

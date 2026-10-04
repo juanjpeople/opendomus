@@ -5,6 +5,7 @@ import { isAllowed } from "./policy";
 import type { SyncScope } from "./protocol";
 import { canSee, parentOf, resolveScope } from "./scope";
 import type { SyncTable } from "./tables";
+import { shouldApplyAfterStorageUpgrade, storageCompatibleGroups } from "./upgrades";
 
 /** Un servidor de mentira: guarda los cambios en orden, como el Durable Object. */
 class Server {
@@ -55,10 +56,11 @@ class Device {
     }
   }
 
-  pull(server: Server) {
+  pull(server: Server, previousCursor?: number) {
     for (const entry of server.log.filter((op) => op.seq > this.cursor)) {
       this.cursor = entry.seq;
       if (entry.device === this.name || !this.scopes.includes(entry.scope)) continue;
+      if (!shouldApplyAfterStorageUpgrade(entry.seq, previousCursor, [entry.change])) continue;
       const key = recordKey(entry.change.t, entry.change.id);
       const result = applyRemote(this.meta.get(key), this.rows.get(key), entry.change, entry.seq, entry.scope);
       this.meta.set(key, result.meta);
@@ -275,6 +277,59 @@ describe("sincronización: niveles de privacidad", () => {
 });
 
 describe("sincronización: fotos", () => {
+  test("las operaciones nuevas no hacen que un cliente antiguo descarte inventario o fotos", () => {
+    const tables = ["inventory", "containerContents", "photos", "containerContents"] as const;
+    const entries = tables.map((t, i) => ({ change: { t, id: String(i), k: "put" as const }, key: String(i) }));
+    const groups = storageCompatibleGroups(entries);
+    assert.deepEqual(groups.map((group) => group.map((entry) => entry.key)), [["0", "2"], ["1", "3"]]);
+    assert.equal(shouldApplyAfterStorageUpgrade(10, 20, groups[0].map((entry) => entry.change)), false);
+    assert.equal(shouldApplyAfterStorageUpgrade(11, 20, groups[1].map((entry) => entry.change)), true);
+    assert.equal(shouldApplyAfterStorageUpgrade(21, 20, groups[0].map((entry) => entry.change)), true);
+  });
+  test("anotaciones agregadas offline por dos dispositivos se conservan juntas", () => {
+    const server = new Server();
+    const ana = new Device("ana");
+    const flor = new Device("flor");
+    ana.write("containerContents", "cables", () => ({ id: "cables", containerId: "box", text: "Cables" }));
+    flor.write("containerContents", "piezas", () => ({ id: "piezas", containerId: "box", text: "Piezas" }));
+    ana.push(server); flor.push(server); ana.pull(server); flor.pull(server);
+    for (const device of [ana, flor]) {
+      assert.equal(device.get("containerContents", "cables")?.text, "Cables");
+      assert.equal(device.get("containerContents", "piezas")?.text, "Piezas");
+    }
+  });
+
+  test("releer tras actualizar recupera anotaciones omitidas sin duplicar consumos", () => {
+    const { server, ana, flor } = household();
+    ana.write("inventory", "leche", (row) => ({ ...row!, quantity: 2 }));
+    ana.push(server); flor.pull(server);
+    ana.write("containerContents", "cables", () => ({ id: "cables", containerId: "box", text: "Cables" }));
+    ana.push(server);
+    flor.cursor = server.log.length; // Un cliente antiguo no conocía la tabla.
+    assert.equal(flor.get("containerContents", "cables"), undefined);
+    const previousCursor = flor.cursor;
+    flor.cursor = 0;
+    flor.pull(server, previousCursor);
+    assert.equal(flor.get("containerContents", "cables")?.text, "Cables");
+    assert.equal(flor.get("inventory", "leche")?.quantity, 2);
+  });
+
+  test("fotos y anotaciones de contenedores exigen storage.manage y conservan su dueño", async () => {
+    const kid = { userId: "kid", role: "kid" as const };
+    const adult = { userId: "adult", role: "adult" as const };
+    const photo = { id: "photo", ownerType: "container", ownerId: "box" };
+    for (const t of ["photos", "containerContents"] as const) {
+      const change: Change = { t, id: "entry", k: "put", full: true, f: photo };
+      assert.equal(isAllowed(kid, change, undefined), false);
+      assert.equal(isAllowed(adult, change, undefined), true);
+      assert.equal(isAllowed(kid, { t, id: "entry", k: "del" }, photo), false);
+    }
+    assert.equal(isAllowed(adult, { t: "photos", id: "photo", k: "put", f: { ownerType: "recipe" } }, photo), false);
+    assert.equal(isAllowed(adult, { t: "photos", id: "photo", k: "put", f: { ownerType: "unknown" } }, undefined), false);
+    assert.equal(isAllowed(adult, { t: "photos", id: "absent", k: "del" }, undefined), true);
+    assert.equal(isAllowed(kid, { t: "photos", id: "absent", k: "del" }, undefined), false);
+    assert.equal(await resolveScope("photos", photo, async () => ({ id: "box" })), "family");
+  });
   test("la ficha viaja (con su clave) pero los bytes no; los bytes de acá no se pisan", () => {
     const server = new Server();
     const ana = new Device("ana");

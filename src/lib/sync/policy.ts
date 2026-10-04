@@ -20,6 +20,7 @@ const WRITE: Record<SyncTable, readonly Permission[]> = {
   members: ["members.manage"],
   spaces: ["storage.manage"],
   containers: ["storage.manage"],
+  containerContents: ["storage.manage"],
   inventory: ["inventory.create", "inventory.adjust"],
   prices: ["prices.manage"],
   projects: ["projects.manage"],
@@ -29,7 +30,7 @@ const WRITE: Record<SyncTable, readonly Permission[]> = {
   shoppingCandidates: ["shopping.manage", "inventory.consume", "inventory.adjust"],
   events: ["calendar.manage"],
   recipes: ["recipes.manage"],
-  // Las fotos son de las recetas: las maneja quien puede editarlas.
+  // Las fotos validan el permiso de su dueño abajo.
   photos: ["recipes.manage"],
   comments: ["comments.create"],
   // El historial lo escribe cada uno al hacer algo (lo que hizo sin permiso se descarta aparte).
@@ -48,6 +49,17 @@ const CONSUME_FIELDS = new Set(["updatedAt"]);
 export function isAllowed(author: SyncAuthor, change: Change, existing: Row | undefined): boolean {
   const actor = { id: author.userId, name: "", role: author.role };
   const any = (permissions: readonly Permission[]) => permissions.length === 0 || permissions.some((permission) => can(actor, permission));
+
+  if (change.t === "photos") {
+    // Un borrado puede llegar cuando la foto ya no está en este dispositivo. Exigir
+    // ambos permisos cubre todos sus dueños posibles sin descartar el resto del lote.
+    if (change.k === "del" && !existing) return can(actor, "storage.manage") && can(actor, "recipes.manage");
+    const ownerType = change.f?.ownerType ?? existing?.ownerType;
+    if (existing && ((change.f?.ownerType !== undefined && change.f.ownerType !== existing.ownerType) ||
+      (change.f?.ownerId !== undefined && change.f.ownerId !== existing.ownerId) ||
+      change.u?.some((field) => field === "ownerType" || field === "ownerId"))) return false;
+    return ownerType === "container" ? can(actor, "storage.manage") : ownerType === "recipe" && can(actor, "recipes.manage");
+  }
 
   if (change.k === "del") return any(DELETE[change.t]);
 

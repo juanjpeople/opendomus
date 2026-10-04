@@ -16,9 +16,9 @@ test("instalada, funciona sin conexión (también los QR impresos)", async ({ ho
 
   await context.setOffline(true);
   await page.goto(containerUrl);
-  await expect(page.getByRole("heading", { level: 2 })).toContainText("Heladera");
+  await expect(page.getByRole("heading", { name: "Heladera", exact: true })).toBeVisible();
   await page.goto(`/c/${code}`);
-  await expect(page.getByRole("heading", { level: 2 })).toContainText("Heladera");
+  await expect(page.getByRole("heading", { name: "Heladera", exact: true })).toBeVisible();
   await page.goto("/recetas");
   await expect(page.getByRole("heading", { level: 2 }).first()).toContainText("Recetas");
   await expect(page.getByText("Sin conexión")).toBeVisible();

@@ -28,6 +28,7 @@ import { opContext, opSigningData, type PullResponse, type PushResponse, type St
 import { PRIVACY_TABLES, resolveScope } from "./scope";
 import { useSyncStatus, type SyncErrorCode } from "./status";
 import { isSyncTable, SYNC_META_TABLES, SYNC_TABLES, type SyncTable } from "./tables";
+import { CONTAINER_BACKFILL, shouldApplyAfterStorageUpgrade, storageCompatibleGroups } from "./upgrades";
 
 export interface RosterEntry {
   role: Role;
@@ -195,13 +196,15 @@ async function prepare(ctx: SyncContext): Promise<Inflight | null> {
       chunk = [];
       bytes = 0;
     };
-    for (const entry of entries) {
-      const size = byteLength(entry.change);
-      if (chunk.length >= OP_CHANGES || (chunk.length > 0 && bytes + size > OP_BYTES)) await flush();
-      chunk.push(entry);
-      bytes += size;
+    for (const group of storageCompatibleGroups(entries)) {
+      for (const entry of group) {
+        const size = byteLength(entry.change);
+        if (chunk.length >= OP_CHANGES || (chunk.length > 0 && bytes + size > OP_BYTES)) await flush();
+        chunk.push(entry);
+        bytes += size;
+      }
+      await flush();
     }
-    await flush();
   }
 
   const inflight: Inflight = { ops, records: planned.map(({ record, sent }) => ({ k: record.k, sent, ops: opsByRecord.get(record.k) ?? [] })) };
@@ -306,6 +309,7 @@ async function decode(ctx: SyncContext, op: StoredOp): Promise<{ payload: OpPayl
 
 async function pull(ctx: SyncContext, onProgress?: Progress) {
   let cursor = (await readState<number>(STATE.cursor)) ?? 0;
+  const previousCursor = await readState<number>(CONTAINER_BACKFILL);
   for (;;) {
     const page = await api<PullResponse>("GET", `/households/${ctx.link.householdId}/ops?since=${cursor}`);
     const decoded: { op: StoredOp; payload: OpPayload; author: { userId: string; role: Role } }[] = [];
@@ -321,7 +325,7 @@ async function pull(ctx: SyncContext, onProgress?: Progress) {
         break;
       }
       if (result === "invalid") rejected++;
-      else if (result !== "own") decoded.push({ op, ...result });
+      else if (result !== "own" && shouldApplyAfterStorageUpgrade(op.seq, previousCursor, result.payload.changes)) decoded.push({ op, ...result });
     }
 
     await db.transaction("rw", [...SYNC_TABLES, ...SYNC_META_TABLES], async (tx) => {
@@ -348,6 +352,7 @@ async function pull(ctx: SyncContext, onProgress?: Progress) {
         }
       }
       await db.syncState.put({ key: STATE.cursor, value: next });
+      if (previousCursor !== undefined && next >= previousCursor) await db.syncState.delete(CONTAINER_BACKFILL);
     });
 
     if (rejected) useSyncStatus.getState().update({ rejected: useSyncStatus.getState().rejected + rejected });

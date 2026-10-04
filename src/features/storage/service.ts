@@ -9,7 +9,7 @@ import { assertCan, type Actor } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
-import { generateContainerCode, parseContainer, parseSpace, STORAGE_LIMITS, type NewContainer, type NewSpace } from "./domain";
+import { CONTENT_LIMITS, generateContainerCode, parseContainer, parseContentText, parseSpace, STORAGE_LIMITS, type NewContainer, type NewSpace } from "./domain";
 import { depthOf, descendantIds, subtreeHeight } from "./tree";
 
 export async function createSpace(actor: Actor | null, input: NewSpace) {
@@ -118,12 +118,45 @@ export async function updateContainer(actor: Actor | null, id: string, input: Ne
 
 export async function deleteContainer(actor: Actor | null, id: string) {
   assertCan(actor, "storage.manage");
-  await db.transaction("rw", db.containers, db.inventory, db.activity, async () => {
+  await db.transaction("rw", [db.containers, db.inventory, db.containerContents, db.photos, db.activity], async () => {
     const container = await db.containers.get(id);
     if (!container) return;
     if ((await db.containers.where("parentId").equals(id).count()) > 0) throw new ValidationError("errors.storage.containerHasChildren");
     if ((await db.inventory.where("containerId").equals(id).count()) > 0) throw new ValidationError("errors.storage.containerNotEmpty");
+    if ((await db.containerContents.where("containerId").equals(id).count()) > 0 ||
+        (await db.photos.where("[ownerType+ownerId]").equals(["container", id]).count()) > 0) throw new ValidationError("errors.storage.containerHasContent");
     await db.containers.delete(id);
     await recordActivity(actor, { module: "storage", action: "delete", entityId: id, entityName: container.name, place: container.name });
+  });
+}
+
+/** Cada anotación tiene identidad propia: agregar una nunca reemplaza la lista de otro dispositivo. */
+export async function saveContainerContent(actor: Actor | null, containerId: string, input: string, id?: string) {
+  assertCan(actor, "storage.manage");
+  const text = parseContentText(input);
+  const entryId = id ?? createId();
+  await db.transaction("rw", db.containers, db.containerContents, db.activity, async () => {
+    const container = await db.containers.get(containerId);
+    if (!container) throw new NotFoundError("errors.notFound.container");
+    const existing = id ? await db.containerContents.get(id) : undefined;
+    if (id && (!existing || existing.containerId !== containerId)) throw new NotFoundError("errors.notFound.containerContent");
+    if (!id && await db.containerContents.where("containerId").equals(containerId).count() >= CONTENT_LIMITS.maxPerContainer) {
+      throw new ValidationError("errors.storage.tooMuchContent", { max: CONTENT_LIMITS.maxPerContainer });
+    }
+    const now = Date.now();
+    await db.containerContents.put({ ...existing, id: entryId, containerId, text, createdBy: existing?.createdBy ?? actor.id, createdAt: existing?.createdAt ?? now, updatedAt: now });
+    await recordActivity(actor, { module: "storage", action: "update", entityId: containerId, entityName: container.name, containerId, place: container.name });
+  });
+  return entryId;
+}
+
+export async function deleteContainerContent(actor: Actor | null, id: string) {
+  assertCan(actor, "storage.manage");
+  await db.transaction("rw", db.containers, db.containerContents, db.activity, async () => {
+    const entry = await db.containerContents.get(id);
+    if (!entry) return;
+    const container = await db.containers.get(entry.containerId);
+    await db.containerContents.delete(id);
+    if (container) await recordActivity(actor, { module: "storage", action: "update", entityId: container.id, entityName: container.name, containerId: container.id, place: container.name });
   });
 }

@@ -166,6 +166,28 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Contenedores: fotos y contenido libre
+
+En Inventario, abrí un contenedor (o escaneá su etiqueta QR). **Qué hay acá** permite
+anotar cables, recuerdos o piezas sin identificar y adjuntar hasta 12 fotos, sin crear
+stock ni sugerencias de compra. Cada anotación se edita o elimina por separado; hay un
+límite de 200 por contenedor y 160 caracteres por anotación.
+
+Herramientas, insumos y productos que necesitan cantidades siguen en el inventario de
+la misma ficha. Un contenedor con anotaciones, fotos, productos o compartimentos no se
+elimina hasta retirar su contenido. Las fotos se comprimen localmente y se incluyen en
+la exportación de datos; con la nube, se sincronizan cifradas usando el sistema de fotos
+existente. Lugares, anotaciones y fotos de contenedores son visibles para la familia;
+administradores y adultos pueden modificarlos. El QR identifica el contenedor en la
+casa del dispositivo: no publica su contenido ni concede acceso a desconocidos.
+
+La base local migra a v12 conservando etiquetas y datos anteriores. Actualizá todos los
+dispositivos: los clientes anteriores no muestran las anotaciones. Al actualizar se
+recuperan una sola vez las operaciones que incluían la tabla nueva y que v11 descartó,
+sin repetir operaciones ya aplicadas ni borrar cambios locales pendientes.
+Las anotaciones viajan en operaciones separadas del inventario y las fotos para que
+las versiones anteriores sigan recibiendo los datos que conocen durante la transición.
+
 ## License
 
 OpenDomus is free software under the [GNU AGPL v3](LICENSE) (or later): you can use,

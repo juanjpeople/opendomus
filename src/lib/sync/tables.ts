@@ -10,6 +10,7 @@ export const SYNC_TABLES = [
   "members",
   "spaces",
   "containers",
+  "containerContents",
   "inventory",
   "prices",
   "projects",

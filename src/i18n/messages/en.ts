@@ -79,6 +79,7 @@ export const en: Messages = {
       project: "That project no longer exists.",
       recipe: "That recipe no longer exists.",
       photo: "That photo no longer exists.",
+      containerContent: "That note no longer exists in this container.",
     },
     members: {
       lastAdmin: "There has to be at least one administrator.",
@@ -121,6 +122,8 @@ export const en: Messages = {
     storage: {
       spaceNotEmpty: "This room has containers. Move or delete them first.",
       containerNotEmpty: "This container has items. Move or delete them first.",
+      containerHasContent: "This container has notes or photos. Remove them before deleting it.",
+      tooMuchContent: "You can keep up to {max} notes per container.",
       containerHasChildren: "This container has compartments. Move or delete them first.",
       tooDeep: "Containers can't be nested more than {max} levels deep.",
       cycle: "A container can't go inside itself or its own compartments.",
@@ -289,7 +292,7 @@ export const en: Messages = {
     },
     list: {
       title: "Contents",
-      emptyTitle: "Nothing here yet",
+      emptyTitle: "No inventory items yet",
       emptyText: "Add the first item above and OpenDomus will let you know when it runs low.",
       min: "Minimum: {min} {unit}",
       deleteConfirm: "Delete “{name}”?",
@@ -330,6 +333,22 @@ export const en: Messages = {
     },
   },
   storage: {
+    contents: {
+      title: "What's in here",
+      hint: "Describe what you store, even when it is not a product: spare cables, keepsakes, unidentified parts. Track tools and supplies with quantities in the inventory below.",
+      input: "Stored contents",
+      placeholder: "E.g. Old cables, printer parts…",
+      add: "Add note",
+      empty: "No notes yet. You can also keep just photos.",
+      edit: "Edit note: {name}",
+      delete: "Delete note: {name}",
+      deleteConfirm: "Delete the note “{name}”?",
+      editTitle: "Edit note",
+      save: "Save note",
+      photos: "Container photos",
+      inventory: "Tools, supplies and products",
+      summary: "{entries} notes · {photos} photos",
+    },
     eyebrow: "Places",
     title: "Inventory",
     description: "Your home's rooms, their containers and what each one holds.",
