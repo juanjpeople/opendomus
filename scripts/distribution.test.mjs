@@ -53,7 +53,7 @@ test("rechaza enlaces a directorios fuera del export, incluso como raíz", (t) =
   assert.throws(() => copyExport(link, destination), /directorio real/);
 });
 
-test("rechaza un archivo reemplazado entre la inspección y la apertura", (t) => {
+test("un reemplazo posterior a la apertura no cambia la copia ni su hash", (t) => {
   const { source, destination } = fixture(t);
   const target = join(source, "index.html");
   writeFileSync(target, "public");
@@ -68,7 +68,9 @@ test("rechaza un archivo reemplazado entre la inspección y la apertura", (t) =>
   });
   syncBuiltinESMExports();
   try {
-    assert.throws(() => copyExport(source, destination), /archivo cambió/);
+    const files = copyExport(source, destination);
+    assert.equal(readFileSync(join(destination, "index.html"), "utf8"), "public");
+    assert.equal(files[0].sha256, createHash("sha256").update("public").digest("hex"));
   } finally {
     check.mock.restore();
     syncBuiltinESMExports();

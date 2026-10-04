@@ -8,20 +8,21 @@ export function copyExport(source, destination) {
   if (!root.isDirectory() || root.isSymbolicLink()) throw new Error("El export debe ser un directorio real, no un enlace.");
   const files = [];
   function visit(dir) {
-    for (const name of readdirSync(dir).sort()) {
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name, "en"))) {
+      const name = entry.name;
       const path = join(dir, name);
-      const info = lstatSync(path);
       const rel = relative(source, path).split(sep).join("/");
-      if (info.isSymbolicLink() || name.startsWith(".") || /^(?:wrangler|package-lock|package)\./i.test(name)) throw new Error(`Archivo no permitido en el export: ${rel}`);
-      if (info.isDirectory()) { visit(path); continue; }
-      if (!info.isFile()) throw new Error(`No es un archivo regular: ${rel}`);
+      if (entry.isSymbolicLink() || name.startsWith(".") || /^(?:wrangler|package-lock|package)\./i.test(name)) throw new Error(`Archivo no permitido en el export: ${rel}`);
+      if (entry.isDirectory()) { visit(path); continue; }
+      if (!entry.isFile()) throw new Error(`No es un archivo regular: ${rel}`);
       // Abrir una sola vez y verificar el descriptor: el hash y la copia deben
       // corresponder a los mismos bytes, aunque el archivo cambie de nombre.
       const fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
       let bytes;
       try {
         const opened = fstatSync(fd);
-        if (!opened.isFile() || opened.dev !== info.dev || opened.ino !== info.ino) {
+        const current = lstatSync(path);
+        if (!opened.isFile() || current.isSymbolicLink() || opened.dev !== current.dev || opened.ino !== current.ino) {
           throw new Error(`El archivo cambió mientras se empaquetaba: ${rel}`);
         }
         bytes = readFileSync(fd);
