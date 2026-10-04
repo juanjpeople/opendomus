@@ -216,6 +216,19 @@ public class NativeFlowTest {
     }
 
     @Test
+    public void cameraStreamStartsAndStopsWithRuntimePermission() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            .grantRuntimePermission(context.getPackageName(), android.Manifest.permission.CAMERA);
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            ready(scenario);
+            evaluate(scenario, "window.__cameraResult=null;(async()=>{let stream,video;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});video=document.createElement('video');video.muted=true;video.playsInline=true;document.body.append(video);video.srcObject=stream;await video.play();const track=stream.getVideoTracks()[0];const live=track.readyState==='live'&&video.videoWidth>0;stream.getTracks().forEach(t=>t.stop());window.__cameraResult={live,ended:track.readyState==='ended'};}catch(e){window.__cameraResult={error:e.name};}finally{stream?.getTracks().forEach(t=>t.stop());video?.remove();}})()");
+            await(scenario, "window.__cameraResult !== null");
+            assertEquals("true", evaluate(scenario, "window.__cameraResult.live && window.__cameraResult.ended"));
+        }
+    }
+
+    @Test
     public void barcodeDetectorReadsQrWithoutNetwork() throws Exception {
         byte[] fixture;
         try (java.io.InputStream input = InstrumentationRegistry.getInstrumentation().getContext().getAssets().open("offline-qr.png")) {
