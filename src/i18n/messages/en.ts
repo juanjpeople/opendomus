@@ -1,6 +1,11 @@
 import type { Messages } from "./es";
 
 export const en: Messages = {
+  localOnly: {
+    title: "This installation works without a server",
+    description: "You can organize your home on this device. Accounts, invitations and feedback submission need a connection to our services and are unavailable in this installation.",
+    continue: "Continue on this device",
+  },
   common: {
     appName: "OpenDomus",
     cancel: "Cancel",

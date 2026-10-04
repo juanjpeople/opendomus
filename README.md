@@ -1,20 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OpenDomus
 
-## Getting Started
+Una app open source para organizar la casa, los proyectos y el inventario, con datos
+locales y sincronización cloud opcional. Licencia AGPL-3.0-or-later.
 
-First, run the development server:
+## Empezar en tu equipo
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Requiere Node.js 24. Desde este repositorio:
+
+```sh
+npm ci
+npm run build:local
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrí http://localhost:4173. Para desarrollar, usá `npm run dev`.
+Para compartir un paquete estático, ejecutá `npm run dist:local`.
+
+La [guía de plataformas](docs/PLATAFORMAS.md) explica Android/PWA, Windows/macOS/Linux,
+Raspberry/NAS, Caddy/HTTPS, límites del ESP, respaldos y el camino hacia un APK.
+El build local no necesita cuenta ni ofrece funciones que requieran la API.
 
 ### Testing on a phone
 
@@ -66,28 +70,25 @@ registered in production builds, so `next dev` never caches stale files. Once in
 every page works without a connection; data already lives in IndexedDB. New versions wait
 for the user to click "Update". Installing requires HTTPS (or `localhost`).
 
-Preview the build locally with `npx serve out`.
+Preview the cloud build with `npm start`. Use `npm run build:local` and `npm run e2e:local` for the portable build.
 
 ### Deploy (Cloudflare)
 
-`wrangler.jsonc` deploys `out/` as static assets (no server code, so Cloudflare doesn't try
-to build a Next.js server with OpenNext). In the Cloudflare dashboard, connect the GitHub
-repo (Workers & Pages → Create → Import a repository) and set:
+`wrangler.jsonc` combines the static assets in `out/` with the API Worker in `server/`.
+The current release process is manual. When publishing a reviewed version:
 
 - Build command: `npm run build`
 - Deploy command: `npx wrangler deploy`
 - Environment variable: `NODE_VERSION=24`
 
-Every push to `main` deploys. `public/_redirects` sends printed QR links (`/c/<code>`) to
+CI checks PRs and main; it does not deploy. `public/_redirects` sends printed QR links (`/c/<code>`) to
 `/c?code=…`, and unknown paths get `404.html`. Check the config locally with
 `npm run build && npx wrangler dev`.
 
 Cloud photo sync stores only client-encrypted bytes in the private Supabase Storage bucket
 `opendomus-photos`. Production needs `SUPABASE_SERVICE_ROLE_KEY` as a Cloudflare secret
 (`npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY`); never expose that key to the browser
-or commit it. The Free plan is $0, blocks further usage instead of charging overages, and
-currently includes 1 GB of file storage plus 5 GB each of direct and cached egress. The
-bucket independently limits every encrypted object to 4 MB and accepts only
+or commit it. Review provider quotas and billing controls before enabling storage. The bucket limits every encrypted object to 4 MB and accepts only
 `application/octet-stream`.
 
 ### Administración privada (CLI + Cloudflare Access)
@@ -171,18 +172,3 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 OpenDomus is free software under the [GNU AGPL v3](LICENSE) (or later): you can use,
 study, modify and share it. If you run a modified version as a service for others, you
 must offer them its source code too.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

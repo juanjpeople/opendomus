@@ -7,8 +7,9 @@
  */
 import { copyFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const OUT = new URL("../out/", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+const OUT = fileURLToPath(new URL("../out/", import.meta.url));
 let copied = 0;
 
 function walk(dir) {

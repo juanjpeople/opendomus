@@ -11,6 +11,7 @@ const PORT = 4173;
 
 export default defineConfig({
   testDir: "e2e",
+  testIgnore: "local-build.spec.ts",
   fullyParallel: true,
   // Pocos a la vez: cada test levanta un navegador entero y la app anima bastante.
   workers: process.env.CI ? 2 : 3,
@@ -30,7 +31,7 @@ export default defineConfig({
     { name: "celular", use: { ...devices["Pixel 7"], channel: process.env.CI ? undefined : "chrome" } },
   ],
   webServer: {
-    command: `npx --yes serve@14 out -l ${PORT} --no-clipboard`,
+    command: `npm start`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
