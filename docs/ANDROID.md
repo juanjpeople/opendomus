@@ -99,7 +99,8 @@ Ocho regresiones de navegador cubren la primera lectura sin conexión tras
 instalar la PWA, sin visitar antes el escáner y con `BarcodeDetector` deshabilitado;
 permisos tardíos, cancelar el inicio de video, navegación y cierre del stream.
 También verifican, en escritorio y móvil, el permiso de cámara realmente denegado
-en Chromium (sin reemplazar `getUserMedia`), su aviso y la entrada manual del código.
+en Chromium con un dispositivo de video virtual (sin reemplazar `getUserMedia` ni
+autorizar permisos automáticamente), su aviso y la entrada manual del código.
 Estas comprobaciones no reemplazan una cámara física en Android.
 
 Pendiente antes de distribuir:
