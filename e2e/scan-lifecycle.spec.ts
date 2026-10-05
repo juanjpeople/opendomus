@@ -43,6 +43,22 @@ test("cámara: detener descarta un inicio de video pendiente", async ({ home: pa
 });
 
 
+test("cámara: un permiso denegado conserva la entrada manual", async ({ home: page, context }) => {
+  // Omitir cámara deniega ese permiso en Chromium, sin reemplazar getUserMedia.
+  await context.grantPermissions([], { origin: "http://localhost:4173" });
+  await page.goto("/inventario/escanear");
+  expect(await page.evaluate(async () => (await navigator.permissions.query({ name: "camera" as PermissionName })).state)).toBe("denied");
+  await page.getByRole("button", { name: "Activar cámara" }).click();
+  await expect(page.getByText("No hay permiso para usar la cámara.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Activar cámara" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Detener", exact: true })).toHaveCount(0);
+  expect(await page.locator("video").evaluate(video => (video as HTMLVideoElement).srcObject)).toBeNull();
+  await page.getByPlaceholder("Ej. K7QM").fill("K7QM");
+  await page.getByRole("button", { name: "Abrir", exact: true }).click();
+  await expect(page).toHaveURL(/\/c\?code=K7QM$/);
+  await expect(page.getByText("Este contenedor no está en este dispositivo", { exact: true })).toBeVisible();
+});
+
 test("QR: primera lectura sin conexión ni BarcodeDetector libera su stream", async ({ home: page, context }) => {
   const qr = await QRCode.toDataURL("https://localhost/c?code=K7QM", { width: 320, margin: 4 });
   await page.addInitScript(dataUrl => {

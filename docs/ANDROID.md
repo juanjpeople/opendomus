@@ -95,9 +95,11 @@ antes del QR. Se recuperaron sus logs; los límites por prueba y fase conservan
 ahora el diagnóstico de futuras esperas. No se atribuye esa espera a una causa
 confirmada solo porque la siguiente ejecución pasó.
 
-Seis regresiones de navegador pasan, incluida la primera lectura sin conexión tras
-instalar la PWA, sin visitar antes el escáner y con `BarcodeDetector` deshabilitado.
-Cubren permisos tardíos, cancelar el inicio de video, navegación y cierre del stream.
+Ocho regresiones de navegador cubren la primera lectura sin conexión tras
+instalar la PWA, sin visitar antes el escáner y con `BarcodeDetector` deshabilitado;
+permisos tardíos, cancelar el inicio de video, navegación y cierre del stream.
+También verifican, en escritorio y móvil, el permiso de cámara realmente denegado
+en Chromium (sin reemplazar `getUserMedia`), su aviso y la entrada manual del código.
 Estas comprobaciones no reemplazan una cámara física en Android.
 
 Pendiente antes de distribuir:
