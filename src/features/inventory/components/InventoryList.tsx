@@ -4,7 +4,7 @@ import { Button, Card, Flex, Popconfirm, Skeleton, Typography, theme } from "ant
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, PackageOpen, Tag as PriceTag, Trash2 } from "lucide-react";
 import { Can } from "@/components/auth/Can";
-import { EmptyState, QuantityStepper, StockTag } from "@/components/ui";
+import { EmptyState, IconTile, QuantityStepper, StockTag } from "@/components/ui";
 import { usePriceSummaries } from "@/features/prices/hooks";
 import { useI18n } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
@@ -12,6 +12,8 @@ import { SPRING } from "@/lib/motion";
 import { getStockStatus, isUnit } from "../domain";
 import { useInventoryActions, useInventoryItems } from "../hooks";
 import { ConsumeButton } from "./ConsumeButton";
+import { findCatalogProduct } from "../catalog";
+import { CATEGORY_APPEARANCE } from "../catalog-appearance";
 
 interface InventoryListProps {
   containerId: string;
@@ -37,6 +39,8 @@ export function InventoryList({ containerId, onOpen }: InventoryListProps) {
       <AnimatePresence>
         {items?.map((item, index) => {
           const price = prices?.get(item.id);
+          const category = findCatalogProduct(item.name)?.category;
+          const appearance = category ? CATEGORY_APPEARANCE[category] : undefined;
           return (
             <motion.div
               key={item.id}
@@ -58,6 +62,7 @@ export function InventoryList({ containerId, onOpen }: InventoryListProps) {
                 >
                   <Flex vertical gap={4}>
                     <Flex align="center" gap={4}>
+                      {appearance && <IconTile icon={appearance.Icon} color={appearance.color} size={28} />}
                       <Typography.Text strong ellipsis>
                         {item.name}
                       </Typography.Text>
@@ -80,9 +85,9 @@ export function InventoryList({ containerId, onOpen }: InventoryListProps) {
                 </button>
 
                 <Flex align="center" gap={8}>
-                  <Can perform="inventory.consume">
+                  {!item.reusable && <Can perform="inventory.consume">
                     <ConsumeButton item={item} />
-                  </Can>
+                  </Can>}
                   <QuantityStepper
                     value={item.quantity}
                     unit={unitLabel(item.unit, item.quantity)}

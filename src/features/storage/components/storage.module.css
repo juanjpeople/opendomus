@@ -1,0 +1,60 @@
+.scene {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 128px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.scene > svg { width: 170px; height: 120px; transition: transform 180ms ease; }
+.tile:hover .scene > svg { transform: translateY(-3px) rotate(-2deg); }
+.contentBadge {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font-size: 17px;
+  border: 1px solid;
+  border-radius: 10px;
+}
+.compact { width: 112px; height: 88px; flex-shrink: 0; }
+.compact > svg { width: 112px; height: 82px; }
+.compact .contentBadge { width: 24px; height: 24px; font-size: 14px; right: 3px; bottom: 3px; }
+.tile { height: 100%; }
+.tile:focus-within { outline: 2px solid var(--storage-accent); outline-offset: 4px; border-radius: 16px; }
+.roomFloor {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--storage-border);
+  background-color: var(--storage-floor);
+  background-image: radial-gradient(var(--storage-border) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.roomFloor[data-space-kind="kitchen"], .roomFloor[data-space-kind="bathroom"] {
+  background-image: linear-gradient(var(--storage-border) 1px, transparent 1px), linear-gradient(90deg, var(--storage-border) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.roomFloor[data-space-kind="bedroom"], .roomFloor[data-space-kind="living"] {
+  background-image: repeating-linear-gradient(0deg, transparent 0 25px, var(--storage-border) 25px 26px);
+}
+.roomFloor[data-space-kind="garden"] {
+  background-image: repeating-linear-gradient(120deg, transparent 0 18px, var(--storage-border) 18px 19px);
+}
+@media (max-width: 420px) {
+  .roomFloor { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; gap: 8px; }
+  .scene { height: 104px; }
+  .scene > svg { width: 140px; height: 100px; }
+  .compact { height: 80px; width: 92px; }
+  .compact > svg { width: 92px; height: 76px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene > svg { transition: none; }
+  .tile:hover .scene > svg { transform: none; }
+}

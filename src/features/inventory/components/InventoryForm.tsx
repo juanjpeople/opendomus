@@ -1,13 +1,14 @@
 "use client";
 
-import { Button, Card, Col, Form, Input, InputNumber, Row, Select } from "antd";
+import { Button, Card, Col, Form, Input, InputNumber, Row, Select, Switch } from "antd";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/i18n";
 import { INVENTORY_LIMITS, UNITS, type NewInventoryItem } from "../domain";
 import { useInventoryActions } from "../hooks";
+import { CatalogPicker } from "./CatalogPicker";
 
-const DEFAULT_VALUES: Omit<NewInventoryItem, "name"> = { quantity: 1, unit: "unidades", minThreshold: 1 };
+const DEFAULT_VALUES: Omit<NewInventoryItem, "name"> = { quantity: 1, unit: "unidades", minThreshold: 1, autoSuggest: true, reusable: false };
 
 export function InventoryForm({ containerId }: { containerId: string }) {
   const [form] = Form.useForm<NewInventoryItem>();
@@ -23,7 +24,11 @@ export function InventoryForm({ containerId }: { containerId: string }) {
   }
 
   return (
-    <Card title={t("inventory.form.title")} style={{ marginBottom: 24 }}>
+    <Card style={{ marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+        <strong>{t("inventory.form.title")}</strong>
+        <CatalogPicker onSelect={(values) => form.setFieldsValue(values)} />
+      </div>
       <Form form={form} layout="vertical" onFinish={handleFinish} initialValues={DEFAULT_VALUES} requiredMark="optional">
         <Row gutter={16} align="bottom">
           <Col xs={24} md={10}>
@@ -60,6 +65,14 @@ export function InventoryForm({ containerId }: { containerId: string }) {
               </Button>
             </Form.Item>
           </Col>
+        </Row>
+        <Row gutter={16}>
+          <Col xs={24} sm={12}><Form.Item name="reusable" valuePropName="checked" label={t("inventory.item.reusable")} tooltip={t("inventory.item.reusableHint")}>
+            <Switch onChange={(checked) => { if (checked) form.setFieldsValue({ autoSuggest: false, minThreshold: 0 }); }} />
+          </Form.Item></Col>
+          <Col xs={24} sm={12}><Form.Item name="autoSuggest" valuePropName="checked" label={t("inventory.item.autoSuggest")} tooltip={t("inventory.item.autoSuggestHint")}>
+            <Switch />
+          </Form.Item></Col>
         </Row>
       </Form>
     </Card>

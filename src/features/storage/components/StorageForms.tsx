@@ -25,6 +25,7 @@ import {
 } from "../domain";
 import { useContainers, useSpaces, useStorageActions } from "../hooks";
 import { descendantIds, subtreeHeight } from "../tree";
+import { ContainerScene } from "./ContainerScene";
 
 /** Grilla de tipos con ícono (radio accesible). Elegir un tipo sugiere el nombre si todavía está vacío. */
 function KindPicker<K extends string>({
@@ -217,6 +218,8 @@ export function ContainerModal({
   const { createContainer, updateContainer } = useStorageActions();
   const [saving, setSaving] = useState(false);
   const kind = (Form.useWatch("kind", form) as ContainerKind | undefined) ?? "box";
+  const color = Form.useWatch("color", form) as AppearanceColor | undefined;
+  const icon = Form.useWatch("icon", form) as AppearanceIcon | undefined;
   const treeData = useLocationTree(container?.id);
 
   useEffect(() => {
@@ -270,6 +273,7 @@ export function ContainerModal({
             }}
           />
         </Form.Item>
+        <div style={{ marginBottom: 16 }}><ContainerScene container={{ kind, color, icon }} /></div>
         <Form.Item
           name="name"
           label={t("storage.fields.name")}

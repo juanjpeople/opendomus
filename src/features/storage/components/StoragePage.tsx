@@ -3,7 +3,7 @@
 import { App, Button, Card, Dropdown, Flex, Skeleton, Tooltip, Typography, theme } from "antd";
 import { EllipsisVertical, MapPin, Pencil, Plus, Printer, ScanLine, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Stagger, StaggerItem } from "@/components/motion";
@@ -17,6 +17,8 @@ import type { LabelData } from "./ContainerLabel";
 import { LabelModal } from "./LabelModal";
 import { AddTile, ContainerTile } from "./ContainerTiles";
 import { ContainerModal, SpaceModal } from "./StorageForms";
+import styles from "./storage.module.css";
+import { StorageSearch } from "./StorageSearch";
 
 type Dialog =
   | { kind: "space"; space?: Space }
@@ -54,6 +56,7 @@ export function StoragePage() {
         }
       />
 
+      <StorageSearch />
       {!spaces && <Skeleton active />}
       {spaces?.length === 0 && (
         <Card>
@@ -172,15 +175,12 @@ function SpaceRoom({ space, onDialog }: { space: SpaceOverview; onDialog: (dialo
 
       {/* El "piso" del ambiente: acá se ubican los contenedores. */}
       <div
+        className={styles.roomFloor}
+        data-space-kind={space.kind}
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-          gap: 10,
-          padding: 10,
-          borderRadius: token.borderRadiusLG * 1.5,
-          border: `1.5px dashed ${palette.border}`,
-          background: `color-mix(in srgb, ${token.colorBgContainer} 70%, transparent)`,
-        }}
+          "--storage-border": palette.border,
+          "--storage-floor": token.colorBgLayout,
+        } as CSSProperties}
       >
         {space.containers.map((container) => (
           <ContainerTile key={container.id} container={container} onLabel={() => onDialog({ kind: "labels", labels: [toLabel(container)] })} />

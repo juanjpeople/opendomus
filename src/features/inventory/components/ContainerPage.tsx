@@ -8,13 +8,14 @@ import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
-import { EmptyState, IconTile, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader } from "@/components/ui";
 import { ActivityButton } from "@/features/activity/components/ActivityButton";
 import { AddTile, ContainerTile } from "@/features/storage/components/ContainerTiles";
 import type { LabelData } from "@/features/storage/components/ContainerLabel";
 import { LabelModal } from "@/features/storage/components/LabelModal";
 import { ContainerModal } from "@/features/storage/components/StorageForms";
 import { ContainerContents } from "@/features/storage/components/ContainerContents";
+import { ContainerScene } from "@/features/storage/components/ContainerScene";
 import { containerAppearance, STORAGE_LIMITS } from "@/features/storage/domain";
 import { useContainer, useStorageActions } from "@/features/storage/hooks";
 import { useT } from "@/i18n";
@@ -82,7 +83,7 @@ export function ContainerPage() {
         eyebrow={[container.spaceName, ...container.ancestors.map((ancestor) => ancestor.name)].join(" › ")}
         title={
           <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
-            <IconTile icon={containerAppearance(container).Icon} color={containerAppearance(container).color} size={40} />
+            <ContainerScene container={container} compact />
             {container.name}
           </span>
         }

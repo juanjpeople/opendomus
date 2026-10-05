@@ -160,3 +160,23 @@ export async function deleteContainerContent(actor: Actor | null, id: string) {
     if (container) await recordActivity(actor, { module: "storage", action: "update", entityId: container.id, entityName: container.name, containerId: container.id, place: container.name });
   });
 }
+
+/** Pegar una lista es una única operación: se valida toda antes de escribir. */
+export async function addContainerContents(actor: Actor | null, containerId: string, input: string) {
+  assertCan(actor, "storage.manage");
+  const lines = input.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map(parseContentText);
+  if (!lines.length) throw new ValidationError("errors.validation.nameRequired");
+  const unique = [...new Set(lines)];
+  return db.transaction("rw", db.containers, db.containerContents, db.activity, async () => {
+    const container = await db.containers.get(containerId);
+    if (!container) throw new NotFoundError("errors.notFound.container");
+    const existing = await db.containerContents.where("containerId").equals(containerId).toArray();
+    const known = new Set(existing.map((entry) => entry.text));
+    const additions = unique.filter((text) => !known.has(text));
+    if (existing.length + additions.length > CONTENT_LIMITS.maxPerContainer) throw new ValidationError("errors.storage.tooMuchContent", { max: CONTENT_LIMITS.maxPerContainer });
+    const now = Date.now();
+    await db.containerContents.bulkAdd(additions.map((text) => ({ id: createId(), containerId, text, createdBy: actor.id, createdAt: now, updatedAt: now })));
+    if (additions.length) await recordActivity(actor, { module: "storage", action: "update", entityId: containerId, entityName: container.name, containerId, place: container.name });
+    return additions.length;
+  });
+}

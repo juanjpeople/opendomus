@@ -7,7 +7,7 @@ import { exportAllData, importAllData, parseExport } from "@/features/settings/s
 import { db, declareSchema } from "@/lib/db";
 import { setSyncLink } from "@/lib/sync/middleware";
 import { CONTENT_LIMITS, parseContentText } from "./domain";
-import { createContainer, deleteContainer, deleteContainerContent, saveContainerContent } from "./service";
+import { addContainerContents, createContainer, deleteContainer, deleteContainerContent, saveContainerContent } from "./service";
 
 const admin = { id: "admin", name: "Ana", role: "admin" as const };
 const kid = { id: "kid", name: "Tomi", role: "kid" as const };
@@ -19,6 +19,23 @@ before(async () => {
   containerId = await createContainer(admin, { name: "Caja de recuerdos", kind: "box", spaceId: space.id });
 });
 after(() => { setSyncLink(null); db.close(); });
+
+test("lista de contenido: permisos, duplicados, validación atómica y sincronización", async () => {
+  await assert.rejects(addContainerContents(kid, containerId, "Repuestos"));
+  await assert.rejects(addContainerContents(admin, "ausente", "Repuestos"));
+  await assert.rejects(addContainerContents(admin, containerId, " \n "));
+  await assert.rejects(addContainerContents(admin, containerId, `Válido\n${"x".repeat(161)}`));
+  assert.equal(await db.containerContents.where("containerId").equals(containerId).count(), 0);
+  setSyncLink({ householdId: "house", userId: "ana", deviceId: "desktop" });
+  assert.equal(await addContainerContents(admin, containerId, " Repuestos \r\n\nTornillos\nRepuestos"), 2);
+  const rows = await db.containerContents.where("containerId").equals(containerId).toArray();
+  for (const row of rows) assert.equal((await db.syncRecords.get(`containerContents|${row.id}`))?.pending, 1);
+  assert.equal(await addContainerContents(admin, containerId, "Repuestos\nTornillos"), 0);
+  await assert.rejects(addContainerContents(admin, containerId, Array.from({ length: 200 }, (_, i) => `Parte ${i}`).join("\n")));
+  assert.equal(await db.containerContents.where("containerId").equals(containerId).count(), 2);
+  setSyncLink(null);
+  await db.containerContents.where("containerId").equals(containerId).delete();
+});
 
 test("el contenido libre valida límites y permisos, sin crear stock ni sugerencias", async () => {
   assert.equal(parseContentText("  Cables sueltos  "), "Cables sueltos");

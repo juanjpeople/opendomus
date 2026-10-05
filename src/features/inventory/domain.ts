@@ -23,14 +23,16 @@ export interface InventoryItem {
   unit: string;
   /** Si al quedar poco entra solo en "Para revisar" de la lista de compras. Sin definir = sí. */
   autoSuggest?: boolean;
+  /** Herramientas y equipos: usarlos no descuenta unidades. Ausente = consumible. */
+  reusable?: boolean;
   createdAt: number;
   updatedAt: number;
 }
 
-export type NewInventoryItem = Pick<InventoryItem, "name" | "quantity" | "unit" | "minThreshold">;
+export type NewInventoryItem = Pick<InventoryItem, "name" | "quantity" | "unit" | "minThreshold" | "autoSuggest" | "reusable">;
 
 /** Campos editables de un producto. Cambiar `containerId` es moverlo de lugar. */
-export type InventoryItemPatch = Partial<Pick<InventoryItem, "name" | "unit" | "minThreshold" | "containerId" | "autoSuggest">>;
+export type InventoryItemPatch = Partial<Pick<InventoryItem, "name" | "unit" | "minThreshold" | "containerId" | "autoSuggest" | "reusable">>;
 
 export const INVENTORY_LIMITS = {
   nameMaxLength: 80,
@@ -75,7 +77,9 @@ export function parseNewInventoryItem(input: NewInventoryItem): NewInventoryItem
   if (!isValidAmount(input.quantity)) throw new ValidationError("errors.validation.quantityInvalid");
   if (!isValidAmount(input.minThreshold)) throw new ValidationError("errors.validation.minInvalid");
   if (!isUnit(input.unit)) throw new ValidationError("errors.validation.unitInvalid");
-  return { name, quantity: input.quantity, unit: input.unit, minThreshold: input.minThreshold };
+  return { name, quantity: input.quantity, unit: input.unit, minThreshold: input.minThreshold,
+    ...(input.autoSuggest === undefined ? {} : { autoSuggest: !!input.autoSuggest }),
+    ...(input.reusable === undefined ? {} : { reusable: !!input.reusable }) };
 }
 
 export function parseInventoryPatch(patch: InventoryItemPatch): InventoryItemPatch {
@@ -91,6 +95,7 @@ export function parseInventoryPatch(patch: InventoryItemPatch): InventoryItemPat
   }
   if (patch.containerId !== undefined) out.containerId = patch.containerId;
   if (patch.autoSuggest !== undefined) out.autoSuggest = !!patch.autoSuggest;
+  if (patch.reusable !== undefined) out.reusable = !!patch.reusable;
   return out;
 }
 

@@ -16,7 +16,7 @@ import { ValidationError } from "@/lib/errors";
 export const SPACE_KINDS = ["kitchen", "living", "bedroom", "bathroom", "workshop", "shed", "garage", "garden", "other"] as const;
 export type SpaceKind = (typeof SPACE_KINDS)[number];
 
-export const CONTAINER_KINDS = ["fridge", "freezer", "pantry", "shelf", "cabinet", "wardrobe", "bed", "drawer", "door", "compartment", "box", "toolbox", "other"] as const;
+export const CONTAINER_KINDS = ["fridge", "freezer", "pantry", "shelf", "cabinet", "wardrobe", "bed", "drawer", "door", "compartment", "box", "basket", "toolbox", "other"] as const;
 export type ContainerKind = (typeof CONTAINER_KINDS)[number];
 
 interface Appearance {
@@ -44,6 +44,7 @@ export const CONTAINER_DEFAULTS: Record<ContainerKind, Appearance> = {
   shelf: { color: "purple", icon: "layers" },
   cabinet: { color: "green", icon: "libraryBig" },
   box: { color: "gold", icon: "box" },
+  basket: { color: "orange", icon: "basket" },
   toolbox: { color: "volcano", icon: "toolCase" },
   wardrobe: { color: "magenta", icon: "shirt" },
   bed: { color: "geekblue", icon: "bed" },

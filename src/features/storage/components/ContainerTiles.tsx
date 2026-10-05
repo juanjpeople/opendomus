@@ -4,19 +4,21 @@ import { Button, Flex, Tooltip, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { Layers, Plus, QrCode } from "lucide-react";
 import Link from "next/link";
-import { IconTile } from "@/components/ui";
 import { useT } from "@/i18n";
 import { tint } from "@/lib/appearance";
 import { SPRING } from "@/lib/motion";
 import { containerAppearance } from "../domain";
 import type { ContainerOverview } from "../hooks";
 import { containerHref } from "@/lib/navigation/routes";
+import { ContainerScene } from "./ContainerScene";
+import styles from "./storage.module.css";
+import type { CSSProperties } from "react";
 
 /** Tarjeta de un contenedor (o compartimento): ícono y color propios, totales y barra de stock. */
 export function ContainerTile({ container, onLabel }: { container: ContainerOverview; onLabel: () => void }) {
   const t = useT();
   const { token } = theme.useToken();
-  const { color, Icon } = containerAppearance(container);
+  const { color } = containerAppearance(container);
   const palette = tint(token, color);
 
   return (
@@ -26,9 +28,10 @@ export function ContainerTile({ container, onLabel }: { container: ContainerOver
       animate="rest"
       variants={{ rest: { y: 0 }, hover: { y: -3 } }}
       transition={SPRING.snappy}
-      style={{ position: "relative" }}
+      className={styles.tile}
+      style={{ position: "relative", "--storage-accent": palette.solid } as CSSProperties}
     >
-      <Link href={containerHref(container.id)} style={{ display: "block", color: "inherit" }}>
+      <Link href={containerHref(container.id)} style={{ display: "block", color: "inherit", height: "100%" }}>
         <motion.div
           variants={{ rest: { borderColor: token.colorBorderSecondary }, hover: { borderColor: palette.solid } }}
           style={{
@@ -43,12 +46,11 @@ export function ContainerTile({ container, onLabel }: { container: ContainerOver
             boxShadow: token.boxShadowTertiary,
           }}
         >
-          <motion.div variants={{ rest: { rotate: 0, scale: 1 }, hover: { rotate: -8, scale: 1.06 } }} transition={SPRING.snappy} style={{ display: "inline-flex" }}>
-            <IconTile icon={Icon} color={color} size={38} />
-          </motion.div>
-          <Typography.Text strong ellipsis style={{ display: "block", marginTop: 10 }}>
+          <ContainerScene container={container} />
+          <Typography.Text strong style={{ display: "block", marginTop: 10, overflowWrap: "anywhere" }}>
             {container.name}
           </Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>{t(`storage.containerKinds.${container.kind}`)}</Typography.Text>
           <Flex justify="space-between" align="baseline" gap={6}>
             <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
               {t("storage.itemCount", { count: container.itemCount })}
@@ -67,7 +69,8 @@ export function ContainerTile({ container, onLabel }: { container: ContainerOver
               <Layers /> {t("storage.childCount", { count: container.children.length })}
             </Typography.Text>
           )}
-          <StockBar ok={container.itemCount - container.needsAttention} low={container.low} empty={container.empty} />
+          {container.preview?.length > 0 && <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }} style={{ fontSize: token.fontSizeSM, margin: "8px 0 0" }}>{container.preview.join(" · ")}</Typography.Paragraph>}
+          {container.itemCount > 0 && <StockBar ok={container.itemCount - container.needsAttention} low={container.low} empty={container.empty} />}
         </motion.div>
       </Link>
       <Tooltip title={t("storage.label")}>
@@ -77,7 +80,7 @@ export function ContainerTile({ container, onLabel }: { container: ContainerOver
           icon={<QrCode />}
           aria-label={t("storage.label")}
           onClick={onLabel}
-          style={{ position: "absolute", top: 8, right: 8, color: token.colorTextTertiary }}
+          style={{ position: "absolute", top: 16, right: 16, color: token.colorText, background: token.colorBgContainer, minWidth: 36, minHeight: 36 }}
         />
       </Tooltip>
     </motion.div>
