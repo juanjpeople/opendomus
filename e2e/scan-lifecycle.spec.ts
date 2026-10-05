@@ -1,9 +1,10 @@
 import QRCode from "qrcode";
 import { test, expect } from "./fixtures";
 
+// El headless-shell devuelve NotSupportedError para getUserMedia; usar Chromium completo.
 // CI no tiene cámara física. Chromium aporta un dispositivo virtual, pero mantiene
 // su control real de permisos: no usar --use-fake-ui-for-media-stream.
-test.use({ launchOptions: { args: ["--use-fake-device-for-media-stream"] } });
+test.use({ channel: "chromium", launchOptions: { args: ["--use-fake-device-for-media-stream"] } });
 
 test("cámara: libera un permiso que llega después de salir de la pantalla", async ({ home: page }) => {
   await page.addInitScript(() => {
