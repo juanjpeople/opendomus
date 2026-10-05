@@ -83,6 +83,7 @@ export const en: Messages = {
       nameRequired: "Name is required.",
       nameTooLong: "Name can't be longer than {max} characters.",
       quantityInvalid: "Quantity must be a valid whole number.",
+      reusableConsumption: "Using this tool or equipment does not consume it. Adjust the quantity to correct how many you have.",
       minInvalid: "Minimum must be a valid whole number.",
       unitInvalid: "Invalid unit.",
       kindInvalid: "Invalid type.",
@@ -294,6 +295,12 @@ export const en: Messages = {
     allPlaces: "See all places",
   },
   inventory: {
+    catalog: {
+      open: "Choose from catalog", title: "Home essentials", hint: "Choose an essential and adjust how much you have. Stock is only added when you submit the form.",
+      search: "Search: sugar, drill bits, bleach…", all: "All categories", empty: "Not in the catalog? You can enter any name in the form.",
+      durable: "Tool", consumable: "Supply",
+      categories: { food: "Pantry and kitchen", cleaning: "Cleaning", hardware: "Hardware", electrical: "Electrical", tools: "Tools" },
+    },
     units: {
       unidades: { one: "unit", other: "units" },
       kg: { one: "kg", other: "kg" },
@@ -331,6 +338,8 @@ export const en: Messages = {
       openAria: "See details for {name}",
     },
     item: {
+      reusable: "Reusable tool or equipment",
+      reusableHint: "Using it does not consume a unit. Adjust the quantity when buying, losing or retiring one.",
       details: "Details",
       location: "Location",
       save: "Save changes",
@@ -363,7 +372,13 @@ export const en: Messages = {
     },
   },
   storage: {
+    search: {
+      placeholder: "Where did I put…?", hint: "Search products, notes, boxes, rooms or label codes, including nested drawers and compartments.",
+      empty: "Nothing found. Try another word or the box label code.",
+      count: { one: "Found in {count} container", other: "Found in {count} containers" }, more: "Show more results",
+    },
     contents: {
+      bulk: "Paste a list", bulkHint: "One thing per line: old spare parts, assorted screws, cables… Empty lines and identical notes are skipped. No need to count or identify everything.",
       title: "What's in here",
       hint: "Describe what you store, even when it is not a product: spare cables, keepsakes, unidentified parts. Track tools and supplies with quantities in the inventory below.",
       input: "Stored contents",
@@ -433,6 +448,7 @@ export const en: Messages = {
       cabinet: "Cabinet",
       box: "Box",
       toolbox: "Toolbox",
+      basket: "Basket",
       wardrobe: "Wardrobe",
       bed: "Bed",
       drawer: "Drawer",

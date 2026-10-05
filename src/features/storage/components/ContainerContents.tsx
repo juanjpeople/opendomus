@@ -15,11 +15,12 @@ export function ContainerContents({ containerId }: { containerId: string }) {
   const { token } = theme.useToken();
   const entries = useContainerContents(containerId);
   const editable = usePermission("storage.manage");
-  const { saveContent, deleteContent } = useStorageActions();
+  const { saveContent, deleteContent, addContents } = useStorageActions();
   const [form] = Form.useForm<{ text: string }>();
   const [editing, setEditing] = useState<ContainerContent | null>(null);
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [bulk, setBulk] = useState<string | null>(null);
 
   async function add(values: { text: string }) {
     setSaving(true);
@@ -47,6 +48,7 @@ export function ContainerContents({ containerId }: { containerId: string }) {
               <Input aria-label={t("storage.contents.input")} placeholder={t("storage.contents.placeholder")} maxLength={CONTENT_LIMITS.textMaxLength} disabled={saving} />
             </Form.Item>
             <Button htmlType="submit" icon={<Plus />} loading={saving} disabled={(entries?.length ?? 0) >= CONTENT_LIMITS.maxPerContainer}>{t("storage.contents.add")}</Button>
+            <Button onClick={() => setBulk("")} disabled={saving}>{t("storage.contents.bulk")}</Button>
           </Flex>
         </Form>
       )}
@@ -68,6 +70,15 @@ export function ContainerContents({ containerId }: { containerId: string }) {
       </ul>
       <Typography.Title level={3} style={{ fontSize: token.fontSizeHeading5 }}>{t("storage.contents.photos")}</Typography.Title>
       <PhotoGallery ownerType="container" ownerId={containerId} editable={editable} />
+      <Modal title={t("storage.contents.bulk")} open={bulk !== null} onCancel={() => { if (!saving) setBulk(null); }} confirmLoading={saving} okText={t("storage.contents.add")} cancelText={t("common.cancel")} okButtonProps={{ disabled: !bulk?.trim() }} onOk={async () => {
+        if (bulk === null || saving) return;
+        setSaving(true);
+        try { if (await addContents(containerId, bulk) !== undefined) setBulk(null); }
+        finally { setSaving(false); }
+      }}>
+        <Typography.Paragraph type="secondary">{t("storage.contents.bulkHint")}</Typography.Paragraph>
+        <Input.TextArea aria-label={t("storage.contents.bulk")} value={bulk ?? ""} onChange={(event) => setBulk(event.target.value)} rows={7} disabled={saving} maxLength={(CONTENT_LIMITS.textMaxLength + 1) * CONTENT_LIMITS.maxPerContainer} />
+      </Modal>
       <Modal title={t("storage.contents.editTitle")} open={!!editing} onCancel={() => setEditing(null)} onOk={edit} confirmLoading={saving} okText={t("storage.contents.save")} cancelText={t("common.cancel")} okButtonProps={{ disabled: !text.trim() }}>
         <Input aria-label={t("storage.contents.input")} value={text} onChange={(event) => setText(event.target.value)} maxLength={CONTENT_LIMITS.textMaxLength} onPressEnter={edit} />
       </Modal>

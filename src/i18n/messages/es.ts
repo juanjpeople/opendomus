@@ -88,6 +88,7 @@ export const es = {
       nameRequired: "El nombre es obligatorio.",
       nameTooLong: "El nombre no puede superar {max} caracteres.",
       quantityInvalid: "La cantidad debe ser un número entero válido.",
+      reusableConsumption: "Esta herramienta o equipo no se descuenta al usarlo. Para corregir cuántos tenés, ajustá la cantidad.",
       minInvalid: "El mínimo debe ser un número entero válido.",
       unitInvalid: "Unidad no válida.",
       kindInvalid: "Tipo no válido.",
@@ -299,6 +300,12 @@ export const es = {
     allPlaces: "Ver todos los lugares",
   },
   inventory: {
+    catalog: {
+      open: "Elegir del catálogo", title: "Básicos de casa", hint: "Elegí un básico y ajustá cuánto tenés. El catálogo no agrega existencias hasta que confirmás el formulario.",
+      search: "Buscar: azúcar, mechas, lavandina…", all: "Todos los rubros", empty: "No está en el catálogo. Podés cargarlo con el nombre que quieras.",
+      durable: "Herramienta", consumable: "Reposición",
+      categories: { food: "Almacén y cocina", cleaning: "Limpieza", hardware: "Ferretería", electrical: "Electricidad", tools: "Herramientas" },
+    },
     units: {
       unidades: { one: "unidad", other: "unidades" },
       kg: { one: "kg", other: "kg" },
@@ -336,6 +343,8 @@ export const es = {
       openAria: "Ver detalle de {name}",
     },
     item: {
+      reusable: "Herramienta o equipo reutilizable",
+      reusableHint: "Usarlo no gasta una unidad. Podés ajustar la cantidad si comprás otro, lo perdés o lo das de baja.",
       details: "Datos",
       location: "Lugar",
       save: "Guardar cambios",
@@ -368,7 +377,13 @@ export const es = {
     },
   },
   storage: {
+    search: {
+      placeholder: "¿Dónde guardé…?", hint: "Buscá por producto, anotación, caja, ambiente o código de etiqueta. También dentro de cajones y compartimentos.",
+      empty: "No encontramos ese contenido. Probá con otra palabra o con el código de la caja.",
+      count: { one: "Lo encontramos en {count} contenedor", other: "Lo encontramos en {count} contenedores" }, more: "Ver más resultados",
+    },
     contents: {
+      bulk: "Pegar una lista", bulkHint: "Una cosa por renglón: repuestos viejos, tornillos varios, cables… Se omiten renglones vacíos y anotaciones idénticas. No hace falta contar ni identificar todo.",
       title: "Qué hay acá",
       hint: "Anotá lo que guardás, aunque no sea un producto: cables sueltos, recuerdos, piezas por identificar. Herramientas e insumos con cantidades van en el inventario de abajo.",
       input: "Contenido guardado",
@@ -384,9 +399,9 @@ export const es = {
       inventory: "Herramientas, insumos y productos",
       summary: "{entries} anotaciones · {photos} fotos",
     },
-    eyebrow: "Lugares",
+    eyebrow: "Cada cosa en su lugar",
     title: "Inventario",
-    description: "Los recintos de tu casa, sus contenedores y lo que guarda cada uno.",
+    description: "De la heladera al último cajón del taller. Armá tus lugares y encontrá lo que guardaste.",
     addSpace: "Nuevo recinto",
     addContainer: "Agregar contenedor",
     editSpace: "Editar recinto",
@@ -438,6 +453,7 @@ export const es = {
       cabinet: "Mueble",
       box: "Caja",
       toolbox: "Caja de herramientas",
+      basket: "Canasto",
       wardrobe: "Placard",
       bed: "Cama",
       drawer: "Cajón",

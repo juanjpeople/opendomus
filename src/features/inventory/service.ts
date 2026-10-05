@@ -98,6 +98,7 @@ export async function consumeInventoryItem(actor: Actor | null, id: string, amou
   assertCan(actor, "inventory.consume");
   const plan = await db.transaction("rw", QUANTITY_TABLES(), async () => {
     const item = await getItem(id);
+    if (item.reusable) throw new ValidationError("errors.validation.reusableConsumption");
     const result = planConsumption(item.quantity, amount);
     const { entryId } = result.consumed > 0 ? await writeQuantity(actor, item, result.quantity, "consume") : { entryId: null };
     return { ...result, entryId };
@@ -113,6 +114,7 @@ export async function consumeInventoryItem(actor: Actor | null, id: string, amou
 export async function consumeWithin(actor: Actor, id: string, amount: number): Promise<ConsumptionPlan | null> {
   const item = await db.inventory.get(id);
   if (!item) return null;
+  if (item.reusable) throw new ValidationError("errors.validation.reusableConsumption");
   const plan = planConsumption(item.quantity, amount);
   if (plan.consumed > 0) await writeQuantity(actor, item, plan.quantity, "consume");
   return plan;

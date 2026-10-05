@@ -83,7 +83,7 @@ function ItemForm({ item }: { item: InventoryItem }) {
   return (
     <Form
       layout="vertical"
-      initialValues={{ name: item.name, minThreshold: item.minThreshold, unit: item.unit, containerId: item.containerId, autoSuggest: item.autoSuggest !== false }}
+      initialValues={{ name: item.name, minThreshold: item.minThreshold, unit: item.unit, containerId: item.containerId, autoSuggest: item.autoSuggest !== false, reusable: item.reusable === true }}
       onFinish={onFinish}
       disabled={!canEdit}
       requiredMark={false}
@@ -114,6 +114,9 @@ function ItemForm({ item }: { item: InventoryItem }) {
         />
       </Form.Item>
       <Form.Item name="autoSuggest" valuePropName="checked" label={t("inventory.item.autoSuggest")} tooltip={t("inventory.item.autoSuggestHint")}>
+        <Switch />
+      </Form.Item>
+      <Form.Item name="reusable" valuePropName="checked" label={t("inventory.item.reusable")} tooltip={t("inventory.item.reusableHint")}>
         <Switch />
       </Form.Item>
       {canEdit && (
@@ -154,7 +157,7 @@ function ConsumptionPanel({ item }: { item: InventoryItem }) {
       </div>
 
       <Flex gap={8} wrap>
-        <Can perform="inventory.consume">
+        {!item.reusable && <Can perform="inventory.consume">
           <Space.Compact>
             <InputNumber
               aria-label={t("inventory.consume.amount")}
@@ -169,7 +172,7 @@ function ConsumptionPanel({ item }: { item: InventoryItem }) {
               {t("inventory.consume.register")}
             </Button>
           </Space.Compact>
-        </Can>
+        </Can>}
         <Can perform="shopping.manage">
           <Button
             icon={<ListPlus />}
