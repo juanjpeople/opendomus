@@ -30,6 +30,7 @@ export const APP_ROUTES: AppRoute[] = [
   { id: "inventory", href: "/inventario", labelKey: "nav.routes.inventory", icon: Boxes, permission: "inventory.view", section: "main" },
   { id: "container", href: "/inventario/ver", labelKey: "nav.routes.container", icon: Boxes, permission: "inventory.view", section: "main", parent: "inventory", hidden: true, needsId: true },
   { id: "scan", href: "/inventario/escanear", labelKey: "nav.routes.scan", icon: ScanLine, permission: "inventory.view", section: "main", parent: "inventory", hidden: true },
+  { id: "camera", href: "/inventario/camara", labelKey: "camera.title", icon: ScanLine, permission: "inventory.view", section: "main", parent: "inventory", hidden: true },
   { id: "calendar", href: "/calendario", labelKey: "nav.routes.calendar", icon: CalendarDays, permission: "calendar.view", section: "main" },
   { id: "compras", href: "/compras", labelKey: "nav.routes.compras", icon: ShoppingCart, permission: "shopping.view", section: "main" },
   { id: "recipes", href: "/recetas", labelKey: "nav.routes.recipes", icon: ChefHat, permission: "recipes.view", section: "main" },
@@ -54,6 +55,7 @@ export const APP_ROUTES: AppRoute[] = [
 // sitio estático (Cloudflare Pages, la NAS, Android). Siempre armarlas con estas funciones.
 
 export const containerHref = (id: string) => `/inventario/ver?id=${encodeURIComponent(id)}`;
+export const cameraHref = (id?: string) => `/inventario/camara${id ? `?id=${encodeURIComponent(id)}` : ""}`;
 export const recipeHref = (id: string) => `/recetas/ver?id=${encodeURIComponent(id)}`;
 export const projectHref = (id: string) => `/proyectos/ver?id=${encodeURIComponent(id)}`;
 /** Destino de un QR leído en la app. (Las etiquetas impresas usan `/c/<código>`: ver `not-found.tsx`.) */
@@ -67,7 +69,7 @@ export function legacyRedirect(pathname: string): string | null {
   const qr = pathname.match(/^\/c\/([^/]+)\/?$/);
   if (qr) return qrHref(decodeURIComponent(qr[1]));
   const container = pathname.match(/^\/inventario\/([^/]+)\/?$/);
-  if (container && container[1] !== "ver" && container[1] !== "escanear") return containerHref(decodeURIComponent(container[1]));
+  if (container && !["ver", "escanear", "camara"].includes(container[1])) return containerHref(decodeURIComponent(container[1]));
   if (pathname === "/alacena" || pathname === "/taller") return "/inventario";
   return null;
 }
