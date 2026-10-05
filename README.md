@@ -264,3 +264,8 @@ un certificado temporal generado con OpenSSL y JWT firmados con claves efímeras
 El gateway y el navegador son reales; los datos del backend son sintéticos. En
 Windows se usa OpenSSL de Git for Windows; `OPENSSL_BINARY` permite indicar otra
 instalación. Estas pruebas no sustituyen la validación de OTP/MFA en Cloudflare.
+
+
+## Casas de ejemplo
+
+Con `npm run dev`, abrir **Explorar casa demo** o **Abrir mi casa de pruebas** desde la bienvenida o Ajustes > Datos. Ambas vienen pobladas y conservan cambios por separado; **Volver a mi casa** recupera la casa habitual. No hace falta otra app, cuenta ni servidor. [Datos, aislamiento y publicación opcional](docs/DEMO.md).

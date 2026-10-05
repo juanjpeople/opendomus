@@ -1,5 +1,7 @@
 "use client";
 
+import { DEMO_ENABLED } from "@/lib/demo";
+import { DemoNotice } from "@/features/demo/DemoNotice";
 import { Alert, Button, ConfigProvider, Drawer, Flex, Grid, Layout, Tooltip, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
@@ -51,9 +53,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const firstVisit = hydrated && mode === "unset" && !isPublic;
 
   useEffect(() => {
-    if (firstVisit) router.replace("/bienvenida");
+    if (firstVisit) router.replace(DEMO_ENABLED ? "/empezar" : "/bienvenida");
   }, [firstVisit, router]);
 
+  if (isPublic && pathname === "/bienvenida") return children;
+  if (!hydrated) return null;
   if (isPublic) return children;
   if (firstVisit) return null;
 
@@ -97,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
       <MembersBridge />
-      {user.role === "kid" ? <KidsLayout>{children}</KidsLayout> : <DefaultLayout>{children}</DefaultLayout>}
+      {user.role === "kid" ? <KidsLayout><DemoNotice />{children}</KidsLayout> : <DefaultLayout><DemoNotice />{children}</DefaultLayout>}
     </>
   );
 }

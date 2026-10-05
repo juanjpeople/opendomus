@@ -1,4 +1,5 @@
 "use client";
+import { DemoLauncher } from "@/features/demo/DemoLauncher";
 
 import { Button, Col, Flex, Grid, Row, Tag, Typography, theme } from "antd";
 import {
@@ -32,6 +33,7 @@ export function Landing() {
     <div style={{ background: token.colorBgLayout, color: token.colorText, minHeight: "100vh" }}>
       <LandingHeader />
       <Hero />
+      <Container><DemoLauncher /></Container>
       <ProjectIntroduction />
       <AccountLinks />
       <ValuesSection />

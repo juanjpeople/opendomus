@@ -1,5 +1,7 @@
 "use client";
+import { DemoLauncher } from "@/features/demo/DemoLauncher";
 
+import { DEMO_ENABLED, SAMPLE_HOUSE } from "@/lib/demo";
 import { Button, Col, Flex, Row, Tag, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, HardDrive, House, ShieldCheck, UserPlus, type LucideIcon } from "lucide-react";
@@ -51,6 +53,17 @@ export function Onboarding() {
     router.push("/");
   }
 
+  if (DEMO_ENABLED) return (
+    <PublicLayout>
+      <Flex vertical align="center" gap={20} style={{ maxWidth: 650, margin: "40px auto", textAlign: "center" }}>
+        <IconTile icon={House} color="blue" size={64} />
+        <Typography.Title>{t("demo.title")}</Typography.Title>
+        <Typography.Paragraph type="secondary">{t("demo.description")}</Typography.Paragraph>
+        <Button type="primary" size="large" onClick={() => choose(CHOICES[2])}>{t(SAMPLE_HOUSE === "tests" ? "demo.testsEnter" : "demo.enter")}</Button>
+      </Flex>
+    </PublicLayout>
+  );
+
   return (
     <PublicLayout>
 
@@ -63,6 +76,7 @@ export function Onboarding() {
           </Typography.Paragraph>
         </Reveal>
 
+        <DemoLauncher />
         <AccountLinks />
         <Row gutter={[20, 20]} align="stretch">
           {CHOICES.map((choice, index) => (

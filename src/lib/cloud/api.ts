@@ -2,13 +2,14 @@
  * Cliente de la API de la nube. En producción la API vive en el mismo origen que la app
  * (`/api/*`); en desarrollo, `NEXT_PUBLIC_API_URL` apunta al Worker local.
  */
+import { DEMO_ENABLED } from "@/lib/demo";
 import { AppError } from "@/lib/errors";
 import type { MessageKey } from "@/i18n/translate";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 /** La nube se puede usar (en producción se habilita cuando esté la sincronización). */
-export const CLOUD_ENABLED = process.env.NEXT_PUBLIC_CLOUD === "1";
+export const CLOUD_ENABLED = !DEMO_ENABLED && process.env.NEXT_PUBLIC_CLOUD === "1";
 
 /** Errores de la API con su código y un texto traducible. */
 export class CloudError extends AppError {
@@ -46,6 +47,7 @@ const CLOUD_ERRORS: Record<string, MessageKey> = {
 
 /** Bytes (fotos cifradas): subir con PUT o bajar con GET. Los errores son los mismos que `api`. */
 export async function apiBytes(method: "GET" | "PUT", path: string, body?: Uint8Array<ArrayBuffer>): Promise<Uint8Array> {
+  if (DEMO_ENABLED) throw new CloudError("offline", 0);
   let response: Response;
   try {
     response = await fetch(`${API_URL}/api${path}`, {
@@ -65,6 +67,7 @@ export async function apiBytes(method: "GET" | "PUT", path: string, body?: Uint8
 }
 
 export async function api<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<T> {
+  if (DEMO_ENABLED) throw new CloudError("offline", 0);
   let response: Response;
   try {
     response = await fetch(`${API_URL}/api${path}`, {

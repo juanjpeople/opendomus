@@ -1,5 +1,7 @@
 "use client";
 
+import { houseStorageKey } from "@/lib/demo";
+
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { isSecured, type Member } from "@/features/members/domain";
@@ -45,7 +47,7 @@ export const useSessionStore = create<SessionState>()(
         set({ currentProfileId: null });
       },
     }),
-    { name: "opendomus-session", version: 1 },
+    { name: houseStorageKey("opendomus-session"), version: 1 },
   ),
 );
 
@@ -68,7 +70,7 @@ export const useLockStore = create<LockState>()(
       lock: () => set({ unlockedProfileId: null }),
       touch: () => set({ lastActivity: Date.now() }),
     }),
-    { name: "opendomus-lock", version: 1, storage: createJSONStorage(() => sessionStorage) },
+    { name: houseStorageKey("opendomus-lock"), version: 1, storage: createJSONStorage(() => sessionStorage) },
   ),
 );
 

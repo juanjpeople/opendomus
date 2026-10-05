@@ -1,0 +1,10 @@
+// Solo archivos públicos de demostración. Sin API, D1, secretos ni service bindings.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "opendomus-demo",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": { "directory": "./demo-dist", "not_found_handling": "404-page" },
+  "observability": { "enabled": false }
+}

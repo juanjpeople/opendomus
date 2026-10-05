@@ -6,6 +6,25 @@
  * - Plurales: un objeto `{ one, other }` se elige con `Intl.PluralRules` según `count`.
  */
 export const es = {
+  demo: {
+    add: "Cargar más ejemplos",
+    addError: "No se pudieron agregar los ejemplos.",
+    testsEnter: "Entrar a mi casa de pruebas",
+    choose: "Explorá una casa completa o guardá tus propias pruebas. Cada casa conserva sus cambios por separado en este navegador.",
+    tests: "Abrir mi casa de pruebas",
+    home: "Volver a mi casa",
+    testsNotice: "Casa de pruebas · datos ficticios",
+
+    "title": "Una casa llena, lista para explorar",
+    "description": "Entrá sin cuenta ni contraseña. Hay productos, herramientas, compras, proyectos, recetas y perfiles ficticios. Cada visitante tiene su propia copia; tus cambios quedan en este navegador.",
+    "enter": "Explorar casa demo",
+    "notice": "Casa demo · datos ficticios",
+    "scope": "Tu copia es independiente. No se envían cambios a otros visitantes. La nube, las invitaciones y el login social no están habilitados acá.",
+    "reset": "Restablecer demo",
+    "resetTitle": "¿Restablecer tu copia de la demo?",
+    "resetText": "Se reemplazarán los cambios de esta demo por los ejemplos iniciales. No afecta a otros visitantes.",
+    "resetError": "No se pudo restablecer la demo. Tus datos no se reemplazaron."
+},
   projectStats: {
     title: "Un proyecto abierto, con cifras claras",
     description: "Compartimos datos públicos de GitHub para mostrar cómo crece el proyecto. Son una foto de la fecha indicada, no un contador en tiempo real.",

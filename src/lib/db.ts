@@ -1,3 +1,4 @@
+import { DEMO_ENABLED, HOUSE_DB } from "@/lib/demo";
 import Dexie, { type EntityTable, type Transaction } from "dexie";
 import type { ActivityEntry } from "@/features/activity/domain";
 import type { CalendarEvent } from "@/features/calendar/domain";
@@ -24,7 +25,7 @@ import { CONTAINER_BACKFILL } from "@/lib/sync/upgrades";
  * con el esquema nuevo y, si hace falta, un `.upgrade()` que migre los datos.
  */
 
-export const db = new Dexie("OpenDomusDB") as Dexie & {
+export const db = new Dexie(HOUSE_DB) as Dexie & {
   inventory: EntityTable<InventoryItem, "id">;
   /** Ítems de todas las listas (el nombre de la tabla es histórico: cada ítem tiene su `listId`). */
   shoppingList: EntityTable<ShoppingListItem, "id">;
@@ -206,6 +207,11 @@ db.use(syncMiddleware);
 
 /** Casa nueva: arranca con lugares de ejemplo (Cocina con Heladera y Alacena, Taller) y los perfiles base. */
 db.on("populate", async (tx) => {
+  if (DEMO_ENABLED) {
+    const { populateDemo } = await Dexie.waitFor(import("@/features/demo/seed"));
+    await populateDemo(tx);
+    return;
+  }
   await seedStorage(tx);
   await seedMembers(tx);
   await seedLists(tx);
