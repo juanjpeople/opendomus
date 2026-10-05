@@ -123,14 +123,13 @@ Hoy se puede abrir la dirección HTTPS de la aplicación en Chrome e instalarla 
 el menú del navegador. Reutiliza interfaz, lógica y almacenamiento local. Probá cámara,
 QR, uso offline, exportación y actualización en el teléfono que vas a usar.
 
-Un APK con [Capacitor](https://capacitorjs.com/docs/getting-started) es una próxima etapa:
-usar `out` como `webDir`, crear el proyecto Android, sincronizar el build y compilarlo
-en Android Studio. El [entorno de Capacitor 8](https://capacitorjs.com/docs/getting-started/environment-setup)
-requiere Node 22+ y Android Studio 2025.2.1 o posterior. Solo las integraciones nativas
-(cámara, compartir archivos, enlaces, ciclo de vida) deberían agregar código específico.
-Antes de distribuir un APK faltan pruebas en WebView, permisos mínimos, manejo del
-service worker, migración de datos y firma de releases. Los datos de la PWA no pasan
-automáticamente al almacenamiento de una app nativa.
+La base APK experimental con [Capacitor](https://capacitorjs.com/docs/getting-started)
+ya empaqueta `out` y reutiliza las mismas pantallas y servicios. `npm run android:sync`
+genera el build local y lo copia al proyecto Android; `npm run android:open` lo abre en
+Android Studio. Consultá [requisitos, respaldos y límites](ANDROID.md).
+El APK inicial funciona sin servidor: la integración cloud nativa sigue pendiente.
+Antes de distribuirlo faltan completar las pruebas en WebView/dispositivo y la firma
+de releases. Los datos de la PWA no pasan automáticamente al almacenamiento nativo.
 
 ## Compartir información y proyectos
 

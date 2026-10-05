@@ -1,0 +1,68 @@
+name: Android
+
+on:
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'package*.json'
+      - 'capacitor.config.ts'
+      - 'next.config.ts'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: APK local de prueba
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - run: npm run android:build
+      - name: Compilar y revisar Android
+        working-directory: android
+        run: bash gradlew --no-daemon :app:lintDebug :app:testDebugUnitTest
+      - name: Habilitar KVM en el runner efímero
+        run: sudo chmod 666 /dev/kvm
+      - name: Recorridos nativos sin red
+        uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated -camera-front none
+          script: |
+            adb shell svc wifi disable
+            adb shell svc data disable
+            bash scripts/test-android.sh
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: android-test-reports
+          path: |
+            android/app/build/reports
+            android/app/build/outputs/androidTest-results
+          retention-days: 7
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-debug-no-production
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7

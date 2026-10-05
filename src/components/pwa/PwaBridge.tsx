@@ -4,6 +4,7 @@ import { Button, Flex, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
 import { RefreshCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { useT } from "@/i18n";
 import { SPRING } from "@/lib/motion";
 import { usePwaStore, type InstallPromptEvent } from "@/store/usePwaStore";
@@ -37,7 +38,8 @@ export function PwaBridge() {
   }, [set]);
 
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
+    // El APK actualiza sus assets como una unidad; una caché PWA podría mezclar versiones.
+    if (Capacitor.isNativePlatform() || !("serviceWorker" in navigator)) return;
     // En desarrollo no hay service worker: cachearía archivos que cambian a cada rato.
     if (process.env.NODE_ENV !== "production") {
       navigator.serviceWorker.getRegistrations().then((registrations) => registrations.forEach((registration) => registration.unregister()));

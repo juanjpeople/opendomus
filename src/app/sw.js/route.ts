@@ -16,7 +16,7 @@ export const dynamic = "force-static";
 
 const VERSION = `${process.env.NEXT_PUBLIC_APP_VERSION ?? "dev"}-${Date.now().toString(36)}`;
 // Todas las páginas del registro, más el destino de los QR (que no está en el menú).
-const PAGES = ["/", "/c", ...APP_ROUTES.filter((route) => route.href !== "/").map((route) => route.href)];
+const PAGES = ["/", "/c", "/third-party-notices.txt", ...APP_ROUTES.filter((route) => route.href !== "/").map((route) => route.href)];
 
 /** Lo que se muestra al abrir sin conexión una página que nunca se guardó. */
 const OFFLINE_HTML = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sin conexión · OpenDomus</title>

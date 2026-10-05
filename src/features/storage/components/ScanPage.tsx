@@ -4,39 +4,18 @@ import { Alert, Button, Card, Flex, Input, Space, Typography, theme } from "antd
 import { motion } from "framer-motion";
 import { Camera, CameraOff, ScanLine } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
 import { PageHeader } from "@/components/ui";
+import { useHydrated } from "@/hooks/useHydrated";
 import { useT } from "@/i18n";
 import { isValidContainerCode, normalizeContainerCode, STORAGE_LIMITS } from "../domain";
+import { codeFromScan } from "../scan";
+import { createQrDetector } from "../qr-reader";
 import { qrHref } from "@/lib/navigation/routes";
 
-/** API nativa de lectura de códigos (Chromium/Android). No está en los tipos de TypeScript. */
-interface BarcodeDetectorLike {
-  detect(source: HTMLVideoElement): Promise<{ rawValue: string }[]>;
-}
-type BarcodeDetectorCtor = new (options: { formats: string[] }) => BarcodeDetectorLike;
-
-function getDetector(): BarcodeDetectorCtor | undefined {
-  return typeof window !== "undefined" ? (window as Window & { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector : undefined;
-}
-
-/** Extrae el código de un QR de OpenDomus (URL `/c/<código>`, `/c?code=<código>` o el código solo). */
-export function codeFromScan(raw: string): string | null {
-  const candidate = (() => {
-    try {
-      const url = new URL(raw);
-      return url.pathname.match(/\/c\/([^/]+)\/?$/)?.[1] ?? (url.pathname.replace(/\/$/, "") === "/c" ? (url.searchParams.get("code") ?? "") : "");
-    } catch {
-      return raw;
-    }
-  })();
-  const code = normalizeContainerCode(decodeURIComponent(candidate));
-  return isValidContainerCode(code) ? code : null;
-}
-
-type Status = "idle" | "scanning" | "denied" | "invalid";
+type Status = "idle" | "starting" | "scanning" | "denied" | "invalid" | "failed";
 
 export function ScanPage() {
   const t = useT();
@@ -46,30 +25,57 @@ export function ScanPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [manual, setManual] = useState("");
-  const supported = !!getDetector() && !!navigator.mediaDevices?.getUserMedia;
+  const hydrated = useHydrated();
+  const supported = hydrated && !!navigator.mediaDevices?.getUserMedia;
 
-  function stop() {
+  const generationRef = useRef(0);
+  const pendingRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const release = useCallback(() => {
+    generationRef.current++;
+    pendingRef.current = false;
+    if (timerRef.current !== null) clearTimeout(timerRef.current);
+    timerRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
-    setStatus((current) => (current === "scanning" ? "idle" : current));
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
+
+  function stop() {
+    release();
+    setStatus("idle");
   }
 
   async function start() {
-    const Detector = getDetector();
-    if (!Detector) return;
+    if (!supported || pendingRef.current || streamRef.current) return;
+    const generation = ++generationRef.current;
+    const active = () => generation === generationRef.current;
+    pendingRef.current = true;
+    setStatus("starting");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      // El permiso puede resolverse después de cancelar o desmontar la pantalla.
+      if (!active()) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
-      setStatus("scanning");
-      const video = videoRef.current!;
+      const video = videoRef.current;
+      if (!video) { stop(); return; }
       video.srcObject = stream;
       await video.play();
-
-      const detector = new Detector({ formats: ["qr_code"] });
-      // Unas 4 lecturas por segundo: suficiente para que se sienta instantáneo sin gastar batería.
+      if (!active()) return;
+      pendingRef.current = false;
+      setStatus("scanning");
+      const detector = createQrDetector();
       const tick = async () => {
-        if (!streamRef.current) return;
-        const [result] = await detector.detect(video).catch(() => []);
+        if (!active()) return;
+        let result: { rawValue: string } | undefined;
+        try { [result] = await detector.detect(video); } catch {
+          if (active()) { release(); setStatus("failed"); }
+          return;
+        }
+        if (!active()) return;
         if (result) {
           const code = codeFromScan(result.rawValue);
           if (code) {
@@ -79,27 +85,29 @@ export function ScanPage() {
           }
           setStatus("invalid");
         }
-        setTimeout(tick, 250);
+        timerRef.current = setTimeout(tick, 250);
       };
-      tick();
-    } catch {
-      setStatus("denied");
+      void tick();
+    } catch (error) {
+      if (!active()) return;
+      release();
+      setStatus(error instanceof DOMException && ["NotAllowedError", "SecurityError"].includes(error.name) ? "denied" : "failed");
     }
   }
 
-  // Al salir de la página, se libera la cámara.
-  useEffect(() => () => streamRef.current?.getTracks().forEach((track) => track.stop()), []);
+  useEffect(() => release, [release]);
 
   const manualCode = normalizeContainerCode(manual);
   const openManual = () => isValidContainerCode(manualCode) && router.push(qrHref(manualCode));
-  const scanning = status === "scanning" || status === "invalid";
+  const scanning = status === "starting" || status === "scanning" || status === "invalid";
 
   return (
     <RequirePermission perform="inventory.view">
       <PageHeader eyebrow={t("storage.eyebrow")} title={t("scan.title")} description={t("scan.description")} />
       <Reveal delay={0.1}>
         <Card style={{ maxWidth: 560 }}>
-          {!supported && <Alert type="info" showIcon title={t("scan.unsupported")} style={{ marginBottom: 16 }} />}
+          {hydrated && !supported && <Alert type="info" showIcon title={t("scan.unsupported")} style={{ marginBottom: 16 }} />}
+          {status === "failed" && <Alert type="error" showIcon title={t("scan.failed")} style={{ marginBottom: 16 }} />}
           {status === "denied" && <Alert type="error" showIcon title={t("scan.denied")} style={{ marginBottom: 16 }} />}
           {status === "invalid" && <Alert type="warning" showIcon title={t("scan.invalid")} style={{ marginBottom: 16 }} />}
 

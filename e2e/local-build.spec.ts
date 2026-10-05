@@ -1,5 +1,47 @@
 import { expect, test } from "@playwright/test";
 
+test("las cabeceras conservan la marca y los controles a 320 px", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  const waitForDrawing = () => expect.poll(() => page.locator('svg path[pathLength="1"]').evaluateAll((paths) =>
+    paths.every((path) => parseFloat(getComputedStyle(path).strokeDasharray) >= 0.99),
+  )).toBe(true);
+  const checkBrand = async () => {
+    const brand = page.getByText("OpenDomus", { exact: true }).first();
+    await expect(brand).toBeVisible();
+    const bounds = await brand.evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const lines = range.getClientRects();
+      const rect = element.getBoundingClientRect();
+      return { lines: lines.length, left: rect.left, right: rect.right, width: innerWidth };
+    });
+    expect(bounds.lines).toBe(1);
+    expect(bounds.left).toBeGreaterThanOrEqual(0);
+    expect(bounds.right).toBeLessThanOrEqual(bounds.width);
+    await expect(page.getByText("EN", { exact: true }).first()).toBeVisible();
+  };
+  for (const route of ["bienvenida", "empezar"]) {
+    await page.goto(`/${route}`);
+    await checkBrand();
+    await waitForDrawing();
+    await page.screenshot({ path: testInfo.outputPath(`${route}-320.png`), animations: "disabled" });
+  }
+  await page.getByRole("button", { name: "Empezar acá" }).click();
+  const profile = page.getByText("Administrador", { exact: true }).first();
+  await expect(profile).toBeVisible();
+  await expect.poll(() => profile.evaluate((element) => {
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      if (Number(getComputedStyle(node).opacity) < 0.99) return false;
+    }
+    return true;
+  })).toBe(true);
+  await checkBrand();
+  await waitForDrawing();
+  await page.screenshot({ path: testInfo.outputPath("profiles-320.png"), animations: "disabled" });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.screenshot({ path: testInfo.outputPath("profiles-320-dark.png"), animations: "disabled" });
+});
+
 test("la distribución local funciona sin API ni formularios cloud", async ({ page, request }) => {
   const info = await request.get("/build-info.json");
   expect((await info.json()).localOnly).toBe(true);

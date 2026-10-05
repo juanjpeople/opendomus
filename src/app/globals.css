@@ -31,6 +31,13 @@ body {
   overflow-x: hidden;
 }
 
+/* El selector deja lugar para la cabecera cuando sus controles pasan a otra fila. */
+@media (max-width: 420px) {
+  .od-profile-picker {
+    padding-top: 112px !important;
+  }
+}
+
 /* <Can fallback="disable">: el wrapper recibe el hover del tooltip, el hijo no recibe clics. */
 .od-can-disabled {
   display: inline-block;

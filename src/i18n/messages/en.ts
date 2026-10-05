@@ -590,6 +590,7 @@ export const en: Messages = {
     preview: "Preview",
   },
   scan: {
+    failed: "We could not read the camera. Try again or enter the label code.",
     title: "Scan QR",
     description: "Point at a container's label to see what's inside.",
     start: "Turn on camera",
@@ -604,7 +605,7 @@ export const en: Messages = {
   qr: {
     resolving: "Looking for the container…",
     notFoundTitle: "This container isn't on this device",
-    notFoundText: "Label {code} was created on another device. Once sync exists, it will open from any device in the house. For now, scan it from the device where you created it.",
+    notFoundText: "Label {code} was not found in the available data. Check the code and selected house. If you use cloud sync, check synchronization on this device.",
     back: "Go to inventory",
   },
   prices: {

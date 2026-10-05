@@ -14,7 +14,7 @@ import { useContainerByCode } from "../hooks";
 
 /**
  * Destino del QR de una etiqueta. Si el contenedor existe en este dispositivo, redirige a su página;
- * si no, explica por qué (los datos todavía no se sincronizan entre dispositivos).
+ * si no, informa que no está disponible entre los datos locales.
  */
 export function QrResolver() {
   const t = useT();

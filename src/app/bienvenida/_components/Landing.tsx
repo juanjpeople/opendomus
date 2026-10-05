@@ -106,14 +106,14 @@ function LandingHeader() {
       }}
     >
       <Container>
-        <Flex align="center" justify="space-between" gap={16} style={{ height: 64 }}>
-          <Flex align="center" gap={10}>
+        <Flex wrap align="center" justify="space-between" gap={12} style={{ minHeight: 64, paddingBlock: 12 }}>
+          <Flex align="center" gap={10} style={{ flexShrink: 0 }}>
             <HouseMark size={26} />
-            <Typography.Text strong style={{ fontSize: token.fontSizeXL, color: token.colorPrimary, letterSpacing: "-0.02em" }}>
+            <Typography.Text strong style={{ fontSize: token.fontSizeXL, color: token.colorPrimary, letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>
               {t("common.appName")}
             </Typography.Text>
           </Flex>
-          <Flex align="center" gap={12}>
+          <Flex align="center" gap={12} style={{ flexShrink: 0, marginInlineStart: "auto" }}>
             <LanguageSwitch />
             {screens.sm && <ThemeModeSwitch />}
             <EnterButton />

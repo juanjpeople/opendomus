@@ -595,6 +595,7 @@ export const es = {
     preview: "Vista previa",
   },
   scan: {
+    failed: "No pudimos leer la cámara. Intentá de nuevo o escribí el código de la etiqueta.",
     title: "Escanear QR",
     description: "Apuntá a la etiqueta de un contenedor para ver qué hay adentro.",
     start: "Activar cámara",
@@ -609,7 +610,7 @@ export const es = {
   qr: {
     resolving: "Buscando el contenedor…",
     notFoundTitle: "Este contenedor no está en este dispositivo",
-    notFoundText: "La etiqueta {code} se creó en otro dispositivo. Cuando exista la sincronización, se va a abrir desde cualquiera de la casa. Por ahora, escaneala desde el dispositivo donde la creaste.",
+    notFoundText: "No encontramos la etiqueta {code} en los datos disponibles. Verificá el código y la casa seleccionada. Si usás la nube, revisá la sincronización de este dispositivo.",
     back: "Ir al inventario",
   },
   prices: {

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same geometry and colors as src/lib/pwa/icon.tsx; inset for adaptive icon masks. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <group android:pivotX="12" android:pivotY="12" android:scaleX="0.65" android:scaleY="0.65">
+        <path android:pathData="M5,10.5 L5,20 L19,20 L19,10.5 M3,11.5 L12,4 L21,11.5"
+            android:strokeColor="#FFFFFF" android:strokeWidth="2"
+            android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <path android:fillColor="#FFC53D"
+            android:pathData="M11,13.5 L13,13.5 Q14,13.5 14,14.5 L14,16.5 Q14,17.5 13,17.5 L11,17.5 Q10,17.5 10,16.5 L10,14.5 Q10,13.5 11,13.5 Z" />
+    </group>
+</vector>
