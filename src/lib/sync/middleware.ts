@@ -1,3 +1,4 @@
+import { DEMO_ENABLED, houseStorageKey } from "@/lib/demo";
 /**
  * Registro de cambios locales, sin tocar los servicios: un middleware de Dexie ve cada escritura
  * (agregar, editar, borrar) de las tablas que se sincronizan y, en la MISMA transacción, anota
@@ -18,9 +19,10 @@ export interface SyncLink {
   deviceId: string;
 }
 
-const LINK_KEY = "opendomus-sync-link";
+const LINK_KEY = houseStorageKey("opendomus-sync-link");
 
 function readLink(): SyncLink | null {
+  if (DEMO_ENABLED) return null;
   try {
     const raw = typeof localStorage === "undefined" ? null : localStorage.getItem(LINK_KEY);
     const parsed = raw ? (JSON.parse(raw) as Partial<SyncLink>) : null;
@@ -44,6 +46,7 @@ export function getSyncLink(): SyncLink | null {
 }
 
 export function setSyncLink(next: SyncLink | null) {
+  if (DEMO_ENABLED) return;
   link = next;
   try {
     if (next) localStorage.setItem(LINK_KEY, JSON.stringify(next));

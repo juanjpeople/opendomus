@@ -1,5 +1,7 @@
 "use client";
 
+import { houseStorageKey } from "@/lib/demo";
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -36,7 +38,7 @@ export const useNavigationStore = create<NavigationState>()(
           return { recent };
         }),
     }),
-    { name: "opendomus-navigation", version: 1 },
+    { name: houseStorageKey("opendomus-navigation"), version: 1 },
   ),
 );
 

@@ -1,6 +1,25 @@
 import type { Messages } from "./es";
 
 export const en: Messages = {
+  demo: {
+    add: "Add more examples",
+    addError: "Could not add the examples.",
+    testsEnter: "Enter my test house",
+    choose: "Explore a full house or keep your own experiments. Each house saves its changes separately in this browser.",
+    tests: "Open my test house",
+    home: "Back to my home",
+    testsNotice: "Test house · fictional data",
+
+    "title": "A full home, ready to explore",
+    "description": "Enter without an account or password. Explore fictional products, tools, shopping lists, projects, recipes and profiles. Every visitor gets their own copy; your changes stay in this browser.",
+    "enter": "Explore demo home",
+    "notice": "Demo home · fictional data",
+    "scope": "Your copy is independent. Changes are not sent to other visitors. Cloud sync, invitations and social login are not enabled here.",
+    "reset": "Reset demo",
+    "resetTitle": "Reset your copy of the demo?",
+    "resetText": "Changes in this demo will be replaced by the initial examples. Other visitors are not affected.",
+    "resetError": "Could not reset the demo. Your data was not replaced."
+},
   projectStats: {
     title: "An open project, with transparent numbers",
     description: "We share public GitHub data to show how the project grows. These numbers are a snapshot from the date shown, not a live counter.",

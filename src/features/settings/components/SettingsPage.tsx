@@ -1,4 +1,5 @@
 "use client";
+import { DemoLauncher } from "@/features/demo/DemoLauncher";
 
 import { Anchor, Button, Card, Col, ColorPicker, Flex, Grid, Row, Segmented, Slider, Typography, theme } from "antd";
 import { motion } from "framer-motion";
@@ -55,7 +56,7 @@ export function SettingsPage() {
     navigation: <NavigationSettings />,
     shortcuts: <ShortcutsSettings />,
     account: <AccountSettings />,
-    data: <DataSettings />,
+    data: <><DemoLauncher /><DataSettings /></>,
     about: <AboutSettings />,
   };
 

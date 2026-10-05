@@ -11,6 +11,7 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "operator-dist/**",
+    "demo-dist/**",
     "dist/**",
     "build/**",
     "android/app/src/main/assets/**",
