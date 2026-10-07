@@ -55,7 +55,7 @@ export function FormsSection() {
               name="name"
               label="Nombre"
               rules={[
-                { required: true, whitespace: true, message: "Ingresá un nombre" },
+                { required: true, whitespace: true, message: "Ingresá un nombre." },
                 { max: INVENTORY_LIMITS.nameMaxLength },
               ]}
             >

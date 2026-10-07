@@ -1,12 +1,12 @@
 "use client";
 
-import { Alert, Button, Card, Flex, Input, Segmented, Skeleton, Tag, Typography, theme } from "antd";
-import { CircleCheck, Link2, MailOpen, ShieldCheck, TriangleAlert } from "lucide-react";
+import { Button, Flex, Grid, Input, Segmented, Skeleton, Tag, Typography, theme } from "antd";
+import { Link2, MailOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { Reveal } from "@/components/motion";
-import { IconTile } from "@/components/ui";
+import { Callout, PanelHeader, ResultState, StepFlow, TrustNote } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getErrorMessage } from "@/lib/errors";
@@ -37,6 +37,7 @@ type View =
  * llega al servidor (ni a sus logs); con él se descifra, acá, a qué casa te invitan.
  */
 export function JoinPage() {
+  const screens = Grid.useBreakpoint();
   const { t, format } = useI18n();
   const { token } = theme.useToken();
   const router = useRouter();
@@ -102,27 +103,20 @@ export function JoinPage() {
   const roleLabel = (role: InvitePreview["role"]) => t(`roles.${role}`);
 
   return (
-    <PublicLayout width={520}>
+    <PublicLayout width={820}>
       <Reveal>
-        <Card styles={{ body: { padding: "clamp(20px, 5vw, 32px)" } }}>
+        <StepFlow screenKey={hydrated ? view.kind : "loading"}>
           <CryptoSupportGate>
             {(!hydrated || view.kind === "loading") && <Skeleton active />}
 
             {hydrated && view.kind === "paste" && (
               <Flex vertical gap={16}>
-                <Flex align="center" gap={14}>
-                  <IconTile icon={MailOpen} color="green" size={52} />
-                  <div>
-                    <Typography.Title level={3} style={{ margin: 0 }}>
-                      {t("cloud.join.pasteTitle")}
-                    </Typography.Title>
-                    <Typography.Text type="secondary">{t("cloud.join.pasteText")}</Typography.Text>
-                  </div>
-                </Flex>
+                <PanelHeader icon={MailOpen} color="green" title={t("cloud.join.pasteTitle")} description={t("cloud.join.pasteText")} />
                 <Input
                   size="large"
                   prefix={<Link2 style={{ color: token.colorTextTertiary }} />}
                   placeholder="https://…/unirme#…"
+                  aria-label={t("cloud.join.pasteTitle")}
                   value={pasted}
                   onChange={(event) => setPasted(event.target.value)}
                 />
@@ -134,7 +128,7 @@ export function JoinPage() {
 
             {view.kind === "error" && (
               <Flex vertical gap={16}>
-                <Alert type="error" showIcon icon={<TriangleAlert />} title={t("cloud.join.errorTitle")} description={view.message} />
+                <Callout tone="danger" role="alert" title={t("cloud.join.errorTitle")}>{view.message}</Callout>
                 <Button
                   onClick={() => {
                     setLink(null);
@@ -158,7 +152,7 @@ export function JoinPage() {
                     <Tag>{t("cloud.join.expires", { date: format.date(view.preview.expiresAt, { day: "numeric", month: "long" }) })}</Tag>
                   </Flex>
                 </div>
-                {replacesLocal && <Alert type="warning" showIcon title={t("cloud.transfer.replaceTitle")} description={t("cloud.transfer.replaceText", { name: view.preview.householdName })} />}
+                {replacesLocal && <Callout tone="warning" title={t("cloud.transfer.replaceTitle")}>{t("cloud.transfer.replaceText", { name: view.preview.householdName })}</Callout>}
                 {status === "ready" && session ? (
                   <>
                     <Typography.Text type="secondary" style={{ textAlign: "center" }}>
@@ -173,6 +167,7 @@ export function JoinPage() {
                 ) : (
                   <>
                     <Segmented<"create" | "signin">
+                      vertical={!screens.sm}
                       block
                       value={mode}
                       onChange={setMode}
@@ -205,28 +200,16 @@ export function JoinPage() {
             )}
 
             {view.kind === "joined" && (
-              <Flex vertical align="center" gap={16} style={{ textAlign: "center" }}>
-                <IconTile icon={CircleCheck} color="green" size={64} />
-                <Typography.Title level={3} style={{ margin: 0 }}>
-                  {t("cloud.join.joinedTitle", { name: view.preview.householdName })}
-                </Typography.Title>
-                <Typography.Text type="secondary">{t("cloud.join.joinedText")}</Typography.Text>
+              <ResultState title={t("cloud.join.joinedTitle", { name: view.preview.householdName })} description={t("cloud.join.joinedText")}>
                 <InstallAppCard />
                 <Button type="primary" size="large" onClick={() => router.push("/")}>
                   {t("cloud.join.go")}
                 </Button>
-              </Flex>
+              </ResultState>
             )}
           </CryptoSupportGate>
-        </Card>
-        <Flex align="center" gap={8} justify="center" style={{ marginTop: 16 }}>
-          <span style={{ display: "inline-flex", color: token.colorSuccess }}>
-            <ShieldCheck />
-          </span>
-          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-            {t("cloud.join.private")}
-          </Typography.Text>
-        </Flex>
+        </StepFlow>
+        <div style={{ marginTop: token.margin }}><TrustNote>{t("cloud.join.private")}</TrustNote></div>
       </Reveal>
     </PublicLayout>
   );

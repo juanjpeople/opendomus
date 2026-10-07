@@ -1,5 +1,7 @@
 "use client";
 
+import { formatQuantity, formatUnit } from "@/features/inventory/format";
+
 import { App, Button, Card, Col, Flex, Grid, Row, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChefHat, CircleAlert, CircleCheck, CircleDashed, Clock, ListPlus, Pencil, SearchX, Trash2, TriangleAlert, Users } from "lucide-react";
@@ -12,7 +14,7 @@ import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { EmptyState, QuantityStepper } from "@/components/ui";
 import { CommentsPanel } from "@/features/comments/components/CommentsPanel";
 import { useComments } from "@/features/comments/hooks";
-import { isUnit } from "@/features/inventory/domain";
+
 import { PhotoGallery } from "@/features/media/components/PhotoGallery";
 import { useI18n } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
@@ -219,8 +221,7 @@ export function IngredientRow({ check, last }: { check: IngredientCheck; last: b
   const { ingredient, needed, have, state } = check;
   const Icon = STATE_ICON[state];
   const color = { ok: token.colorSuccess, short: token.colorWarning, missing: token.colorError, unlinked: token.colorTextQuaternary }[state];
-  const unit = isUnit(ingredient.unit) ? t(`inventory.units.${ingredient.unit}`, { count: needed }) : ingredient.unit;
-  const haveUnit = isUnit(ingredient.unit) ? t(`inventory.units.${ingredient.unit}`, { count: have ?? 0 }) : ingredient.unit;
+  const haveUnit = formatUnit(t, have ?? 0, ingredient.unit);
 
   return (
     <StaggerItem>
@@ -243,7 +244,7 @@ export function IngredientRow({ check, last }: { check: IngredientCheck; last: b
           </Typography.Text>
         </Flex>
         <Typography.Text strong style={{ whiteSpace: "nowrap" }}>
-          {format.number(needed)} {unit}
+          {formatQuantity(t, needed, ingredient.unit, format.number)}
         </Typography.Text>
       </Flex>
     </StaggerItem>

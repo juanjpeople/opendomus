@@ -1,9 +1,10 @@
 "use client";
 
-import { Alert, Button, Flex, Form, Input, Progress, Typography, theme } from "antd";
-import { KeyRound, Lock, ShieldCheck } from "lucide-react";
+import { Button, Flex, Form, Input, Progress, Typography, theme } from "antd";
+import { KeyRound, Lock } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/i18n";
+import { Callout, TrustNote } from "@/components/ui";
 import { PASSWORD_MIN_LENGTH, passwordStrength } from "../domain";
 import { useCloudActions } from "../hooks";
 
@@ -49,7 +50,7 @@ export function AuthForm({ mode, onCreated, onSignedIn, defaultEmail, onForgot }
   return (
     <Form form={form} layout="vertical" requiredMark={false} onFinish={onFinish} initialValues={{ email: defaultEmail }} disabled={busy}>
       {mode === "create" && (
-        <Form.Item name="name" label={t("cloud.auth.name")} rules={[{ required: true, whitespace: true, message: t("cloud.auth.nameRequired") }, { max: 60 }]}>
+        <Form.Item name="name" label={t("cloud.auth.name")} rules={[{ required: true, whitespace: true, message: t("errors.validation.nameRequired") }, { max: 60 }]}>
           <Input size="large" autoComplete="name" placeholder={t("cloud.auth.namePlaceholder")} maxLength={60} />
         </Form.Item>
       )}
@@ -95,27 +96,13 @@ export function AuthForm({ mode, onCreated, onSignedIn, defaultEmail, onForgot }
           >
             <Input.Password size="large" autoComplete="new-password" prefix={<Lock style={{ color: token.colorTextTertiary }} />} />
           </Form.Item>
-          <Alert
-            type="info"
-            showIcon
-            icon={<KeyRound />}
-            style={{ marginBottom: 16 }}
-            title={t("cloud.auth.forgetTitle")}
-            description={t("cloud.auth.forgetText")}
-          />
+          <div style={{ marginBottom: token.margin }}><Callout tone="primary" icon={KeyRound} title={t("cloud.auth.forgetTitle")}>{t("cloud.auth.forgetText")}</Callout></div>
         </>
       )}
       <Button type="primary" size="large" htmlType="submit" block loading={busy}>
         {busy ? t("cloud.auth.working") : mode === "create" ? t("cloud.auth.create") : t("cloud.auth.signIn")}
       </Button>
-      <Flex align="center" gap={8} justify="center" style={{ marginTop: 14 }}>
-        <span style={{ display: "inline-flex", color: token.colorSuccess }}>
-          <ShieldCheck />
-        </span>
-        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-          {t("cloud.auth.e2ee")}
-        </Typography.Text>
-      </Flex>
+      <div style={{ marginTop: token.margin }}><TrustNote /></div>
     </Form>
   );
 }

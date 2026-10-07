@@ -1,13 +1,13 @@
 "use client";
 
-import { Alert, App, Button, Card, Flex, Form, Input, Segmented, Steps, Typography, theme } from "antd";
-import { CircleCheck, House, KeyRound, ShieldCheck, TriangleAlert } from "lucide-react";
+import { App, Button, Flex, Form, Grid, Input, Segmented, Typography } from "antd";
+import { House, KeyRound, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { Reveal } from "@/components/motion";
-import { IconTile } from "@/components/ui";
+import { Callout, IconTile, PanelHeader, ResultState, StepFlow, TrustNote } from "@/components/ui";
 import type { Member } from "@/features/members/domain";
 import { useT } from "@/i18n";
 import { getSyncLink } from "@/lib/sync/middleware";
@@ -36,6 +36,7 @@ type Step = "access" | "auth" | "kit" | "house" | "setup" | "upload" | "replace"
  * - Olvidé mi contraseña (`modo=recuperar`) → con el kit, contraseña nueva y kit nuevo.
  */
 export function AccountPage() {
+  const screens = Grid.useBreakpoint();
   const t = useT();
   const { message } = App.useApp();
   const router = useRouter();
@@ -114,12 +115,9 @@ export function AccountPage() {
   const current = Math.max(0, order.indexOf(step === "upload" || step === "setup" ? "house" : step));
 
   return (
-    <PublicLayout width={step === "setup" ? 820 : 520}>
+    <PublicLayout width={820}>
       <Reveal>
-        {steps.length > 0 && ["access", "auth", "kit", "house", "setup", "upload"].includes(step) && (
-          <Steps size="small" current={current} items={steps.map((title) => ({ title }))} style={{ marginBottom: 24 }} />
-        )}
-        <Card styles={{ body: { padding: "clamp(20px, 5vw, 32px)" } }}>
+        <StepFlow screenKey={step} current={current} steps={["access", "auth", "kit", "house", "setup", "upload"].includes(step) ? steps : []}>
           <CryptoSupportGate>
             {step === "access" && (
               <AccessCodeStep
@@ -131,15 +129,7 @@ export function AccountPage() {
             )}
             {step === "auth" && mode === "recover" && (
               <Flex vertical gap={20}>
-                <Flex align="center" gap={14}>
-                  <IconTile icon={KeyRound} color="gold" size={52} />
-                  <div>
-                    <Typography.Title level={3} style={{ margin: 0 }}>
-                      {t("cloud.recover.title")}
-                    </Typography.Title>
-                    <Typography.Text type="secondary">{t("cloud.recover.subtitle")}</Typography.Text>
-                  </div>
-                </Flex>
+                <PanelHeader icon={KeyRound} color="gold" title={t("cloud.recover.title")} description={t("cloud.recover.subtitle")} />
                 <RecoverForm
                   onRecovered={(code) => {
                     setRecoveryCode(code);
@@ -153,14 +143,10 @@ export function AccountPage() {
             )}
             {step === "auth" && mode !== "recover" && (
               <Flex vertical gap={20}>
-                <div>
-                  <Typography.Title level={3} style={{ margin: 0 }}>
-                    {mode === "create" ? t("cloud.auth.createTitle") : t("cloud.auth.signInTitle")}
-                  </Typography.Title>
-                  <Typography.Text type="secondary">{mode === "create" ? t("cloud.auth.createSubtitle") : t("cloud.auth.signInSubtitle")}</Typography.Text>
-                </div>
+                <PanelHeader title={mode === "create" ? t("cloud.auth.createTitle") : t("cloud.auth.signInTitle")} description={mode === "create" ? t("cloud.auth.createSubtitle") : t("cloud.auth.signInSubtitle")} />
                 <Segmented<"create" | "signin">
                   block
+                  vertical={!screens.sm}
                   value={mode === "create" ? "create" : "signin"}
                   onChange={setMode}
                   options={[
@@ -168,7 +154,7 @@ export function AccountPage() {
                     { value: "signin", label: t("cloud.auth.signInTab") },
                   ]}
                 />
-                {params.get("socialError") === "1" && <Alert type="error" showIcon title={t(params.get("error") === "email_not_verified" ? "social.verificationPending" : "social.signinFailed")} />}
+                {params.get("socialError") === "1" && <Callout tone="danger" role="alert">{t(params.get("error") === "email_not_verified" ? "social.verificationPending" : "social.signinFailed")}</Callout>}
                 {params.get("social") === "1" && mode === "signin" ? <SocialUnlock onUnlocked={afterSignIn} onForgot={() => setMode("recover")} /> : <>
                 <AuthForm
                   key={mode}
@@ -188,7 +174,7 @@ export function AccountPage() {
               <RecoveryKit code={recoveryCode} email={session?.user.email ?? ""} onDone={() => (mode === "recover" ? afterSignIn() : wantsHouse ? void beginHouse() : finishLocal())} />
             )}
             {step === "house" && <NameHouse accessCode={accessCode} onCreated={upload} />}
-            {step === "setup" && <HouseSetup onComplete={() => {
+            {step === "setup" && <HouseSetup embedded onComplete={() => {
               // The confirmed draft is already local data, even if cloud creation is cancelled.
               if (useDeviceStore.getState().mode === "unset") setDeviceMode("local");
               setStep("house");
@@ -209,22 +195,15 @@ export function AccountPage() {
               />
             )}
             {step === "done" && household && (
-              <Flex vertical align="center" gap={16} style={{ textAlign: "center" }}>
-                <IconTile icon={CircleCheck} color="green" size={64} />
-                <div>
-                  <Typography.Title level={3} style={{ margin: 0 }}>
-                    {t("cloud.done.title", { name: household.name })}
-                  </Typography.Title>
-                  <Typography.Text type="secondary">{wantsHouse ? t("cloud.done.created") : t("cloud.done.downloaded")}</Typography.Text>
-                </div>
+              <ResultState title={t("cloud.done.title", { name: household.name })} description={wantsHouse ? t("cloud.done.created") : t("cloud.done.downloaded")}>
                 <InstallAppCard />
                 <Button type="primary" size="large" block onClick={() => router.push(wantsHouse ? "/familia" : "/")}>
                   {wantsHouse ? t("cloud.done.invite") : t("cloud.done.go")}
                 </Button>
-              </Flex>
+              </ResultState>
             )}
           </CryptoSupportGate>
-        </Card>
+        </StepFlow>
         {["access", "auth", "kit", "house"].includes(step) && (
           <Flex justify="center" style={{ marginTop: 16 }}>
             <Link href="/empezar">
@@ -248,7 +227,7 @@ export function ReplaceWarning({ name, onConfirm, onCancel }: { name: string; on
           {t("cloud.transfer.replaceTitle")}
         </Typography.Title>
       </Flex>
-      <Alert type="warning" showIcon={false} description={t("cloud.transfer.replaceText", { name })} />
+      <Callout tone="warning">{t("cloud.transfer.replaceText", { name })}</Callout>
       <Button type="primary" size="large" block onClick={onConfirm}>
         {t("cloud.transfer.replaceConfirm", { name })}
       </Button>
@@ -261,7 +240,6 @@ export function ReplaceWarning({ name, onConfirm, onCancel }: { name: string; on
 
 function NameHouse({ accessCode, onCreated }: { accessCode: string; onCreated: (household: CloudHousehold) => void }) {
   const t = useT();
-  const { token } = theme.useToken();
   const { createHousehold } = useCloudActions();
   const [busy, setBusy] = useState(false);
 
@@ -275,17 +253,9 @@ function NameHouse({ accessCode, onCreated }: { accessCode: string; onCreated: (
 
   return (
     <Flex vertical gap={20}>
-      <Flex align="center" gap={14}>
-        <IconTile icon={House} color="blue" size={52} />
-        <div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            {t("cloud.house.title")}
-          </Typography.Title>
-          <Typography.Text type="secondary">{t("cloud.house.subtitle")}</Typography.Text>
-        </div>
-      </Flex>
+      <PanelHeader icon={House} title={t("cloud.house.title")} description={t("cloud.house.subtitle")} />
       <Form layout="vertical" requiredMark={false} onFinish={onFinish} disabled={busy}>
-        <Form.Item name="name" label={t("cloud.house.name")} rules={[{ required: true, whitespace: true, message: t("cloud.auth.nameRequired") }, { max: 60 }]}>
+        <Form.Item name="name" label={t("cloud.house.name")} rules={[{ required: true, whitespace: true, message: t("errors.validation.nameRequired") }, { max: 60 }]}>
           <Input size="large" placeholder={t("cloud.house.placeholder")} maxLength={60} autoFocus />
         </Form.Item>
         {!accessCode && (
@@ -297,14 +267,7 @@ function NameHouse({ accessCode, onCreated }: { accessCode: string; onCreated: (
           {t("cloud.house.create")}
         </Button>
       </Form>
-      <Flex align="center" gap={8}>
-        <span style={{ display: "inline-flex", color: token.colorSuccess }}>
-          <ShieldCheck />
-        </span>
-        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-          {t("cloud.house.encrypted")}
-        </Typography.Text>
-      </Flex>
+      <TrustNote>{t("cloud.house.encrypted")}</TrustNote>
     </Flex>
   );
 }

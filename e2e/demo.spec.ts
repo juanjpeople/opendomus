@@ -4,7 +4,7 @@ async function enter(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Explorar casa demo' }).click();
   await page.getByRole('heading', { name: 'Administrador', exact: true }).click();
-  await expect(page.getByText('Casa demo · datos ficticios', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Casa demo · datos ficticios', exact: true })).toBeVisible();
 }
 
 test('demo: acceso sin cuenta, datos completos, aislamiento, persistencia y reinicio', async ({ page, browser }) => {
@@ -31,6 +31,7 @@ test('demo: acceso sin cuenta, datos completos, aislamiento, persistencia y rein
     await second.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).click();
     await expect(second.getByText('Anotación exclusiva del visitante A',{exact:true})).toHaveCount(0);
   } finally {await other.close();}
+  await page.getByRole('button', { name: 'Casa demo · datos ficticios', exact: true }).click();
   await page.getByRole('button',{name:'Restablecer demo',exact:true}).click();
   await page.getByRole('dialog').getByRole('button',{name:'Restablecer demo',exact:true}).click();
   await expect(page.getByText('Anotación exclusiva del visitante A',{exact:true})).toHaveCount(0);
@@ -41,4 +42,30 @@ test('demo: acceso sin cuenta, datos completos, aislamiento, persistencia y rein
   await page.goto('/recetas');
   await expect(page.getByText('Panqueques caseros',{exact:true})).toBeVisible();
   expect(requests).toEqual([]);
+});
+
+
+test('demo: indicador accesible, acciones por permiso y cabecera a 320 px', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await enter(page);
+  const badge = page.getByRole('button', { name: 'Casa demo · datos ficticios', exact: true });
+  await expect(badge).toHaveAttribute('aria-expanded', 'false');
+  await badge.press('Enter');
+  await expect(badge).toHaveAttribute('aria-expanded', 'true');
+  const detail = page.getByRole('region', { name: 'Casa demo · datos ficticios', exact: true });
+  await expect(detail.getByRole('button', { name: 'Restablecer demo', exact: true })).toBeVisible();
+  await detail.getByRole('button', { name: 'Restablecer demo', exact: true }).press('Escape');
+  await expect(badge).toBeFocused();
+  await expect(badge).toHaveAttribute('aria-expanded', 'false');
+  await badge.click();
+  await page.screenshot({ path: testInfo.outputPath('demo-indicador.png'), fullPage: true });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await detail.press('Escape');
+  await page.getByRole('button', { name: 'Cambiar de perfil', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Niño/ }).first().click();
+  await badge.click();
+  await expect(detail).toBeVisible();
+  await expect(detail.getByRole('button', { name: 'Restablecer demo', exact: true })).toHaveCount(0);
+  await expect(detail.getByRole('button', { name: 'Cargar más ejemplos', exact: true })).toHaveCount(0);
+  await expect(detail.getByRole('link', { name: 'Abrir mi casa de pruebas', exact: true })).toBeVisible();
 });

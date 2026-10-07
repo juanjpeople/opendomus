@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Col, Form, Input, InputNumber, Row, Select, Switch } from "antd";
+import { Button, Card, Col, Form, Input, InputNumber, Row, Select, Switch, theme } from "antd";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/i18n";
@@ -15,6 +15,7 @@ export function InventoryForm({ containerId }: { containerId: string }) {
   const [saving, setSaving] = useState(false);
   const { create } = useInventoryActions();
   const t = useT();
+  const { token } = theme.useToken();
 
   async function handleFinish(values: NewInventoryItem) {
     setSaving(true);
@@ -24,19 +25,16 @@ export function InventoryForm({ containerId }: { containerId: string }) {
   }
 
   return (
-    <Card style={{ marginBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
-        <strong>{t("inventory.form.title")}</strong>
-        <CatalogPicker onSelect={(values) => form.setFieldsValue(values)} />
-      </div>
-      <Form form={form} layout="vertical" onFinish={handleFinish} initialValues={DEFAULT_VALUES} requiredMark="optional">
+    <Card title={t("inventory.form.title")} style={{ marginBottom: token.marginLG }}>
+      <div style={{ marginBottom: token.margin }}><CatalogPicker onSelect={(values) => form.setFieldsValue(values)} /></div>
+      <Form form={form} layout="vertical" onFinish={handleFinish} initialValues={DEFAULT_VALUES} requiredMark="optional" disabled={saving}>
         <Row gutter={16} align="bottom">
-          <Col xs={24} md={10}>
+          <Col xs={24} md={12}>
             <Form.Item
               name="name"
               label={t("inventory.form.name")}
               rules={[
-                { required: true, whitespace: true, message: t("inventory.form.nameRequired") },
+                { required: true, whitespace: true, message: t("errors.validation.nameRequired") },
                 { max: INVENTORY_LIMITS.nameMaxLength },
               ]}
             >
@@ -53,18 +51,12 @@ export function InventoryForm({ containerId }: { containerId: string }) {
               <InputNumber min={0} max={INVENTORY_LIMITS.maxQuantity} precision={0} style={{ width: "100%" }} />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={12} md={3}>
+          <Col xs={24} sm={12} md={4}>
             <Form.Item name="unit" label={t("inventory.form.unit")}>
               <Select options={UNITS.map((unit) => ({ value: unit, label: t(`inventory.units.${unit}`, { count: 2 }) }))} />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={12} md={3}>
-            <Form.Item>
-              <Button type="primary" htmlType="submit" icon={<Plus />} loading={saving} block>
-                {t("inventory.form.submit")}
-              </Button>
-            </Form.Item>
-          </Col>
+
         </Row>
         <Row gutter={16}>
           <Col xs={24} sm={12}><Form.Item name="reusable" valuePropName="checked" label={t("inventory.item.reusable")} tooltip={t("inventory.item.reusableHint")}>
@@ -74,6 +66,7 @@ export function InventoryForm({ containerId }: { containerId: string }) {
             <Switch />
           </Form.Item></Col>
         </Row>
+        <Button type="primary" htmlType="submit" icon={<Plus />} loading={saving}>{t("inventory.form.submit")}</Button>
       </Form>
     </Card>
   );

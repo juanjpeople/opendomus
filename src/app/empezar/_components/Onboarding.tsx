@@ -17,7 +17,7 @@ import { IconTile } from "@/components/ui";
 import { useT, type MessageKey } from "@/i18n";
 import { CLOUD_ENABLED } from "@/lib/cloud/api";
 import type { AppearanceColor } from "@/lib/appearance";
-import { SPRING } from "@/lib/motion";
+import { HOVER_LIFT, SPRING, TAP } from "@/lib/motion";
 import { useDeviceStore } from "@/store/useDeviceStore";
 
 interface Choice {
@@ -90,8 +90,6 @@ export function Onboarding() {
           </Typography.Paragraph>
         </Reveal>
 
-        <DemoLauncher />
-        <AccountLinks />
         <Row gutter={[20, 20]} align="stretch">
           {CHOICES.map((choice, index) => (
             <Col key={choice.id} xs={24} md={8}>
@@ -99,6 +97,10 @@ export function Onboarding() {
             </Col>
           ))}
         </Row>
+        <Reveal delay={0.2}>
+          <DemoLauncher />
+          <AccountLinks />
+        </Reveal>
 
         <Reveal delay={0.5}>
           <Flex
@@ -149,7 +151,8 @@ function ChoiceCard({ choice, index, onChoose }: { choice: Choice; index: number
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0, transition: { ...SPRING.snappy, delay: 0.15 + index * 0.08 } }}
-      whileHover={choice.soon ? undefined : { y: -6 }}
+      whileHover={choice.soon ? undefined : { y: HOVER_LIFT.hero }}
+      whileTap={choice.soon ? undefined : { scale: TAP.card }}
       style={{ height: "100%" }}
     >
       <Flex

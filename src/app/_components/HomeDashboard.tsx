@@ -119,7 +119,7 @@ function HomeHero({ eyebrow, title, status }: { eyebrow: string; title: string; 
         <div style={{ minWidth: 0 }}>
           <Typography.Text
             strong
-            style={{ color: token.colorPrimary, textTransform: "uppercase", letterSpacing: "0.12em", fontSize: token.fontSizeSM }}
+            style={{ color: token.colorTextSecondary, textTransform: "uppercase", letterSpacing: "0.12em", fontSize: token.fontSizeSM }}
           >
             {eyebrow}
           </Typography.Text>

@@ -28,7 +28,7 @@ import {
 import { APP_VERSION } from "../service";
 import { DataSettings } from "./DataSettings";
 import { SidebarPreview, ThemePreview } from "./Previews";
-import { SettingRow } from "./SettingRow";
+import { SettingRow } from "@/components/ui";
 import { usePwaStore } from "@/store/usePwaStore";
 
 const SECTIONS = [

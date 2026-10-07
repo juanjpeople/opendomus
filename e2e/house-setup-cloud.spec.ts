@@ -9,6 +9,7 @@ test("la precarga se elige antes del alta cloud y llega cifrada a un segundo dis
   let household: Record<string, unknown> | null = null;
   const operations: StoredOp[] = [];
   const unexpected: string[] = [];
+  const links: Record<string, unknown>[] = [];
   async function mockApi(context: BrowserContext) {
     await context.route("**/api/**", async (route) => {
       const request = route.request();
@@ -28,13 +29,20 @@ test("la precarga se elige antes del alta cloud y llega cifrada a un segundo dis
           result = { acks: incoming.map((entry) => ({ id: entry.id, seq: operations.find((op) => op.id === entry.id)!.seq })) };
         } else result = { ops: operations.filter((op) => op.seq > Number(url.searchParams.get("since") ?? 0)), next: operations.length, head: operations.length };
       } else if (path.endsWith("/members")) result = { members: [{ ...user, userId: user.id, role: "admin", signPublicKey: keys?.signPublicKey }], former: [] };
-      else if (path === "/social-providers") result = { providers: [] };
+      else if (path === "/social-providers") result = { providers: ["google", "github"] };
+      else if (path === "/auth/list-accounts") result = [{ providerId: "github" }];
+      else if (path === "/account/devices") result = { devices: [] };
+      else if (path.endsWith("/invites")) result = { invites: [] };
+      else if (path === "/auth/link-social") { links.push(request.postDataJSON()); result = { url: "https://unexpected.example/blocked" }; }
       else { unexpected.push(`${request.method()} ${path}`); return route.fulfill({ status: 404, json: { error: "not-found" } }); }
       await route.fulfill({ json: result });
     });
   }
   await mockApi(page.context());
   await page.goto("/cuenta?modo=crear&siguiente=casa");
+  const panel = page.getByRole("main").locator(".ant-card").first();
+  await expect(panel).toBeVisible();
+  const initialWidth = await panel.evaluate((element) => element.getBoundingClientRect().width);
   await page.getByPlaceholder("OD-XXXX-XXXX-XXXX-XXXX").fill("OD-TEST-TEST-TEST-TEST");
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
   await page.getByLabel("Tu nombre", { exact: true }).fill(user.name);
@@ -45,6 +53,7 @@ test("la precarga se elige antes del alta cloud y llega cifrada a un segundo dis
   await page.getByRole("checkbox", { name: "Guardé mi kit en un lugar seguro" }).check();
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
   await expect(page.getByRole("heading", { name: "¿Cómo querés empezar tu casa?" })).toBeVisible();
+  expect(await panel.evaluate((element) => element.getBoundingClientRect().width)).toBeCloseTo(initialWidth, 0);
   expect(household).toBeNull();
   await page.getByRole("checkbox", { name: "Cocina", exact: true }).check();
   await page.getByRole("checkbox", { name: "Heladera", exact: true }).check();
@@ -74,5 +83,14 @@ test("la precarga se elige antes del alta cloud y llega cifrada a un segundo dis
     await expect(other.getByRole("button", { name: "Ver detalle de Leche", exact: true })).toBeVisible();
     await expect(other.getByText("Taller de herramientas", { exact: true })).toHaveCount(0);
   } finally { await second.close(); }
+  await page.goto("/ajustes");
+  const providers = page.getByRole("group", { name: "Acceso con proveedores", exact: true });
+  await expect(providers.getByRole("button", { name: "GitHub vinculado", exact: true })).toBeDisabled();
+  await providers.getByRole("button", { name: "Vincular Google", exact: true }).click();
+  await expect(providers.getByRole("alert")).toContainText("No pudimos abrir los proveedores; podés entrar con tu contraseña.");
+  expect(links).toHaveLength(1);
+  expect(links[0]).toMatchObject({ provider: "google", disableRedirect: true });
+  expect(links[0].callbackURL).toMatch(/\/ajustes$/);
+  expect(links[0].password).toBeUndefined();
   expect(unexpected).toEqual([]);
 });

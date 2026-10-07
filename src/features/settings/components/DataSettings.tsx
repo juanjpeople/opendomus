@@ -16,7 +16,7 @@ import { useCurrentUser } from "@/lib/auth/session";
 import { downloadJson } from "@/lib/download";
 import { getErrorMessage } from "@/lib/errors";
 import { clearCache, deleteAllData, exportAllData, getStorageEstimate, importAllData, parseExport } from "../service";
-import { SettingRow } from "./SettingRow";
+import { SettingRow } from "@/components/ui";
 
 export function DataSettings() {
   const { t, format } = useI18n();

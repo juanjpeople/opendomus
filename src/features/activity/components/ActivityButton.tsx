@@ -18,6 +18,20 @@ export function ActivityButton({ containerId, place }: { containerId: string; pl
   );
 }
 
+/** Variante controlada para abrir el historial desde el menú de acciones. */
+export function ActivityDrawer({ containerId, place, open, onClose }: { containerId: string; place: string; open: boolean; onClose: () => void }) {
+  return <Can perform="activity.view"><ActivityDrawerInner containerId={containerId} place={place} open={open} onClose={onClose} /></Can>;
+}
+
+function ActivityDrawerInner({ containerId, place, open, onClose }: { containerId: string; place: string; open: boolean; onClose: () => void }) {
+  const t = useT();
+  const entries = useActivity({ containerId, limit: 100 });
+  return <Drawer title={t("activity.title")} open={open} onClose={onClose} size={420}>
+    <Typography.Paragraph type="secondary">{t("activity.subtitle", { place })}</Typography.Paragraph>
+    <ActivityList entries={entries} />
+  </Drawer>;
+}
+
 function ActivityButtonInner({ containerId, place }: { containerId: string; place: string }) {
   const t = useT();
   const [open, setOpen] = useState(false);

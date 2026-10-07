@@ -1,7 +1,23 @@
 import { expect, test } from "./fixtures";
 
 test("elige país, agenda materias y tareas por hijo y respeta días sin clases", async ({ home: page }, testInfo) => {
-  await page.clock.install({ time: new Date("2026-07-09T07:00:00-03:00") });
+  // Playwright's clock also replaces performance/RAF, even with setFixedTime.
+  // Motion's native animations need those to share the document timeline.
+  // Fix Date alone, before the next document loads, leaving real timers intact.
+  await page.addInitScript(({ now }) => {
+    const OriginalDate = Date;
+    window.Date = new Proxy(OriginalDate, {
+      construct(target, args) {
+        return Reflect.construct(target, args.length ? args : [now]);
+      },
+      apply() {
+        return new OriginalDate(now).toString();
+      },
+      get(target, property, receiver) {
+        return property === "now" ? () => now : Reflect.get(target, property, receiver);
+      },
+    });
+  }, { now: new Date("2026-07-09T07:00:00-03:00").getTime() });
   await page.goto("/calendario");
   await page.getByText("Configurar feriados y escuela", { exact: true }).click();
   await page.getByRole("checkbox", { name: "Activar escuela: materias, mochila y tareas" }).check();
@@ -14,6 +30,7 @@ test("elige país, agenda materias y tareas por hijo y respeta días sin clases"
     await page.getByRole("button", { name: "Nuevo evento", exact: true }).filter({ hasText: "Nuevo evento" }).click();
     await page.getByLabel("Tipo de evento", { exact: true }).click();
     await page.locator(".ant-select-dropdown:visible").getByText(kind, { exact: true }).click();
+    await expect(page.getByLabel("Tipo de evento", { exact: true }).locator("..")).toContainText(kind);
     await page.getByLabel("Título", { exact: true }).fill(title);
     await page.getByLabel("Quiénes", { exact: true }).fill("Explorador");
     await page.getByLabel("Quiénes", { exact: true }).press("Enter");
@@ -34,6 +51,7 @@ test("elige país, agenda materias y tareas por hijo y respeta días sin clases"
   await expect(page.getByText("Escuela hoy · mochila y tareas", { exact: true })).toBeVisible();
   await expect(page.getByText("Cuaderno cuadriculado y regla", { exact: true })).toBeVisible();
   await expect(page.getByText(/Confirmá si hay clases/)).toBeVisible();
+  await expect(page.getByText("Revisar tarea: Revisar ejercicio 4", { exact: false })).toBeVisible();
   await expect.poll(() => page.getByText("Cuaderno cuadriculado y regla", { exact: true }).evaluate((element) => {
     for (let node: Element | null = element; node; node = node.parentElement) if (Number(getComputedStyle(node).opacity) < 1) return false;
     return true;
@@ -62,4 +80,39 @@ test("elige país, agenda materias y tareas por hijo y respeta días sin clases"
   await page.goto("/");
   await expect(page.getByText("No hay materias programadas para hoy.", { exact: true })).toBeVisible();
   await expect(page.getByText("Cuaderno cuadriculado y regla", { exact: true })).toHaveCount(0);
+});
+
+
+test("escuela en inglés: validación, guardado único y ancho de 320 px", async ({ home: page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+  await page.goto("/ajustes");
+  await page.getByText("English", { exact: true }).click();
+  await page.goto("/calendario");
+  await page.getByText("Configure holidays and school", { exact: true }).click();
+  await page.getByRole("checkbox", { name: "Enable school: subjects, backpack and homework" }).check();
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
+  await expect(page.getByText("Calendar configured", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "New event", exact: true }).filter({ hasText: "New event" }).click();
+  await page.getByLabel("Event type", { exact: true }).click();
+  await page.locator(".ant-select-dropdown:visible").getByText("School subject", { exact: true }).click();
+  await page.getByLabel("Title", { exact: true }).fill("Science club");
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByText("Choose who attends this class", { exact: true })).toBeVisible();
+  await expect(page.getByText("Choose the end of term", { exact: true })).toBeVisible();
+  await page.getByLabel("Who", { exact: true }).fill("Explorador");
+  await page.getByLabel("Who", { exact: true }).press("Enter");
+  await page.getByLabel("Who", { exact: true }).press("Escape");
+  await page.getByLabel("Repeat until (end of school term)", { exact: true }).fill("31/12/2030");
+  await page.getByLabel("Repeat until (end of school term)", { exact: true }).press("Enter");
+  await page.getByLabel("For the backpack: materials and reminders", { exact: true }).fill("Notebook");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await page.locator(".ant-modal-wrap").evaluate(element => { element.scrollTop = 0; });
+  await page.screenshot({ path: testInfo.outputPath("school-subject-en.png"), animations: "disabled" });
+  await page.getByRole("button", { name: "Save changes", exact: true }).evaluate((button: HTMLButtonElement) => { button.click(); button.click(); });
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Science club/ })).toHaveCount(1);
+  await page.goto("/");
+  await expect(page.getByText("School today · backpack and homework", { exact: true })).toBeVisible();
+  await expect(page.getByText("Notebook", { exact: true })).toBeVisible();
 });

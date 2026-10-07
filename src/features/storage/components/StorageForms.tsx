@@ -1,13 +1,10 @@
 "use client";
 
 import { Flex, Form, Input, Modal, TreeSelect, Typography, theme } from "antd";
-import { motion } from "framer-motion";
-import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ColorSwatches, IconGrid, IconTile } from "@/components/ui";
+import { ChoiceCards, ColorSwatches, IconGrid, IconTile } from "@/components/ui";
 import { useT } from "@/i18n";
 import { APPEARANCE_ICONS, type AppearanceColor, type AppearanceIcon } from "@/lib/appearance";
-import { SPRING } from "@/lib/motion";
 import {
   CONTAINER_DEFAULTS,
   CONTAINER_ICONS,
@@ -27,65 +24,8 @@ import { useContainers, useSpaces, useStorageActions } from "../hooks";
 import { descendantIds, subtreeHeight } from "../tree";
 import { ContainerScene } from "./ContainerScene";
 
-/** Grilla de tipos con ícono (radio accesible). Elegir un tipo sugiere el nombre si todavía está vacío. */
-function KindPicker<K extends string>({
-  value,
-  kinds,
-  icons,
-  label,
-  onChange,
-}: {
-  value?: K;
-  kinds: readonly K[];
-  icons: Record<K, LucideIcon>;
-  label: (kind: K) => string;
-  onChange?: (kind: K) => void;
-}) {
-  const { token } = theme.useToken();
-
-  return (
-    <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(92px, 1fr))", gap: 8 }}>
-      {kinds.map((kind) => {
-        const Icon: LucideIcon = icons[kind];
-        const selected = kind === value;
-        return (
-          <motion.button
-            key={kind}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange?.(kind)}
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.96 }}
-            transition={SPRING.snappy}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 6,
-              padding: "10px 6px",
-              cursor: "pointer",
-              font: "inherit",
-              fontSize: token.fontSizeSM,
-              borderRadius: token.borderRadiusLG,
-              border: `${selected ? 2 : 1}px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`,
-              background: selected ? token.colorPrimaryBg : token.colorBgContainer,
-              color: selected ? token.colorPrimary : token.colorText,
-            }}
-          >
-            <span style={{ fontSize: 22, display: "inline-flex" }}>
-              <Icon />
-            </span>
-            {label(kind)}
-          </motion.button>
-        );
-      })}
-    </div>
-  );
-}
-
 /** Color + ícono con vista previa en vivo. Sin elección, se usa la apariencia del tipo. */
-function AppearanceFields({ defaults }: { defaults: { color: AppearanceColor; icon: AppearanceIcon } }) {
+function AppearanceFields({ defaults, containerKind }: { defaults: { color: AppearanceColor; icon: AppearanceIcon }; containerKind?: ContainerKind }) {
   const t = useT();
   const { token } = theme.useToken();
   const form = Form.useFormInstance();
@@ -95,8 +35,8 @@ function AppearanceFields({ defaults }: { defaults: { color: AppearanceColor; ic
 
   return (
     <>
-      <Flex align="center" gap={12} style={{ padding: 12, marginBottom: 16, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
-        <IconTile icon={APPEARANCE_ICONS[icon]} color={color} size={48} />
+      <Flex align="center" gap={token.marginSM} style={{ padding: token.paddingSM, marginBottom: token.margin, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
+        <div style={{ width: token.controlHeightLG * 2, flexShrink: 0 }}>{containerKind ? <ContainerScene container={{ kind: containerKind, color, icon }} compact /> : <IconTile icon={APPEARANCE_ICONS[icon]} color={color} size={token.controlHeightLG} />}</div>
         <Typography.Text strong style={{ fontSize: token.fontSizeLG }} ellipsis>
           {name || "—"}
         </Typography.Text>
@@ -113,6 +53,7 @@ function AppearanceFields({ defaults }: { defaults: { color: AppearanceColor; ic
 
 export function SpaceModal({ open, space, onClose }: { open: boolean; space?: Space; onClose: () => void }) {
   const t = useT();
+  const { token } = theme.useToken();
   const [form] = Form.useForm<NewSpace>();
   const { createSpace, updateSpace } = useStorageActions();
   const [saving, setSaving] = useState(false);
@@ -136,12 +77,10 @@ export function SpaceModal({ open, space, onClose }: { open: boolean; space?: Sp
 
   return (
     <Modal open={open} onCancel={onClose} onOk={onOk} confirmLoading={saving} title={t(space ? "storage.editSpace" : "storage.addSpace")} width={600} destroyOnHidden>
-      <Form form={form} layout="vertical" requiredMark={false} onFinish={onOk}>
+      <Form form={form} layout="vertical" requiredMark={false} onFinish={onOk} disabled={saving}>
         <Form.Item name="kind" label={t("storage.fields.kind")}>
-          <KindPicker<SpaceKind>
-            kinds={SPACE_KINDS}
-            icons={SPACE_ICONS}
-            label={(kind) => t(`storage.spaceKinds.${kind}`)}
+          <ChoiceCards<SpaceKind> compact value={kind} aria-label={t("storage.fields.kind")} disabled={saving}
+            options={SPACE_KINDS.map((value) => ({ value, title: t(`storage.spaceKinds.${value}`), leading: <IconTile icon={SPACE_ICONS[value]} color={SPACE_DEFAULTS[value].color} size={token.controlHeight} /> }))}
             onChange={(kind) => {
               form.setFieldValue("kind", kind);
               if (!form.getFieldValue("name")) form.setFieldValue("name", t(`storage.spaceKinds.${kind}`));
@@ -151,7 +90,7 @@ export function SpaceModal({ open, space, onClose }: { open: boolean; space?: Sp
         <Form.Item
           name="name"
           label={t("storage.fields.name")}
-          rules={[{ required: true, whitespace: true, message: t("inventory.form.nameRequired") }, { max: STORAGE_LIMITS.nameMaxLength }]}
+          rules={[{ required: true, whitespace: true, message: t("errors.validation.nameRequired") }, { max: STORAGE_LIMITS.nameMaxLength }]}
         >
           <Input placeholder={t("storage.fields.spacePlaceholder")} maxLength={STORAGE_LIMITS.nameMaxLength} autoFocus />
         </Form.Item>
@@ -212,14 +151,13 @@ export function ContainerModal({
   onClose: () => void;
 }) {
   const t = useT();
+  const { token } = theme.useToken();
   const [form] = Form.useForm<ContainerFormValues>();
   const spaces = useSpaces();
   const containers = useContainers();
   const { createContainer, updateContainer } = useStorageActions();
   const [saving, setSaving] = useState(false);
   const kind = (Form.useWatch("kind", form) as ContainerKind | undefined) ?? "box";
-  const color = Form.useWatch("color", form) as AppearanceColor | undefined;
-  const icon = Form.useWatch("icon", form) as AppearanceIcon | undefined;
   const treeData = useLocationTree(container?.id);
 
   useEffect(() => {
@@ -261,30 +199,27 @@ export function ContainerModal({
       width={600}
       destroyOnHidden
     >
-      <Form form={form} layout="vertical" requiredMark={false} onFinish={onOk}>
+      <Form form={form} layout="vertical" requiredMark={false} onFinish={onOk} disabled={saving}>
         <Form.Item name="kind" label={t("storage.fields.kind")}>
-          <KindPicker<ContainerKind>
-            kinds={CONTAINER_KINDS}
-            icons={CONTAINER_ICONS}
-            label={(kind) => t(`storage.containerKinds.${kind}`)}
+          <ChoiceCards<ContainerKind> compact value={kind} aria-label={t("storage.fields.kind")} disabled={saving}
+            options={CONTAINER_KINDS.map((value) => ({ value, title: t(`storage.containerKinds.${value}`), leading: <IconTile icon={CONTAINER_ICONS[value]} color={CONTAINER_DEFAULTS[value].color} size={token.controlHeight} /> }))}
             onChange={(kind) => {
               form.setFieldValue("kind", kind);
               if (!form.getFieldValue("name")) form.setFieldValue("name", t(`storage.containerKinds.${kind}`));
             }}
           />
         </Form.Item>
-        <div style={{ marginBottom: 16 }}><ContainerScene container={{ kind, color, icon }} /></div>
         <Form.Item
           name="name"
           label={t("storage.fields.name")}
-          rules={[{ required: true, whitespace: true, message: t("inventory.form.nameRequired") }, { max: STORAGE_LIMITS.nameMaxLength }]}
+          rules={[{ required: true, whitespace: true, message: t("errors.validation.nameRequired") }, { max: STORAGE_LIMITS.nameMaxLength }]}
         >
           <Input placeholder={t("storage.fields.containerPlaceholder")} maxLength={STORAGE_LIMITS.nameMaxLength} autoFocus />
         </Form.Item>
         <Form.Item name="location" label={t("storage.fields.location")} rules={[{ required: true }]}>
           <TreeSelect treeData={treeData} treeDefaultExpandAll showSearch={{ treeNodeFilterProp: "title" }} />
         </Form.Item>
-        <AppearanceFields defaults={CONTAINER_DEFAULTS[kind]} />
+        <AppearanceFields defaults={CONTAINER_DEFAULTS[kind]} containerKind={kind} />
         {container && (
           <Typography.Text type="secondary">
             {t("storage.code")}: <Typography.Text code>{container.code}</Typography.Text>

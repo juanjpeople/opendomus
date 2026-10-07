@@ -1,6 +1,6 @@
 "use client";
 
-import { App, ConfigProvider, theme } from "antd";
+import { App, ConfigProvider } from "antd";
 import enUS from "antd/locale/en_US";
 import esES from "antd/locale/es_ES";
 import { MotionConfig } from "framer-motion";
@@ -9,14 +9,10 @@ import { useEffect, type ReactNode } from "react";
 import { useIsDark } from "@/hooks/useIsDark";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n, type Locale } from "@/i18n";
-import type { FontSize, MotionPreference } from "@/store/usePreferencesStore";
+import { createTheme, FONT_SIZES, REDUCED_MOTION } from "@/lib/theme";
+export { createTheme, FONT_SIZES } from "@/lib/theme";
 
 const ANTD_LOCALES = { es: esES, en: enUS } satisfies Record<Locale, unknown>;
-
-/** Tamaño base del texto (px) por preferencia. Todo el resto de tamaños de antd se deriva de este. */
-export const FONT_SIZES: Record<FontSize, number> = { sm: 13, md: 14, lg: 16, xl: 18 };
-
-const REDUCED_MOTION = { system: "user", reduced: "always", full: "never" } as const satisfies Record<MotionPreference, string>;
 
 /**
  * Tema global. Todo color/radio/tamaño sale de acá vía tokens de antd:
@@ -33,23 +29,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.fontSize = `${(baseFontSize / FONT_SIZES.md) * 100}%`;
   }, [baseFontSize]);
 
-  const algorithm = [isDark ? theme.darkAlgorithm : theme.defaultAlgorithm];
-  if (density === "compact") algorithm.push(theme.compactAlgorithm);
-
   return (
     <ConfigProvider
       locale={ANTD_LOCALES[locale]}
-      theme={{
-        algorithm,
-        token: {
-          fontFamily: "inherit",
-          colorPrimary: brandColor,
-          borderRadius,
-          fontSize: baseFontSize,
-          // "Reducidas" también apaga las animaciones propias de antd (modales, menús…).
-          motion: motion !== "reduced",
-        },
-      }}
+      theme={createTheme({ brandColor, borderRadius, fontSize, density, motion }, isDark)}
     >
       {/* Íconos: lucide-react. El tamaño sigue al font-size (ver .lucide en globals.css). */}
       <LucideProvider strokeWidth={2}>

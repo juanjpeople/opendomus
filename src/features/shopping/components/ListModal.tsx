@@ -90,7 +90,7 @@ export function ListModal({ open, list, projectId, initialPrivacy = "family", on
             {name || "—"}
           </Typography.Text>
         </Flex>
-        <Form.Item name="name" label={t("shopping.lists.name")} rules={[{ required: true, whitespace: true, message: t("inventory.form.nameRequired") }]}>
+        <Form.Item name="name" label={t("shopping.lists.name")} rules={[{ required: true, whitespace: true, message: t("errors.validation.nameRequired") }]}>
           <Input maxLength={LIST_LIMITS.nameMaxLength} placeholder={t("shopping.lists.namePlaceholder")} autoFocus={!home} disabled={home} />
         </Form.Item>
         {/* La lista de la casa es de todos: ahí llegan las sugerencias del inventario. */}

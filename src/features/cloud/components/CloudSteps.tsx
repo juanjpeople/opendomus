@@ -38,7 +38,7 @@ export function CryptoSupportGate({ children }: { children: ReactNode }) {
       </Flex>
       <Typography.Text type="secondary">{missing.includes("secure-context") ? t("cloud.support.insecure") : t("cloud.support.text")}</Typography.Text>
       <Link href="/empezar">
-        <Button size="large" block icon={<HardDrive size={18} />}>
+        <Button size="large" block icon={<HardDrive />}>
           {t("cloud.support.local")}
         </Button>
       </Link>
@@ -139,7 +139,7 @@ export function InstallAppCard() {
   return (
     <Flex align="center" gap={12} style={{ width: "100%", padding: 14, borderRadius: token.borderRadiusLG, border: `1px solid ${token.colorPrimaryBorder}`, background: token.colorPrimaryBg, textAlign: "left" }}>
       <span aria-hidden style={{ display: "inline-flex", color: token.colorPrimary }}>
-        <Smartphone size={22} />
+        <Smartphone />
       </span>
       <Flex vertical style={{ flex: 1, minWidth: 0 }}>
         <Typography.Text strong>{t("cloud.install.title")}</Typography.Text>
@@ -147,7 +147,7 @@ export function InstallAppCard() {
           {t("cloud.install.text")}
         </Typography.Text>
       </Flex>
-      <Button type="primary" icon={<MonitorDown size={16} />} onClick={install}>
+      <Button type="primary" icon={<MonitorDown />} onClick={install}>
         {t("pwa.install.button")}
       </Button>
     </Flex>

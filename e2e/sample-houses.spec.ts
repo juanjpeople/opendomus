@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { addItem, selectTestSpaces } from './fixtures';
 
-test('casas integradas: demo y pruebas conservan cambios sin tocar la casa habitual', async ({ page }) => {
+test('casas integradas: demo y pruebas conservan cambios sin tocar la casa habitual', async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/empezar?house=home');
@@ -21,20 +21,24 @@ test('casas integradas: demo y pruebas conservan cambios sin tocar la casa habit
   await page.getByLabel('Contenido guardado', { exact: true }).fill('Solo en demo, nunca en mi casa');
   await page.getByRole('button', { name: 'Anotar', exact: true }).click();
   await expect(page.getByText('Solo en demo, nunca en mi casa', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Casa demo · datos ficticios', exact: true }).click();
+  await page.screenshot({ path: testInfo.outputPath('demo-cambiar-casa.png'), animations: 'disabled' });
   await page.getByRole('link', { name: 'Abrir mi casa de pruebas', exact: true }).click();
   await page.getByRole('button', { name: 'Entrar a mi casa de pruebas', exact: true }).click();
   await page.getByRole('heading', { name: 'Administrador', exact: true }).click();
-  await expect(page.getByText('Casa de pruebas · datos ficticios', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Casa de pruebas · datos ficticios', exact: true })).toBeVisible();
   await page.goto('/inventario');
   await page.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).click();
   await expect(page.getByText('Solo en demo, nunca en mi casa', { exact: true })).toHaveCount(0);
   await page.goto('/recetas');
   await expect(page.getByText('Pizza de la familia', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Casa de pruebas · datos ficticios', exact: true }).click();
   await page.getByRole('link', { name: 'Explorar casa demo', exact: true }).click();
   await page.getByRole('button', { name: 'Explorar casa demo', exact: true }).click();
   await page.goto('/inventario');
   await page.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).click();
   await expect(page.getByText('Solo en demo, nunca en mi casa', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Casa demo · datos ficticios', exact: true }).click();
   await page.getByRole('link', { name: 'Volver a mi casa', exact: true }).click();
   await page.goto('/inventario');
   await expect(page.getByRole('link', { name: /^Herramientas inventariadas/ })).toHaveCount(0);

@@ -1,5 +1,5 @@
 import QRCode from "qrcode";
-import { test, expect } from "./fixtures";
+import { test, expect, addItem } from "./fixtures";
 
 // El headless-shell devuelve NotSupportedError para getUserMedia; usar Chromium completo.
 // CI no tiene cámara física. Chromium aporta un dispositivo virtual, pero mantiene
@@ -93,4 +93,103 @@ test("QR: primera lectura sin conexión ni BarcodeDetector libera su stream", as
   await expect(page).toHaveURL(/\/c\?code=K7QM$/);
   await expect(page.getByText("Este contenedor no está en este dispositivo", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => sessionStorage.getItem("qrTestStopped"))).toBe("true");
+});
+
+
+test("cámara: cambiar de modo descarta permisos pendientes y conserva la búsqueda", async ({ home: page }) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  await page.addInitScript(() => {
+    const state = { stopped: 0, requests: 0, grant: () => {} };
+    Object.assign(window, { cameraTest: state });
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", { value: () => new Promise<MediaStream>(resolve => {
+      state.requests++;
+      state.grant = () => { const stream = new MediaStream(); stream.getTracks = () => [{ stop: () => state.stopped++ } as unknown as MediaStreamTrack]; resolve(stream); };
+    }) });
+    Object.defineProperty(navigator, "xr", { value: undefined, configurable: true });
+  });
+  await page.goto("/inventario/camara");
+  await page.getByRole("textbox", { name: "¿Qué buscás?" }).fill("arroz");
+  await page.getByRole("button", { name: "Activar cámara" }).click();
+  await expect(page.getByRole("button", { name: "Detener", exact: true })).toBeVisible();
+  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("AR", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "Entrar en AR" })).toBeDisabled();
+  await expect(page.locator("video")).toHaveCount(0);
+  await page.evaluate(() => (window as unknown as { cameraTest: { grant(): void } }).cameraTest.grant());
+  await expect.poll(() => page.evaluate(() => (window as unknown as { cameraTest: { stopped: number } }).cameraTest.stopped)).toBe(1);
+  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("Mirar y encontrar", { exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "¿Qué buscás?" })).toHaveValue("arroz");
+  await expect(page.getByRole("button", { name: "Activar cámara" })).toBeVisible();
+  await expect(page.locator("video")).toHaveCount(1);
+  expect(await page.evaluate(() => (window as unknown as { cameraTest: { requests: number } }).cameraTest.requests)).toBe(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("Escanear QR", { exact: true }).click();
+  await expect(page.getByPlaceholder("Ej. K7QM")).toBeVisible();
+  await expect(page.locator("video")).toHaveCount(1);
+});
+
+
+test("cámara: encontrar muestra productos y notas; QR abre la ficha", async ({ home: page }, testInfo) => {
+  if (testInfo.project.name === "celular") await page.setViewportSize({ width: 320, height: 780 });
+  await addItem(page, "Alacena", "Arroz de prueba", 3, 1);
+  const containerUrl = page.url();
+  await page.getByRole("textbox", { name: "Contenido guardado" }).fill("Frasco azul");
+  await page.getByRole("button", { name: "Anotar", exact: true }).click();
+  await expect(page.getByText("Frasco azul", { exact: true })).toBeVisible();
+  await page.goto("/inventario");
+  await page.getByRole("button", { name: "Etiqueta: Alacena", exact: true }).click();
+  const code = await page.locator(".od-label").locator("div").last().textContent();
+  expect(code?.trim()).toMatch(/^[A-Z0-9]{4}$/);
+  const qr = await QRCode.toDataURL(`https://localhost/c?code=${code?.trim()}`, { width: 320, margin: 4 });
+  await page.addInitScript(dataUrl => {
+    Object.defineProperty(window, "BarcodeDetector", { value: undefined, configurable: true });
+    Object.defineProperty(navigator, "xr", { value: undefined, configurable: true });
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", { value: async () => {
+      const image = new Image(); image.src = dataUrl; await image.decode();
+      const canvas = document.createElement("canvas"); canvas.width = canvas.height = 320;
+      const context = canvas.getContext("2d")!; context.drawImage(image, 0, 0);
+      const stream = canvas.captureStream(10);
+      const timer = setInterval(() => { if (stream.getVideoTracks()[0].readyState === "ended") clearInterval(timer); else context.drawImage(image, 0, 0); }, 100);
+      return stream;
+    } });
+  }, qr);
+  await page.goto("/inventario/camara");
+  await page.getByRole("button", { name: "Activar cámara" }).click();
+  await expect(page.getByRole("heading", { name: "Alacena", exact: true })).toBeVisible();
+  await expect(page.getByText("Arroz de prueba", { exact: true })).toBeVisible();
+  await expect(page.getByText("Frasco azul", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/inventario\/camara$/);
+  await page.getByRole("textbox", { name: "¿Qué buscás?" }).fill("arroz");
+  await expect(page.getByText("Frasco azul", { exact: true })).toHaveCount(0);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await page.screenshot({ path: testInfo.outputPath("encontrar.png"), fullPage: true, animations: "disabled" });
+  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("AR", { exact: true }).click();
+  await expect(page.getByText("Vista previa de la tarjeta", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Entrar en AR" })).toBeDisabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await page.screenshot({ path: testInfo.outputPath("ar.png"), fullPage: true, animations: "disabled" });
+  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("Escanear QR", { exact: true }).click();
+  await page.getByRole("button", { name: "Activar cámara" }).click();
+  await expect(page).toHaveURL(containerUrl);
+  await expect(page.getByText("Frasco azul", { exact: true })).toBeVisible();
+});
+
+
+test("cámara: búsqueda manual y AR sin soporte en inglés", async ({ home: page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/ajustes");
+  await page.getByText("English", { exact: true }).click();
+  await page.addInitScript(() => Object.defineProperty(navigator, "xr", { value: undefined, configurable: true }));
+  await page.goto("/inventario/camara");
+  await page.getByRole("combobox", { name: "Container to display" }).fill("Alacena");
+  await page.getByText("Cocina › Alacena", { exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Alacena", exact: true })).toBeVisible();
+  await page.getByRole("radiogroup", { name: "Camera mode" }).getByText("AR", { exact: true }).click();
+  await expect(page.getByText("Card preview", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Enter AR" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Open details" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await page.screenshot({ path: testInfo.outputPath("ar-en-dark.png"), fullPage: true, animations: "disabled" });
 });

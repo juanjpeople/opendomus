@@ -8,8 +8,8 @@ const headers = {
 /** La pantalla de ingreso y su código son públicos. Los datos exigen sesión en la API. */
 export async function operatorPage(request: Request, assets: { fetch(request: Request): Promise<Response> }) {
   const url = new URL(request.url);
-  if (!["GET", "HEAD"].includes(request.method) || !["/admin", "/admin/", "/admin/index.html", "/admin/panel.js"].includes(url.pathname)) return new Response(null, { status: 404, headers });
-  if (url.pathname !== "/admin/panel.js") url.pathname = "/admin/";
+  if (!["GET", "HEAD"].includes(request.method) || !["/admin", "/admin/", "/admin/index.html", "/admin/panel.js", "/admin/panel.css"].includes(url.pathname)) return new Response(null, { status: 404, headers });
+  if (!["/admin/panel.js", "/admin/panel.css"].includes(url.pathname)) url.pathname = "/admin/";
   const response = await assets.fetch(new Request(url, { method: request.method }));
   const combined = new Headers(response.headers);
   for (const [key, value] of Object.entries(headers)) combined.set(key, value);

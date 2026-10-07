@@ -28,7 +28,7 @@ export function FlowFrame<T extends string>({ steps, step, onStep, status, scree
   return (
     <div>
       <Flex justify="space-between" align="center" gap={12} wrap style={{ marginBottom: 12 }}>
-        <Segmented<T> value={step} onChange={onStep} options={steps} />
+        <Segmented<T> value={step} onChange={onStep} options={steps} vertical={!screens.sm} block={!screens.sm} style={{ maxWidth: "100%" }} />
         {status === "adopted" ? (
           <Tag color="success" variant="filled" icon={<CircleCheck />} style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
             Así se ve hoy en la app

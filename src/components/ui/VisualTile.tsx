@@ -57,11 +57,11 @@ export function VisualTile({ media, title, meta, footer, href, onClick, color, s
           </motion.div>
         </div>
       )}
-      <Typography.Text strong style={{ display: "block", overflowWrap: "anywhere", paddingInlineEnd: action && !media ? 44 : 0 }}>
+      <Typography.Text strong ellipsis={{ tooltip: title }} style={{ display: "block", paddingInlineEnd: action && !media ? 44 : 0 }}>
         {title}
       </Typography.Text>
       {meta && (
-        <Typography.Text type="secondary" style={{ display: "block", fontSize: token.fontSizeSM }}>
+        <Typography.Text type="secondary" ellipsis={{ tooltip: meta }} style={{ display: "block", fontSize: token.fontSizeSM }}>
           {meta}
         </Typography.Text>
       )}

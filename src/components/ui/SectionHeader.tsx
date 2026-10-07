@@ -28,7 +28,7 @@ export function SectionHeader({ title, description, icon, color, extra }: Sectio
       <Flex align="center" gap={12} style={{ minWidth: 0 }}>
         {icon && <IconTile icon={icon} color={color} size={36} />}
         <div style={{ minWidth: 0 }}>
-          <Typography.Title level={4} style={{ margin: 0, letterSpacing: "-0.02em" }} ellipsis>
+          <Typography.Title level={4} style={{ margin: 0, letterSpacing: "-0.02em", overflowWrap: "anywhere" }}>
             {title}
           </Typography.Title>
           {description && (

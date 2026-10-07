@@ -1,7 +1,6 @@
 "use client";
 
 import { DEMO_ENABLED } from "@/lib/demo";
-import { DemoNotice } from "@/features/demo/DemoNotice";
 import { Alert, Button, ConfigProvider, Drawer, Flex, Grid, Layout, Tooltip, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
@@ -101,7 +100,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
       <MembersBridge />
-      {user.role === "kid" ? <KidsLayout><DemoNotice />{children}</KidsLayout> : <DefaultLayout><DemoNotice />{children}</DefaultLayout>}
+      {user.role === "kid" ? <KidsLayout>{children}</KidsLayout> : <DefaultLayout>{children}</DefaultLayout>}
     </>
   );
 }
@@ -117,7 +116,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
         strong
         style={{
           fontSize: token.fontSizeXL,
-          color: token.colorPrimary,
+          color: token.colorText,
           letterSpacing: "-0.02em",
           whiteSpace: "nowrap",
           opacity: compact ? 0 : 1,
@@ -220,6 +219,10 @@ function DefaultLayout({ children }: { children: ReactNode }) {
         <Header
           style={{
             display: "flex",
+            flexWrap: "wrap",
+            height: "auto",
+            minHeight: token.controlHeight * 2,
+            paddingBlock: token.paddingXS,
             justifyContent: "space-between",
             alignItems: "center",
             gap: 12,

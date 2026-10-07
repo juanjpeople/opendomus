@@ -1,11 +1,13 @@
 "use client";
 
+import { formatQuantity } from "@/features/inventory/format";
+
 import { Button, Flex, Skeleton, Tag, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, ArrowUp, BellOff, ChefHat, ListPlus, MoveRight, PackageMinus, Pencil, Plus, RotateCcwClock, ShoppingBag, Tag as PriceTag, Trash2, Undo2, type LucideIcon } from "lucide-react";
 import { Fragment } from "react";
 import { EmptyState } from "@/components/ui";
-import { isUnit } from "@/features/inventory/domain";
+
 import { useInventoryActions } from "@/features/inventory/hooks";
 import { useNow } from "@/hooks/useNow";
 import { useI18n } from "@/i18n";
@@ -48,8 +50,6 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
         ? t("common.yesterday")
         : format.date(day, { weekday: "long", day: "numeric", month: "long" });
 
-  const unitLabel = (unit: string | undefined, count: number) =>
-    unit && isUnit(unit) ? t(`inventory.units.${unit}`, { count }) : (unit ?? "");
 
   const describe = (entry: ActivityEntry) => {
     const params = { actor: entry.actorName, name: entry.entityName, place: entry.place ?? "" };
@@ -71,11 +71,11 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
       return t(`activity.recipes.${entry.action as "create" | "update" | "delete" | "cooked"}`, params);
     }
     if (entry.module === "shopping") {
-      const quantity = entry.to ? ` (${entry.to} ${unitLabel(entry.unit, entry.to)})` : "";
+      const quantity = entry.to ? ` (${formatQuantity(t, entry.to, entry.unit, format.number)})` : "";
       return t(`activity.shopping.${entry.action as "create" | "bought" | "dismiss" | "delete"}`, params) + quantity;
     }
     if (entry.action === "adjust" || entry.action === "consume" || entry.action === "restock" || entry.action === "undo") {
-      return t(`activity.inventory.${entry.action}`, { ...params, from: entry.from ?? 0, to: `${entry.to ?? 0} ${unitLabel(entry.unit, entry.to ?? 0)}` });
+      return t(`activity.inventory.${entry.action}`, { ...params, from: entry.from ?? 0, to: formatQuantity(t, entry.to ?? 0, entry.unit, format.number) });
     }
     return t(`activity.inventory.${entry.action as "create" | "update" | "move" | "delete"}`, params);
   };

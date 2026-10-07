@@ -1,0 +1,31 @@
+import { expect, test } from "./fixtures";
+
+test("el plano conserva la etiqueta y encuentra anotaciones sin tildes", async ({ home: page }, testInfo) => {
+  if (testInfo.project.name === "celular") await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto("/inventario");
+  await expect(page.getByRole("main").getByRole("link", { name: "Cámara", exact: true })).toHaveCount(1);
+  await expect(page.getByRole("main").getByRole("link", { name: "Escanear", exact: true })).toHaveCount(0);
+  const label = page.getByRole("button", { name: "Etiqueta: Alacena", exact: true });
+  const box = await label.boundingBox();
+  expect(Math.round(box?.width ?? 0)).toBeGreaterThanOrEqual(44);
+  expect(Math.round(box?.height ?? 0)).toBeGreaterThanOrEqual(44);
+  await label.click();
+  await expect(page.getByRole("dialog", { name: "Imprimir etiqueta" })).toBeVisible();
+  await expect(page).toHaveURL(/\/inventario$/);
+  await page.getByRole("dialog").getByRole("button", { name: "Cerrar", exact: true }).click();
+  await page.getByRole("link", { name: /^Alacena/ }).click();
+  await page.getByRole("textbox", { name: "Contenido guardado" }).fill("Café en frasco azul");
+  await page.getByRole("button", { name: "Anotar", exact: true }).click();
+  await expect(page.getByText("Café en frasco azul", { exact: true })).toBeVisible();
+  await page.goto("/inventario");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => innerWidth));
+  await page.screenshot({ path: testInfo.outputPath("plano.png"), fullPage: true, animations: "disabled" });
+  await page.getByRole("textbox", { name: "¿Dónde guardé…?" }).fill("cafe azul");
+  const result = page.getByRole("list").getByRole("link", { name: "Cocina › Alacena", exact: true });
+  await expect(result).toBeVisible();
+  await expect(result.locator("mark")).toHaveText(["Café", "azul"]);
+  await expect(result).toHaveAttribute("href", /\/inventario\/ver\?id=/);
+  await page.screenshot({ path: testInfo.outputPath("busqueda.png"), fullPage: true, animations: "disabled" });
+  await result.click();
+  await expect(page.getByText("Café en frasco azul", { exact: true })).toBeVisible();
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { App, Button, Card, Col, Dropdown, Flex, Input, Popconfirm, Row, Segmented, Space, Tooltip, Typography, theme } from "antd";
+import { App, Button, Card, Col, Dropdown, Flex, Grid, Input, Popconfirm, Row, Segmented, Space, Tooltip, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
 import { Box, Boxes, Camera, EllipsisVertical, ExternalLink, Layers, NotebookPen, PackageOpen, Pencil, Plus, Printer, QrCode, ScanLine, Search, SearchX, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -203,11 +203,11 @@ function RoomPanel({ space, onOpen }: { space: DemoSpace; onOpen: (id: string) =
         boxShadow: token.boxShadowTertiary,
       }}
     >
-      <Flex align="center" justify="space-between" gap={12} style={{ marginBottom: 14 }}>
-        <Flex align="center" gap={12} style={{ minWidth: 0 }}>
+      <Flex align="center" justify="space-between" gap={token.marginSM} wrap style={{ marginBottom: token.margin }}>
+        <Flex align="center" gap={token.marginSM} style={{ minWidth: 0, flex: `1 1 ${token.controlHeight * 6}px` }}>
           <IconTile icon={Icon} color={color} size={44} solid />
           <div style={{ minWidth: 0 }}>
-            <Typography.Title level={4} style={{ margin: 0, letterSpacing: "-0.02em" }} ellipsis>
+            <Typography.Title level={4} style={{ margin: 0, letterSpacing: "-0.02em", overflowWrap: "anywhere" }}>
               {space.name}
             </Typography.Title>
             <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
@@ -293,6 +293,7 @@ function SearchResults({ query, onOpen }: { query: string; onOpen: (id: string) 
 
 function PlanScreen({ onOpen, onCamera }: { onOpen: (id: string) => void; onCamera: () => void }) {
   const t = useT();
+  const { token } = theme.useToken();
   const [query, setQuery] = useState("");
 
   return (
@@ -327,7 +328,7 @@ function PlanScreen({ onOpen, onCamera }: { onOpen: (id: string) => void; onCame
       {query.trim() ? (
         <SearchResults query={query} onOpen={onOpen} />
       ) : (
-        <Stagger delay={0.1} stagger={0.08} style={{ columnWidth: 400, columnGap: 20 }}>
+        <Stagger delay={0.1} stagger={0.08} style={{ columnWidth: token.controlHeightLG * 10, columnGap: token.marginLG }}>
           {HOUSE.map((space) => (
             <StaggerItem key={space.id} style={{ breakInside: "avoid", marginBottom: 20 }}>
               <RoomPanel space={space} onOpen={onOpen} />
@@ -348,6 +349,12 @@ function ContainerScreen({ id, onOpen, onCamera }: { id: string; onOpen: (id: st
   const [items, setItems] = useState(container.items);
   const [notes, setNotes] = useState(container.notes.map((text, index) => ({ id: `${container.id}-${index}`, text })));
   const [draft, setDraft] = useState("");
+  const [editingNote, setEditingNote] = useState<{ id: string; text: string } | null>(null);
+  const saveNote = () => {
+    if (!editingNote?.text.trim()) return;
+    setNotes((current) => current.map((note) => note.id === editingNote.id ? { ...note, text: editingNote.text.trim() } : note));
+    setEditingNote(null);
+  };
   const unit = (value: string, count: number) => (isUnit(value) ? t(`inventory.units.${value}`, { count }) : value);
   const toRestock = items.filter((item) => getStockStatus(item) !== "ok").length;
   const children = container.children ?? [];
@@ -483,13 +490,19 @@ function ContainerScreen({ id, onOpen, onCamera }: { id: string; onOpen: (id: st
         <Card styles={{ body: { padding: 0 } }}>
           <AnimatePresence initial={false}>
             {notes.map((note, index) => (
+              editingNote?.id === note.id ? <Flex key={note.id} gap={token.marginXS} wrap style={{ padding: token.padding }}>
+                <Input autoFocus aria-label={t("storage.contents.editTitle")} value={editingNote.text} maxLength={160} style={{ flex: "1 1 200px" }} onChange={(event) => setEditingNote({ ...editingNote, text: event.target.value })} onPressEnter={saveNote} onKeyDown={(event) => { if (event.key === "Escape") setEditingNote(null); }} />
+                <Button type="primary" disabled={!editingNote.text.trim()} onClick={saveNote}>{t("storage.contents.save")}</Button>
+                <Button onClick={() => setEditingNote(null)}>{t("common.cancel")}</Button>
+              </Flex> :
               <ListRow
                 key={note.id}
                 index={index}
                 title={note.text}
+                wrapTitle
                 trailing={
                   <>
-                    <Button type="text" aria-label={t("storage.contents.edit", { name: note.text })} icon={<Pencil />} />
+                    <Button type="text" aria-label={t("storage.contents.edit", { name: note.text })} icon={<Pencil />} onClick={() => setEditingNote({ ...note })} />
                     <Button
                       type="text"
                       danger
@@ -528,6 +541,7 @@ type CameraMode = "qr" | "find" | "ar";
 function CameraScreen({ onOpen }: { onOpen: (id: string) => void }) {
   const t = useT();
   const { token } = theme.useToken();
+  const screens = Grid.useBreakpoint();
   const [mode, setMode] = useState<CameraMode>("find");
   const [query, setQuery] = useState("");
   const [code, setCode] = useState("");
@@ -548,6 +562,8 @@ function CameraScreen({ onOpen }: { onOpen: (id: string) => void }) {
         <Segmented<CameraMode>
           value={mode}
           onChange={setMode}
+          vertical={!screens.sm}
+          block={!screens.sm}
           style={{ marginBottom: 16 }}
           options={[
             { value: "qr", label: "Escanear QR", icon: <ScanLine /> },
@@ -724,7 +740,7 @@ export function StorageFlow() {
         ]}
         step={step}
         onStep={setStep}
-        status="reference"
+        status="adopted"
         screenKey={step === "container" ? `container:${containerId}` : step}
       >
         {step === "plan" && <PlanScreen onOpen={open} onCamera={() => setStep("camera")} />}

@@ -1,21 +1,20 @@
 "use client";
 
-import { App, Button, Card, Flex, Skeleton, Tooltip, Typography, theme } from "antd";
-import { ArrowLeft, Camera, PackageX, Pencil, Printer, QrCode, Trash2 } from "lucide-react";
+import { App, Button, Card, Dropdown, Skeleton, Typography, theme } from "antd";
+import { ArrowLeft, Camera, EllipsisVertical, RotateCcwClock, PackageX, Pencil, Printer, QrCode, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
-import { EmptyState, PageHeader } from "@/components/ui";
-import { ActivityButton } from "@/features/activity/components/ActivityButton";
+import { EmptyState, IconTile, PageHeader, RoomFloor, SectionHeader } from "@/components/ui";
+import { ActivityDrawer } from "@/features/activity/components/ActivityButton";
 import { AddTile, ContainerTile } from "@/features/storage/components/ContainerTiles";
 import type { LabelData } from "@/features/storage/components/ContainerLabel";
 import { LabelModal } from "@/features/storage/components/LabelModal";
 import { ContainerModal } from "@/features/storage/components/StorageForms";
 import { ContainerContents } from "@/features/storage/components/ContainerContents";
-import { ContainerScene } from "@/features/storage/components/ContainerScene";
 import { containerAppearance, STORAGE_LIMITS } from "@/features/storage/domain";
 import { useContainer, useStorageActions } from "@/features/storage/hooks";
 import { useT } from "@/i18n";
@@ -41,6 +40,8 @@ export function ContainerPage() {
   const [dialog, setDialog] = useState<"edit" | "addChild" | null>(null);
   const [labels, setLabels] = useState<LabelData[] | null>(null);
   const canManage = usePermission("storage.manage");
+  const canViewActivity = usePermission("activity.view");
+  const [activityOpen, setActivityOpen] = useState(false);
   const { token } = theme.useToken();
   useTrackVisit(container ? containerHref(container.id) : null);
   usePageCrumbs(
@@ -81,12 +82,8 @@ export function ContainerPage() {
     <RequirePermission perform="inventory.view">
       <PageHeader
         eyebrow={[container.spaceName, ...container.ancestors.map((ancestor) => ancestor.name)].join(" › ")}
-        title={
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
-            <ContainerScene container={container} compact />
-            {container.name}
-          </span>
-        }
+        title={container.name}
+        leading={<IconTile icon={containerAppearance(container).Icon} color={containerAppearance(container).color} size={token.controlHeightLG + token.padding} solid />}
         description={`${t(`storage.containerKinds.${container.kind}`)} · ${t("storage.code")} ${container.code}`}
         extra={
           <>
@@ -94,71 +91,61 @@ export function ContainerPage() {
             <Button icon={<QrCode />} onClick={() => setLabels([labelOf(container, container.spaceName, container.ancestors)])}>
               {t("storage.label")}
             </Button>
-            <ActivityButton containerId={container.id} place={container.name} />
-            <Can perform="storage.manage">
-              <Tooltip title={t("storage.edit")}>
-                <Button icon={<Pencil />} aria-label={t("storage.edit")} onClick={() => setDialog("edit")} />
-              </Tooltip>
-              <Tooltip title={t("storage.delete")}>
-                <Button danger icon={<Trash2 />} aria-label={t("storage.delete")} onClick={confirmDelete} />
-              </Tooltip>
-            </Can>
+            {(canManage || canViewActivity) && <Dropdown trigger={["click"]} menu={{ items: [
+              ...(canViewActivity ? [{ key: "activity", icon: <RotateCcwClock />, label: t("activity.button"), onClick: () => setActivityOpen(true) }] : []),
+              ...(canManage ? [
+                { key: "edit", icon: <Pencil />, label: t("storage.edit"), onClick: () => setDialog("edit") },
+                { type: "divider" as const },
+                { key: "delete", danger: true, icon: <Trash2 />, label: t("storage.delete"), onClick: confirmDelete },
+              ] : []),
+            ] }}><Button icon={<EllipsisVertical />} aria-label={t("common.moreActions")} /></Dropdown>}
           </>
         }
       />
-      <ContainerContents key={container.id} containerId={container.id} />
+      <InventoryStats containerId={container.id} />
+      <Reveal delay={0.1}>
+        <section style={{ marginBottom: token.marginLG }}>
+          <SectionHeader title={t("storage.contents.inventory")} />
+          <Can perform="inventory.create"><InventoryForm containerId={container.id} /></Can>
+          <InventoryList containerId={container.id} onOpen={setOpenItem} />
+        </section>
+      </Reveal>
       {(container.children.length > 0 || (canManage && container.depth < STORAGE_LIMITS.maxDepth)) && (
-        <Reveal delay={0.1}>
+        <Reveal delay={0.2}>
           <section
             style={{
-              marginBottom: 24,
-              padding: 16,
+              marginBottom: token.marginLG,
+              padding: token.padding,
               borderRadius: token.borderRadiusLG * 1.5,
               border: `1.5px dashed ${tint(token, containerAppearance(container).color).border}`,
             }}
           >
-            <Flex align="center" justify="space-between" gap={8} style={{ marginBottom: 12 }}>
-              <Typography.Title level={5} style={{ margin: 0 }}>
-                {t("storage.subcontainers")}
-              </Typography.Title>
-              {container.children.length > 0 && (
-                <Button size="small" icon={<Printer />} onClick={() => setLabels(container.children.map((child) => labelOf(child, container.spaceName, [...container.ancestors, container])))}>
-                  {t("storage.printLabels")}
-                </Button>
-              )}
-            </Flex>
+            <SectionHeader title={t("storage.subcontainers")} extra={container.children.length > 0 && (
+              <Button icon={<Printer />} onClick={() => setLabels(container.children.map((child) => labelOf(child, container.spaceName, [...container.ancestors, container])))}>{t("storage.printLabels")}</Button>
+            )} />
             {container.children.length === 0 && (
               <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
                 {t("storage.noSubcontainers")}
               </Typography.Paragraph>
             )}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
+            <RoomFloor color={containerAppearance(container).color} minTileWidth={150}>
               {container.children.map((child) => (
                 <ContainerTile key={child.id} container={child} onLabel={() => setLabels([labelOf(child, container.spaceName, [...container.ancestors, container])])} />
               ))}
               {canManage && container.depth < STORAGE_LIMITS.maxDepth && (
                 <AddTile color={tint(token, containerAppearance(container).color).solid} label={t("storage.addSubcontainer")} onClick={() => setDialog("addChild")} />
               )}
-            </div>
+            </RoomFloor>
             {canManage && container.depth >= STORAGE_LIMITS.maxDepth && container.children.length > 0 && (
-              <Typography.Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: token.fontSizeSM }}>
+              <Typography.Text type="secondary" style={{ display: "block", marginTop: token.marginXS, fontSize: token.fontSizeSM }}>
                 {t("storage.maxDepth")}
               </Typography.Text>
             )}
           </section>
         </Reveal>
       )}
-      <Typography.Title level={2} style={{ fontSize: token.fontSizeHeading4 }}>{t("storage.contents.inventory")}</Typography.Title>
-      <InventoryStats containerId={container.id} />
-      <Can perform="inventory.create">
-        <Reveal delay={0.15}>
-          <InventoryForm containerId={container.id} />
-        </Reveal>
-      </Can>
-      <Reveal delay={0.25}>
-        <InventoryList containerId={container.id} onOpen={setOpenItem} />
-      </Reveal>
-
+      <Reveal delay={0.25}><ContainerContents key={container.id} containerId={container.id} /></Reveal>
+      <ActivityDrawer containerId={container.id} place={container.name} open={activityOpen} onClose={() => setActivityOpen(false)} />
 
       <ItemDrawer itemId={openItem} onClose={() => setOpenItem(null)} />
       <ContainerModal open={dialog === "edit"} container={container} onClose={() => setDialog(null)} />

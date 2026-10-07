@@ -1,8 +1,10 @@
 "use client";
 
 import { Button, Card, Flex, Form, Input, Modal, Popconfirm, Typography, theme } from "antd";
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { NotebookPen, Pencil, Plus, Trash2 } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ListRow, SectionHeader } from "@/components/ui";
 import { PhotoGallery } from "@/features/media/components/PhotoGallery";
 import { useT } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
@@ -21,6 +23,18 @@ export function ContainerContents({ containerId }: { containerId: string }) {
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
   const [bulk, setBulk] = useState<string | null>(null);
+  const returnFocus = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    if (editing || saving || !returnFocus.current) return;
+    document.getElementById(`content-edit-${returnFocus.current}`)?.focus();
+    returnFocus.current = null;
+  }, [editing, saving]);
+
+  function stopEditing() {
+    returnFocus.current = editing?.id ?? null;
+    setEditing(null);
+  }
 
   async function add(values: { text: string }) {
     setSaving(true);
@@ -33,18 +47,18 @@ export function ContainerContents({ containerId }: { containerId: string }) {
     if (!editing || saving) return;
     setSaving(true);
     try {
-      if (await saveContent(containerId, text, editing.id)) setEditing(null);
+      if (await saveContent(containerId, text, editing.id)) stopEditing();
     } finally { setSaving(false); }
   }
 
   return (
-    <Card style={{ marginBottom: 24 }}>
-      <Typography.Title level={2} style={{ fontSize: token.fontSizeHeading4, marginTop: 0 }}>{t("storage.contents.title")}</Typography.Title>
-      <Typography.Paragraph type="secondary">{t("storage.contents.hint")}</Typography.Paragraph>
+    <section style={{ marginBottom: token.marginLG }}>
+      <SectionHeader icon={NotebookPen} title={t("storage.contents.title")} description={t("storage.contents.hint")} />
+      <Card>
       {editable && (
         <Form form={form} onFinish={add} layout="vertical">
           <Flex gap={8} wrap align="start">
-            <Form.Item name="text" style={{ flex: "1 1 220px", marginBottom: 12 }} rules={[{ required: true, whitespace: true, message: t("errors.validation.nameRequired") }]}>
+            <Form.Item name="text" style={{ flex: "1 1 220px", marginBottom: token.marginSM }} rules={[{ required: true, whitespace: true, message: t("errors.validation.contentRequired") }]}>
               <Input aria-label={t("storage.contents.input")} placeholder={t("storage.contents.placeholder")} maxLength={CONTENT_LIMITS.textMaxLength} disabled={saving} />
             </Form.Item>
             <Button htmlType="submit" icon={<Plus />} loading={saving} disabled={(entries?.length ?? 0) >= CONTENT_LIMITS.maxPerContainer}>{t("storage.contents.add")}</Button>
@@ -53,23 +67,29 @@ export function ContainerContents({ containerId }: { containerId: string }) {
         </Form>
       )}
       {entries?.length === 0 && <Typography.Paragraph type="secondary">{t("storage.contents.empty")}</Typography.Paragraph>}
-      <ul style={{ padding: 0, margin: "0 0 24px", listStyle: "none" }}>
+      <ul style={{ padding: 0, margin: `0 0 ${token.marginLG}px`, listStyle: "none" }}>
+        <AnimatePresence initial={false}>
         {entries?.map((entry) => (
-          <li key={entry.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
-            <Typography.Text style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{entry.text}</Typography.Text>
-            {editable && (
+          <motion.li key={entry.id} layout exit={{ opacity: 0 }}>
+            {editing?.id === entry.id ? <Flex gap={token.marginXS} wrap style={{ paddingBlock: token.paddingSM }}>
+              <Input autoFocus aria-label={t("storage.contents.editTitle")} value={text} onChange={(event) => setText(event.target.value)} maxLength={CONTENT_LIMITS.textMaxLength} disabled={saving} style={{ flex: "1 1 200px" }} onPressEnter={edit} onKeyDown={(event) => { if (event.key === "Escape" && !saving) stopEditing(); }} />
+              <Button type="primary" onClick={edit} loading={saving} disabled={!text.trim()}>{t("storage.contents.save")}</Button>
+              <Button onClick={stopEditing} disabled={saving}>{t("common.cancel")}</Button>
+            </Flex> : <ListRow title={entry.text} wrapTitle trailing={editable && (
               <Flex gap={4}>
-                <Button icon={<Pencil />} style={{ minWidth: 44, minHeight: 44 }} aria-label={t("storage.contents.edit", { name: entry.text })} onClick={() => { setEditing(entry); setText(entry.text); }} />
+                <Button id={`content-edit-${entry.id}`} icon={<Pencil />} style={{ minWidth: token.controlHeightLG + token.paddingXXS, minHeight: token.controlHeightLG + token.paddingXXS }} aria-label={t("storage.contents.edit", { name: entry.text })} disabled={saving} onClick={() => { setEditing(entry); setText(entry.text); }} />
                 <Popconfirm title={t("storage.contents.deleteConfirm", { name: entry.text })} okText={t("storage.delete")} cancelText={t("common.cancel")} okButtonProps={{ danger: true }} onConfirm={() => deleteContent(entry.id)}>
-                  <Button danger icon={<Trash2 />} style={{ minWidth: 44, minHeight: 44 }} aria-label={t("storage.contents.delete", { name: entry.text })} />
+                  <Button danger icon={<Trash2 />} style={{ minWidth: token.controlHeightLG + token.paddingXXS, minHeight: token.controlHeightLG + token.paddingXXS }} aria-label={t("storage.contents.delete", { name: entry.text })} disabled={saving} />
                 </Popconfirm>
               </Flex>
-            )}
-          </li>
+            )} />}
+          </motion.li>
         ))}
+        </AnimatePresence>
       </ul>
-      <Typography.Title level={3} style={{ fontSize: token.fontSizeHeading5 }}>{t("storage.contents.photos")}</Typography.Title>
+      <SectionHeader title={t("storage.contents.photos")} />
       <PhotoGallery ownerType="container" ownerId={containerId} editable={editable} />
+      </Card>
       <Modal title={t("storage.contents.bulk")} open={bulk !== null} onCancel={() => { if (!saving) setBulk(null); }} confirmLoading={saving} okText={t("storage.contents.add")} cancelText={t("common.cancel")} okButtonProps={{ disabled: !bulk?.trim() }} onOk={async () => {
         if (bulk === null || saving) return;
         setSaving(true);
@@ -79,9 +99,6 @@ export function ContainerContents({ containerId }: { containerId: string }) {
         <Typography.Paragraph type="secondary">{t("storage.contents.bulkHint")}</Typography.Paragraph>
         <Input.TextArea aria-label={t("storage.contents.bulk")} value={bulk ?? ""} onChange={(event) => setBulk(event.target.value)} rows={7} disabled={saving} maxLength={(CONTENT_LIMITS.textMaxLength + 1) * CONTENT_LIMITS.maxPerContainer} />
       </Modal>
-      <Modal title={t("storage.contents.editTitle")} open={!!editing} onCancel={() => setEditing(null)} onOk={edit} confirmLoading={saving} okText={t("storage.contents.save")} cancelText={t("common.cancel")} okButtonProps={{ disabled: !text.trim() }}>
-        <Input aria-label={t("storage.contents.input")} value={text} onChange={(event) => setText(event.target.value)} maxLength={CONTENT_LIMITS.textMaxLength} onPressEnter={edit} />
-      </Modal>
-    </Card>
+    </section>
   );
 }

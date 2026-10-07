@@ -3,9 +3,8 @@
 import { Avatar, Card, Col, Flex, Row, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
 import { useLiveQuery } from "dexie-react-hooks";
 import { CalendarDays, ChefHat, HardHat, KeyRound, ShoppingCart, type LucideIcon } from "lucide-react";
-import Link from "next/link";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
-import { IconTile, PageHeader, PRIVACY_META } from "@/components/ui";
+import { IconTile, ListRow, PageHeader, PRIVACY_META } from "@/components/ui";
 import { MemberAvatar } from "@/components/ui/MemberAvatar";
 import type { Member } from "@/features/members/domain";
 import { useMembers } from "@/features/members/hooks";
@@ -150,19 +149,9 @@ export function PrivacyPage() {
                           own.map((item) => {
                             const TypeIcon = TYPE_ICONS[item.type];
                             return (
-                              <Link key={`${item.type}-${item.id}`} href={item.href} style={{ color: "inherit" }}>
-                                <Flex align="center" gap={10} className="od-privacy-row" style={{ padding: "8px 6px", borderRadius: token.borderRadius }}>
-                                  <span style={{ display: "inline-flex", color: token.colorTextTertiary }} aria-hidden>
-                                    <TypeIcon size={16} />
-                                  </span>
-                                  <Typography.Text ellipsis style={{ flex: 1, minWidth: 0 }}>
-                                    {item.name}
-                                  </Typography.Text>
-                                  <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                                    {t(`privacy.page.types.${item.type}`)}
-                                  </Typography.Text>
-                                </Flex>
-                              </Link>
+                              <ListRow key={`${item.type}-${item.id}`} href={item.href} title={item.name} wrapTitle
+                                leading={<span style={{ display: "inline-flex", color: token.colorTextSecondary, fontSize: token.fontSize }} aria-hidden><TypeIcon /></span>}
+                                meta={t(`privacy.page.types.${item.type}`)} />
                             );
                           })
                         )}
@@ -175,7 +164,6 @@ export function PrivacyPage() {
           </Row>
         </Stagger>
       )}
-      <style>{`.od-privacy-row:hover { background: ${token.colorFillTertiary}; }`}</style>
     </>
   );
 }

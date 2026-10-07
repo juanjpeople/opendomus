@@ -11,7 +11,7 @@ const PORT = 4173;
 
 export default defineConfig({
   testDir: "e2e",
-  testIgnore: ["local-build.spec.ts", "demo.spec.ts"],
+  testIgnore: ["local-build.spec.ts", "demo.spec.ts", "visual-tour.spec.ts", "visual-comparison.spec.ts"],
   fullyParallel: true,
   // Pocos a la vez: cada test levanta un navegador entero y la app anima bastante.
   workers: process.env.CI ? 2 : 3,

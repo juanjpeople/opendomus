@@ -1,6 +1,10 @@
 "use client";
 
-import { Alert, App, Button, Flex } from "antd";
+import { App, Button, Flex, Typography, theme } from "antd";
+import { FlaskConical } from "lucide-react";
+import { useRef, useState } from "react";
+import { Can } from "@/components/auth/Can";
+import { ContextBadge } from "@/components/ui";
 import { useT } from "@/i18n";
 import { useCurrentUser } from "@/lib/auth/session";
 import { DEMO_ENABLED, SAMPLE_HOUSE } from "@/lib/demo";
@@ -10,15 +14,22 @@ import { addDemoExamples } from "./service";
 
 export function DemoNotice() {
   const t = useT();
+  const { token } = theme.useToken();
+  const pending = useRef(false);
+  const [busy, setBusy] = useState(false);
   const user = useCurrentUser();
   const { modal, message } = App.useApp();
   if (!DEMO_ENABLED) return null;
 
   async function addExamples() {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
     try {
       await addDemoExamples(user);
       window.location.reload();
     } catch { message.error(t("demo.addError")); }
+    finally { pending.current = false; setBusy(false); }
   }
 
   function reset() {
@@ -38,18 +49,16 @@ export function DemoNotice() {
     });
   }
 
-  return (
-    <Alert
-      type="info"
-      showIcon
-      title={t(SAMPLE_HOUSE === "tests" ? "demo.testsNotice" : "demo.notice")}
-      description={<>{t("demo.scope")}<DemoLauncher />
-        {user?.role === "admin" && <Flex wrap gap={8}>
-          <Button size="small" onClick={addExamples}>{t("demo.add")}</Button>
-          <Button size="small" onClick={reset}>{t("demo.reset")}</Button>
-        </Flex>}
-      </>}
-      style={{ marginBottom: 20 }}
-    />
-  );
+  return <ContextBadge icon={FlaskConical} label={t(SAMPLE_HOUSE === "tests" ? "demo.testsBadge" : "demo.badge")}
+    title={t(SAMPLE_HOUSE === "tests" ? "demo.testsNotice" : "demo.notice")}>
+    <Typography.Text type="secondary">{t("demo.scope")}</Typography.Text>
+    <Typography.Text type="secondary">{t("demo.unavailable")}</Typography.Text>
+    <DemoLauncher />
+    <Can perform="members.manage">
+      <Flex vertical gap={token.marginXS}>
+        <Button style={{ minHeight: 44, height: "auto", whiteSpace: "normal" }} loading={busy} disabled={busy} aria-label={t("demo.add")} onClick={addExamples}>{t("demo.add")}</Button>
+        <Button style={{ minHeight: 44, height: "auto", whiteSpace: "normal" }} danger disabled={busy} onClick={reset}>{t("demo.reset")}</Button>
+      </Flex>
+    </Can>
+  </ContextBadge>;
 }

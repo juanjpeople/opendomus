@@ -2,7 +2,7 @@
 
 import { Flex, Typography, theme } from "antd";
 import type { ReactNode } from "react";
-import { Reveal } from "@/components/motion";
+import { Reveal } from "@/components/motion/Reveal";
 
 interface PageHeaderProps {
   title: ReactNode;
@@ -28,7 +28,7 @@ export function PageHeader({ title, description, eyebrow, extra, leading }: Page
             {eyebrow && (
               <Typography.Text
                 strong
-                style={{ color: token.colorPrimary, textTransform: "uppercase", letterSpacing: "0.12em", fontSize: 12 }}
+                style={{ color: token.colorTextSecondary, textTransform: "uppercase", letterSpacing: "0.12em", fontSize: token.fontSizeSM }}
               >
                 {eyebrow}
               </Typography.Text>
@@ -37,7 +37,7 @@ export function PageHeader({ title, description, eyebrow, extra, leading }: Page
               {title}
             </Typography.Title>
             {description && (
-              <Typography.Paragraph type="secondary" style={{ margin: "6px 0 0", fontSize: 16 }}>
+              <Typography.Paragraph type="secondary" style={{ margin: "6px 0 0", fontSize: token.fontSizeLG }}>
                 {description}
               </Typography.Paragraph>
             )}

@@ -1,9 +1,10 @@
 "use client";
-import { App, Alert, Button, Card, Col, Descriptions, Flex, Form, Input, InputNumber, Modal, Row, Segmented, Skeleton, Statistic, Table, Tabs, Tag, Typography } from "antd";
+import { App, Alert, Button, Card, Col, Descriptions, Flex, Form, Grid, Input, InputNumber, Modal, Row, Select, Segmented, Skeleton, Statistic, Table, Tabs, Tag, Typography, theme } from "antd";
 import { CircleAlert, Gauge, KeyRound, MessageSquare, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OperatorLayout, useT, api, CloudError, getErrorMessage } from "./support";
-import { IconTile } from "../src/components/ui/IconTile";
+import { PageHeader } from "../src/components/ui/PageHeader";
+import { Reveal } from "../src/components/motion/Reveal";
 interface Overview {
   metrics: {
     users: number;
@@ -76,7 +77,7 @@ interface AdminData {
   notices: AdminNotice[];
 }
 const shortId = (value: string) => `${value.slice(0, 8)}…`;
-const date = (value: string | number | null) => (value ? new Date(value).toLocaleString() : "—");
+const date = (value: string | number | null) => (value === null ? "—" : new Date(value).toLocaleString("es-AR"));
 async function fetchAdminData(): Promise<AdminData> {
   const [overview, users, households, licenses, feedback, notices] = await Promise.all([
     api<Overview>("GET", "/api/admin/platform/overview"),
@@ -90,6 +91,9 @@ async function fetchAdminData(): Promise<AdminData> {
 }
 export function PlatformAdminPage() {
   const t = useT();
+  const { token } = theme.useToken();
+  const screens = Grid.useBreakpoint();
+  const [section, setSection] = useState("households");
   const { modal } = App.useApp();
   const [data, setData] = useState<AdminData | null>(null);
   const [forbidden, setForbidden] = useState(false);
@@ -156,7 +160,7 @@ export function PlatformAdminPage() {
         width: 560,
         afterClose: () => { void load(); },
         content: (
-          <Flex vertical gap={8} style={{ marginTop: 16 }}>
+          <Flex vertical gap={token.marginXS} style={{ marginTop: token.margin }}>
             <Alert type="warning" showIcon title={t("platformAdmin.licenses.once")} />
             {result.licenses.map((license) => (
               <Typography.Text key={license.code} copyable code>
@@ -173,9 +177,9 @@ export function PlatformAdminPage() {
       setBusy(false);
     }
   }
-  if (forbidden) return <OperatorLayout><Alert type="error" title="Sesión privada vencida o acceso no autorizado" description="Volvé a ingresar con tu clave de operador y un código nuevo del autenticador." /><Button href="/admin">Volver a ingresar</Button></OperatorLayout>;
-  if (failure) return <OperatorLayout><Alert type="error" title="No se pudo completar la consulta u operación" description={failure} /><Typography.Paragraph>Si estabas guardando un cambio, consultá el estado antes de repetirlo: la respuesta puede haberse perdido después de aplicarlo.</Typography.Paragraph><Button onClick={load}>Volver a consultar</Button></OperatorLayout>;
-  if (!data) return <OperatorLayout><Skeleton active title={{ width: "50%" }} /><Typography.Text>Cargando administración privada…</Typography.Text></OperatorLayout>;
+  if (forbidden) return <OperatorLayout><Flex vertical gap={token.margin}><Alert type="error" title={t("operator.expired")} description={t("operator.expiredHelp")} /><Button href="/admin">{t("operator.loginAgain")}</Button></Flex></OperatorLayout>;
+  if (failure) return <OperatorLayout><Flex vertical gap={token.margin}><Alert type="error" title={t("operator.failed")} description={failure} /><Typography.Paragraph>{t("operator.failedHelp")}</Typography.Paragraph><Button onClick={load}>{t("operator.retry")}</Button></Flex></OperatorLayout>;
+  if (!data) return <OperatorLayout><Skeleton active title={{ width: "50%" }} /><Typography.Text role="status">{t("operator.loading")}</Typography.Text></OperatorLayout>;
   const overview = data.overview;
   const metrics = overview?.metrics;
   const metricCards = [
@@ -186,33 +190,23 @@ export function PlatformAdminPage() {
   ] as const;
   return (
     <OperatorLayout width={1200}>
-      <Flex vertical gap={20}>
-        <Flex align="center" justify="space-between" gap={12} wrap>
-          <Flex align="center" gap={14}>
-            <IconTile icon={Gauge} color="blue" size={52} />
-            <div>
-              <Typography.Title level={2} style={{ margin: 0 }}>
-                {t("platformAdmin.title")}
-              </Typography.Title>
-              <Typography.Text type="secondary">Acceso privado · Clave y autenticador</Typography.Text>
-            </div>
-          </Flex>
-          <Button icon={<RefreshCw />} loading={loading} disabled={busy} onClick={load}>
-            {t("common.reload")}
-          </Button>
-        </Flex>
+      <Flex vertical gap={token.marginLG}>
+        <PageHeader title={t("platformAdmin.title")} eyebrow={t("operator.badge")} description={t("operator.private")}
+          extra={<Button aria-label={t("common.reload")} icon={<RefreshCw />} loading={loading} disabled={busy} onClick={load} style={{ minHeight: 44 }}>{t("common.reload")}</Button>} />
+        <Reveal delay={0.05}>
         <Row gutter={[12, 12]}>
           {metricCards.map(([title, value, Icon]) => (
             <Col xs={12} lg={6} key={title}>
               <Card>
-                <Statistic title={title} value={value} prefix={<Icon size={18} />} />
+                <Statistic title={title} value={value} prefix={<Icon />} />
               </Card>
             </Col>
           ))}
         </Row>
+        </Reveal>
         {overview && (
-          <Card>
-            <Flex gap={24} wrap>
+          <Reveal delay={0.1}><Card>
+            <Flex gap={token.marginLG} wrap>
               <Descriptions
                 title={t("platformAdmin.runtime")}
                 size="small"
@@ -229,18 +223,33 @@ export function PlatformAdminPage() {
                 size="small"
                 column={1}
                 items={[
-                  { key: "admin", label: "Acceso de operador", children: <Tag color={overview.credentials.operatorConfigured ? "green" : "red"}>{t(overview.credentials.operatorConfigured ? "platformAdmin.configured" : "platformAdmin.missing")}</Tag> },
-                  { key: "storage", label: "Supabase", children: <Tag color={overview.credentials.supabaseConfigured ? "green" : "red"}>{t(overview.credentials.supabaseConfigured ? "platformAdmin.configured" : "platformAdmin.missing")}</Tag> },
+                  { key: "admin", label: t("operator.title"), children: <Tag color={overview.credentials.operatorConfigured ? "green" : "red"}>{t(overview.credentials.operatorConfigured ? "platformAdmin.configured" : "platformAdmin.missing")}</Tag> },
+                  { key: "storage", label: t("operator.storage"), children: <Tag color={overview.credentials.supabaseConfigured ? "green" : "red"}>{t(overview.credentials.supabaseConfigured ? "platformAdmin.configured" : "platformAdmin.missing")}</Tag> },
                 ]}
               />
             </Flex>
-          </Card>
+          </Card></Reveal>
         )}
         {overview && overview.risks.length > 0 && (
-          <Alert type="warning" showIcon icon={<CircleAlert />} title={t("platformAdmin.risks")} description={<pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{JSON.stringify(overview.risks, null, 2)}</pre>} />
+          <Alert type="warning" showIcon icon={<CircleAlert />} title={t("platformAdmin.risks")} description={<Flex vertical gap={token.margin} style={{ overflowWrap: "anywhere" }}>
+            <Typography.Text>{t("operator.risks.help")}</Typography.Text>
+            {overview.risks.map((risk, index) => <Descriptions key={index} size="small" column={1} items={[
+              { key: "type", label: t("operator.risks.type"), children: t(`operator.risks.${risk.type}`) },
+              ...(risk.type === "many-sessions" ? [
+                { key: "email", label: t("operator.risks.email"), children: String(risk.email) },
+                { key: "sessions", label: t("operator.risks.sessions"), children: String(risk.sessions) },
+              ] : [
+                { key: "sources", label: t("operator.risks.sources"), children: String(risk.sources) },
+                { key: "maxCount", label: t("operator.risks.maxCount"), children: String(risk.maxCount) },
+              ]),
+            ]} />)}
+          </Flex>} />
         )}
-        <Card>
-          <Tabs
+        <Reveal delay={0.15}><Card>
+          {!screens.sm && <Select virtual={false} aria-label={t("operator.section")} value={section} onChange={setSection}
+            style={{ width: "100%", minHeight: 44, marginBottom: token.margin }}
+            options={["households", "users", "licenses", "feedback", "notices"].map(value => ({ value, label: t(`platformAdmin.tabs.${value}`) }))} />}
+          <Tabs activeKey={section} onChange={setSection} tabBarStyle={screens.sm ? undefined : { display: "none" }}
             items={[
               {
                 key: "households",
@@ -251,20 +260,21 @@ export function PlatformAdminPage() {
                     dataSource={data?.households ?? []}
                     pagination={{ pageSize: 10 }}
                     columns={[
-                      { title: "ID", dataIndex: "id", render: (id: string) => <Typography.Text copyable={{ text: id }}>{shortId(id)}</Typography.Text> },
+                      { title: t("operator.id"), dataIndex: "id", render: (id: string) => <Typography.Text copyable={{ text: id }}>{shortId(id)}</Typography.Text> },
                       { title: t("platformAdmin.members"), dataIndex: "members" },
                       { title: t("platformAdmin.lastActivity"), dataIndex: "lastActivityAt", render: date },
-                      { title: t("platformAdmin.status"), dataIndex: "status", render: (value: string) => <Tag color={value === "active" ? "green" : "orange"}>{value}</Tag> },
+                      { title: t("platformAdmin.status"), dataIndex: "status", render: (value: string) => <Tag color={value === "active" ? "green" : "orange"}>{t(`operator.states.${value}`)}</Tag> },
                       {
                         title: t("platformAdmin.actions"),
                         render: (_: unknown, row: AdminHousehold) => (
                           <Flex gap={8} wrap>
-                            <Button size="small" onClick={() => action("POST", `/api/admin/platform/households/${row.id}/${row.status === "active" ? "pause" : "resume"}`)}>
+                            <Button disabled={busy} style={{ minHeight: 44 }} onClick={() => action("POST", `/api/admin/platform/households/${row.id}/${row.status === "active" ? "pause" : "resume"}`)}>
                               {t(row.status === "active" ? "platformAdmin.pause" : "platformAdmin.resume")}
                             </Button>
                             {Boolean(row.deletionEligible) && (
                               <Button
-                                size="small"
+                                disabled={busy}
+                                style={{ minHeight: 44 }}
                                 danger
                                 onClick={() =>
                                   modal.confirm({
@@ -309,7 +319,7 @@ export function PlatformAdminPage() {
                 label: t("platformAdmin.tabs.licenses"),
                 children: (
                   <Flex vertical gap={12}>
-                    <Button type="primary" icon={<KeyRound />} onClick={() => setLicenseOpen(true)} style={{ alignSelf: "flex-start" }}>
+                    <Button type="primary" icon={<KeyRound />} onClick={() => setLicenseOpen(true)} style={{ alignSelf: "flex-start", minHeight: 44 }}>
                       {t("platformAdmin.licenses.create")}
                     </Button>
                     <Table scroll={{ x: "max-content" }}
@@ -320,12 +330,12 @@ export function PlatformAdminPage() {
                         { title: t("platformAdmin.note"), dataIndex: "note", render: (value: string | null) => value ?? "—" },
                         { title: t("platformAdmin.usage"), render: (_: unknown, row: AdminLicense) => `${row.used}/${row.maxHouseholds}` },
                         { title: t("platformAdmin.expires"), dataIndex: "expiresAt", render: date },
-                        { title: t("platformAdmin.status"), dataIndex: "status", render: (value: string) => <Tag color={value === "active" ? "green" : "red"}>{value}</Tag> },
+                        { title: t("platformAdmin.status"), dataIndex: "status", render: (value: string) => <Tag color={value === "active" ? "green" : "red"}>{t(`operator.states.${value}`)}</Tag> },
                         {
                           title: t("platformAdmin.actions"),
                           render: (_: unknown, row: AdminLicense) =>
                             row.status === "active" ? (
-                              <Button size="small" danger onClick={() => action("POST", `/api/admin/platform/licenses/${row.id}/revoke`)}>
+                              <Button disabled={busy} style={{ minHeight: 44 }} danger onClick={() => action("POST", `/api/admin/platform/licenses/${row.id}/revoke`)}>
                                 {t("platformAdmin.revoke")}
                               </Button>
                             ) : null,
@@ -345,7 +355,7 @@ export function PlatformAdminPage() {
                     pagination={{ pageSize: 10 }}
                     expandable={{ expandedRowRender: (row) => <Typography.Paragraph>{row.message}</Typography.Paragraph> }}
                     columns={[
-                      { title: t("platformAdmin.category"), dataIndex: "category" },
+                      { title: t("platformAdmin.category"), dataIndex: "category", render: (value: AdminFeedback["category"]) => t(`operator.categories.${value}`) },
                       { title: t("platformAdmin.email"), dataIndex: "email", render: (value: string | null) => value ?? "—" },
                       { title: t("platformAdmin.created"), dataIndex: "createdAt", render: date },
                       {
@@ -353,7 +363,7 @@ export function PlatformAdminPage() {
                         dataIndex: "status",
                         render: (value: AdminFeedback["status"], row: AdminFeedback) => (
                           <Segmented
-                            size="small"
+                            disabled={busy}
                             value={value}
                             options={[
                               { value: "open", label: t("platformAdmin.open") },
@@ -376,20 +386,20 @@ export function PlatformAdminPage() {
                     dataSource={data?.notices ?? []}
                     pagination={{ pageSize: 10 }}
                     columns={[
-                      { title: "ID", dataIndex: "householdId", render: (id: string) => shortId(id) },
+                      { title: t("operator.id"), dataIndex: "householdId", render: (id: string) => shortId(id) },
                       { title: t("platformAdmin.recipients"), dataIndex: "memberEmails" },
                       { title: t("platformAdmin.daysBeforePause"), dataIndex: "daysBeforePause" },
                       { title: t("platformAdmin.due"), dataIndex: "dueAt", render: date },
-                      { title: t("platformAdmin.status"), dataIndex: "status" },
+                      { title: t("platformAdmin.status"), dataIndex: "status", render: (value: AdminNotice["status"]) => t(`operator.states.${value}`) },
                       {
                         title: t("platformAdmin.actions"),
                         render: (_: unknown, row: AdminNotice) =>
                           row.status === "pending" ? (
                             <Flex gap={8}>
-                              <Button size="small" onClick={() => action("PATCH", `/api/admin/platform/notices/${row.householdId}/${row.daysBeforePause}`, { status: "sent" })}>
+                              <Button disabled={busy} style={{ minHeight: 44 }} onClick={() => action("PATCH", `/api/admin/platform/notices/${row.householdId}/${row.daysBeforePause}`, { status: "sent" })}>
                                 {t("platformAdmin.markSent")}
                               </Button>
-                              <Button size="small" onClick={() => action("PATCH", `/api/admin/platform/notices/${row.householdId}/${row.daysBeforePause}`, { status: "cancelled" })}>
+                              <Button disabled={busy} style={{ minHeight: 44 }} onClick={() => action("PATCH", `/api/admin/platform/notices/${row.householdId}/${row.daysBeforePause}`, { status: "cancelled" })}>
                                 {t("common.cancel")}
                               </Button>
                             </Flex>
@@ -401,10 +411,10 @@ export function PlatformAdminPage() {
               },
             ]}
           />
-        </Card>
+        </Card></Reveal>
       </Flex>
-      <Modal title={t("platformAdmin.licenses.create")} open={licenseOpen} onCancel={() => setLicenseOpen(false)} footer={null} destroyOnHidden>
-        <Form form={form} layout="vertical" initialValues={{ count: 1 }} onFinish={createLicenses}>
+      <Modal title={t("platformAdmin.licenses.create")} open={licenseOpen} onCancel={() => { if (!pending.current) setLicenseOpen(false); }} closable={!busy} keyboard={!busy} mask={{ closable: !busy }} footer={null} destroyOnHidden>
+        <Form form={form} disabled={busy} requiredMark={false} layout="vertical" initialValues={{ count: 1 }} onFinish={createLicenses}>
           <Form.Item name="count" label={t("platformAdmin.quantity")} rules={[{ required: true }]}>
             <InputNumber min={1} max={50} style={{ width: "100%" }} />
           </Form.Item>
@@ -414,7 +424,7 @@ export function PlatformAdminPage() {
           <Form.Item name="note" label={t("platformAdmin.note")}>
             <Input maxLength={120} />
           </Form.Item>
-          <Button type="primary" htmlType="submit" loading={busy} block>
+          <Button aria-label={t("platformAdmin.licenses.create")} type="primary" htmlType="submit" loading={busy} style={{ minHeight: 44 }} block>
             {t("platformAdmin.licenses.create")}
           </Button>
         </Form>

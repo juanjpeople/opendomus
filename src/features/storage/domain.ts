@@ -126,8 +126,8 @@ export const CONTENT_LIMITS = { textMaxLength: 160, maxPerContainer: 200 } as co
 
 export function parseContentText(input: string): string {
   const text = typeof input === "string" ? input.trim() : "";
-  if (!text) throw new ValidationError("errors.validation.nameRequired");
-  if (text.length > CONTENT_LIMITS.textMaxLength) throw new ValidationError("errors.validation.nameTooLong", { max: CONTENT_LIMITS.textMaxLength });
+  if (!text) throw new ValidationError("errors.validation.contentRequired");
+  if (text.length > CONTENT_LIMITS.textMaxLength) throw new ValidationError("errors.validation.contentTooLong", { max: CONTENT_LIMITS.textMaxLength });
   return text;
 }
 
