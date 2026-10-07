@@ -36,4 +36,3 @@ export const DEFAULT_PREFERENCES: Preferences = {
 
 /** Colores de marca sugeridos (Ajustes y sistema de diseño). */
 export const BRAND_PRESETS = ["#1677ff", "#722ed1", "#13c2c2", "#52c41a", "#fa8c16", "#eb2f96"] as const;
-
