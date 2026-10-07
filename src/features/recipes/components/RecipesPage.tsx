@@ -134,7 +134,8 @@ export function RecipesPage() {
   );
 }
 
-function RecipeCard({ recipe, index }: { recipe: RecipeSummary; index: number }) {
+/** Tarjeta del recetario: portada que se acerca, disponibilidad, tiempo, porciones y lo que falta. */
+export function RecipeCard({ recipe, index }: { recipe: RecipeSummary; index: number }) {
   const { t } = useI18n();
   const { token } = theme.useToken();
 

@@ -1,14 +1,13 @@
 "use client";
 
 import { Card, Col, Flex, Grid, Row, Typography, theme } from "antd";
-import { motion } from "framer-motion";
-import { ArrowRight, Boxes, ShoppingCart, type LucideIcon } from "lucide-react";
+import { Boxes, ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useState, type ComponentProps } from "react";
 import { Can } from "@/components/auth/Can";
 import { House } from "@/components/illustrations/House";
 import { AnimatedNumber, Reveal, Stagger, StaggerItem } from "@/components/motion";
-import { IconTile } from "@/components/ui";
+import { NavCard, PulseDot } from "@/components/ui";
 import { ActivityList } from "@/features/activity/components/ActivityList";
 import { useOccurrences } from "@/features/calendar/hooks";
 import { SchoolToday } from "@/features/calendar/components/SchoolToday";
@@ -20,10 +19,8 @@ import { spaceAppearance } from "@/features/storage/domain";
 import { useStorageOverview, type SpaceOverview } from "@/features/storage/hooks";
 import { useNow } from "@/hooks/useNow";
 import { useI18n, useT, type MessageKey } from "@/i18n";
-import type { AppearanceColor } from "@/lib/appearance";
 import dayjs from "dayjs";
 import { useCurrentUser } from "@/lib/auth/session";
-import { SPRING } from "@/lib/motion";
 
 function greetingKey(hour: number): MessageKey {
   if (hour >= 6 && hour < 13) return "home.greeting.morning";
@@ -103,7 +100,6 @@ interface HeroStatus {
 function HomeHero({ eyebrow, title, status }: { eyebrow: string; title: string; status: HeroStatus | null }) {
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
-  const dotColor = status?.tone === "warning" ? token.colorWarning : token.colorSuccess;
 
   return (
     <Reveal>
@@ -133,14 +129,7 @@ function HomeHero({ eyebrow, title, status }: { eyebrow: string; title: string; 
           <Flex align="center" gap={10} style={{ minHeight: 24 }}>
             {status && (
               <>
-                <span style={{ position: "relative", display: "inline-flex", width: 10, height: 10 }}>
-                  <motion.span
-                    animate={{ scale: [1, 2.4], opacity: [0.6, 0] }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
-                    style={{ position: "absolute", inset: 0, borderRadius: "50%", background: dotColor }}
-                  />
-                  <span style={{ position: "relative", width: 10, height: 10, borderRadius: "50%", background: dotColor }} />
-                </span>
+                <PulseDot tone={status.tone} />
                 <Reveal y={4} key={status.text}>
                   <Typography.Text style={{ fontSize: token.fontSizeLG }}>{status.text}</Typography.Text>
                 </Reveal>
@@ -206,47 +195,10 @@ function ShoppingCard() {
   );
 }
 
-function DashboardCard({
-  href,
-  icon,
-  color,
-  title,
-  children,
-}: {
-  href: string;
-  icon: LucideIcon;
-  color?: AppearanceColor;
-  title: string;
-  children: ReactNode;
-}) {
-  const { token } = theme.useToken();
-
+function DashboardCard(props: ComponentProps<typeof NavCard>) {
   return (
     <StaggerItem style={{ height: "100%" }}>
-      <Link href={href} style={{ display: "block", height: "100%" }}>
-        <motion.div whileHover="hover" whileTap={{ scale: 0.98 }} initial="rest" animate="rest" style={{ height: "100%" }}>
-          <motion.div variants={{ rest: { y: 0 }, hover: { y: -4 } }} transition={SPRING.snappy} style={{ height: "100%" }}>
-            <Card hoverable style={{ height: "100%" }}>
-              <Flex gap={16} align="flex-start">
-                <motion.div variants={{ rest: { rotate: 0, scale: 1 }, hover: { rotate: -6, scale: 1.08 } }} transition={SPRING.snappy}>
-                  <IconTile icon={icon} color={color} />
-                </motion.div>
-                <Flex vertical gap={2} style={{ minWidth: 0, flex: 1 }}>
-                  <Typography.Text type="secondary">{title}</Typography.Text>
-                  {children}
-                </Flex>
-                <motion.span
-                  variants={{ rest: { x: -6, opacity: 0 }, hover: { x: 0, opacity: 1 } }}
-                  transition={SPRING.snappy}
-                  style={{ display: "inline-flex", fontSize: token.fontSizeXL, alignSelf: "center", color: token.colorTextTertiary }}
-                >
-                  <ArrowRight />
-                </motion.span>
-              </Flex>
-            </Card>
-          </motion.div>
-        </motion.div>
-      </Link>
+      <NavCard {...props} />
     </StaggerItem>
   );
 }
