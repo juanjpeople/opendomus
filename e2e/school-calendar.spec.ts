@@ -28,8 +28,17 @@ test("elige país, agenda materias y tareas por hijo y respeta días sin clases"
 
   async function create(kind: string, title: string) {
     await page.getByRole("button", { name: "Nuevo evento", exact: true }).filter({ hasText: "Nuevo evento" }).click();
+    // El menú está en un portal: puede parecer estable mientras el modal aún
+    // termina de entrar. Esperar la transición completa antes de abrirlo.
+    await expect.poll(() => page.getByRole("dialog").evaluate(element =>
+      element.getAnimations({ subtree: true }).every(animation => animation.playState === "finished"),
+    )).toBe(true);
     await page.getByLabel("Tipo de evento", { exact: true }).click();
-    await page.locator(".ant-select-dropdown:visible").getByText(kind, { exact: true }).click();
+    const menu = page.locator(".ant-select-dropdown:visible");
+    await expect.poll(() => menu.evaluate(element =>
+      element.getAnimations({ subtree: true }).every(animation => animation.playState === "finished"),
+    )).toBe(true);
+    await menu.getByText(kind, { exact: true }).click();
     await expect(page.getByLabel("Tipo de evento", { exact: true }).locator("..")).toContainText(kind);
     await page.getByLabel("Título", { exact: true }).fill(title);
     await page.getByLabel("Quiénes", { exact: true }).fill("Explorador");

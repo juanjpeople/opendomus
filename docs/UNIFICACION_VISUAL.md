@@ -338,6 +338,7 @@ local acumulado se cerró con `EMFILE`; la repetición con servidor nuevo pasó.
   - Configuración con tokens, entrada `Reveal` y ayuda `Callout`. Guardar configuración, eventos y tareas bloquea envíos duplicados; el formulario y sus salidas quedan bloqueados mientras se guarda el evento.
   - `CalendarPage` conserva el cálculo de inicio de semana por locale. Es una excepción legítima del chequeo, no una traducción pendiente.
   - Cuatro pruebas en paralelo aprobaron feriados offline, materias y tareas por hijo, días sin clases, validación inglesa y guardado único a 320 px. Evidencias: `.playwright-mcp/school-verified`. También aprobaron las 180 pruebas de base y los 8 recorridos demo (`.playwright-mcp/school-demo`). La demo compiló; Windows bloqueó el renombrado de salida y se recuperó copiando el export verificado a `demo-dist`. La compilación normal se restauró correctamente.
+  - El CI del PR #38 reveló otra intermitencia al seleccionar «Sin clases / vacaciones» en Chromium móvil. Se reprodujo una vez en ocho ejecuciones paralelas sin reintentos. La prueba ahora espera las transiciones del modal y del menú antes de seleccionar; las ocho repeticiones equivalentes pasaron (`.playwright-mcp/school-animation-check`). `failOnFlakyTests` impide que CI quede verde gracias a un reintento.
 - [x] **Retoques:**
   - navegación activa y nombre de la app usan el color de texto del tema; el fondo y el ícono conservan la marca. Eyebrows de `PageHeader`, inicio y referencia visual usan texto secundario, escalado por tokens;
   - prueba con marca violeta, texto XL, claro/oscuro y 320 px: contraste calculado mayor o igual a 4,5:1 para navegación activa y eyebrow sobre el fondo de marca;
@@ -391,10 +392,13 @@ Capturas: `.playwright-mcp/operator-complete/` (datos sintéticos).
   después de descifrar. La explicación se contrastó con la API y `sync/policy.ts`,
   y se comprobó en la vista compilada. El servidor no puede leer el contenido cifrado.
 
-### Validación pendiente fuera del navegador
-La prueba nativa de alta offline y recarga necesita el SDK/emulador de Android;
-este equipo no los tiene disponibles. Cámara y AR requieren además un Android real.
-Estas verificaciones no quedan cubiertas por las capturas ni por las pruebas web.
+### Validación fuera del navegador
+El CI de Android del PR #38 (`37619903081`, commit `9bb410c`) aprobó sus cinco
+pruebas nativas sin fallas ni omisiones, incluida `offlineOnboardingAndReloadKeepTheHouse`.
+También cubrió permisos e inicio/cierre de cámara, exportación UTF-8, cancelación
+y fallo/reintento del respaldo. Los informes y el APK están en los artefactos de ese run.
+Cámara y AR en un Android físico siguen pendientes: el emulador no verifica
+anclajes reales ni las condiciones de iluminación y movimiento del teléfono.
 
 ## Cómo verificar cada fase
 1. Corre `npm run check` (typecheck + lint + tests, incluye `design-lint`).
