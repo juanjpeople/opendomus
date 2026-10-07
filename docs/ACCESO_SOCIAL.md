@@ -1,6 +1,6 @@
 # Google y GitHub para cuentas domésticas
 
-Esta integración es independiente de Cloudflare Access y de la administración por CLI.
+Esta integración es independiente del acceso de operador a /admin y de la administración por CLI.
 Un proveedor social nunca concede permisos globales ni abre por sí mismo la identidad
 cifrada. No reemplaza la contraseña de cifrado ni el kit de recuperación.
 

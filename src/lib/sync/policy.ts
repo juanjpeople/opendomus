@@ -18,6 +18,7 @@ export interface SyncAuthor {
 /** Para crear o editar alcanza cualquiera de estos permisos. Vacío: cualquier miembro. */
 const WRITE: Record<SyncTable, readonly Permission[]> = {
   members: ["members.manage"],
+  houseSettings: ["calendar.manage"],
   spaces: ["storage.manage"],
   containers: ["storage.manage"],
   containerContents: ["storage.manage"],

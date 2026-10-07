@@ -1,4 +1,4 @@
-import { theme } from "antd";
+import { App, Button, theme } from "antd";
 
 import type { ReactNode } from "react";
 
@@ -32,7 +32,12 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
 export function OperatorLayout({ children, width = 1200 }: { children: ReactNode; width?: number }) {
 
   const { token } = theme.useToken();
+  const { message } = App.useApp();
+  async function logout() {
+    try { await api("POST", "/api/admin/auth/logout"); window.location.replace("/admin"); }
+    catch { message.error("No se pudo cerrar la sesión. Volvé a intentar."); }
+  }
 
-  return <main style={{ maxWidth: width, margin: "0 auto", padding: "32px 20px", color: token.colorText }}><a href="/cdn-cgi/access/logout">Cerrar sesión privada</a>{children}</main>;
+  return <main style={{ maxWidth: width, margin: "0 auto", padding: "32px 20px", color: token.colorText }}><Button onClick={logout}>Cerrar sesión privada</Button>{children}</main>;
 
 }

@@ -13,6 +13,8 @@ import { SPRING } from "@/lib/motion";
 import { CURRENCIES, defaultCurrencyFor, summarizePrices, type Currency } from "../domain";
 import { useKnownStores, usePriceActions, usePrices } from "../hooks";
 import { getPriceSearchProviders } from "../search";
+import { findCatalogProduct } from "@/features/inventory/catalog";
+import { ReferencePrice } from "./ReferencePrice";
 
 interface PriceFormValues {
   amount: number;
@@ -45,9 +47,11 @@ export function PricePanel({ itemId, itemName }: { itemId: string; itemName: str
   }
 
   const providers = getPriceSearchProviders(locale);
+  const catalogProduct = findCatalogProduct(itemName);
 
   return (
     <Flex vertical gap={16}>
+      {catalogProduct && <ReferencePrice catalogId={catalogProduct.id} />}
       {summary && (
         <Row gutter={12}>
           <Col span={12}>

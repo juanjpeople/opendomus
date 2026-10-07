@@ -304,7 +304,7 @@ export const es = {
       open: "Elegir del catálogo", title: "Básicos de casa", hint: "Elegí un básico y ajustá cuánto tenés. El catálogo no agrega existencias hasta que confirmás el formulario.",
       search: "Buscar: azúcar, mechas, lavandina…", all: "Todos los rubros", empty: "No está en el catálogo. Podés cargarlo con el nombre que quieras.",
       durable: "Herramienta", consumable: "Reposición",
-      categories: { food: "Almacén y cocina", cleaning: "Limpieza", hardware: "Ferretería", electrical: "Electricidad", tools: "Herramientas" },
+      categories: { food: "Almacén y cocina", cleaning: "Limpieza", hygiene: "Higiene personal", hardware: "Ferretería", electrical: "Electricidad", tools: "Herramientas", ceramics: "Cerámica", stationery: "Librería y escuela" },
     },
     units: {
       unidades: { one: "unidad", other: "unidades" },

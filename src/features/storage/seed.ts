@@ -2,8 +2,9 @@ import { createId } from "@/lib/id";
 import { generateContainerCode, type Container, type ContainerKind, type Space, type SpaceKind } from "./domain";
 
 /**
- * Lugares con los que arranca una casa nueva (y a los que se migran los datos de la v2:
- * Alacena y Taller eran listas fijas; ahora son contenedores dentro de recintos).
+ * Lugares históricos a los que se migran los datos de la v2:
+ * Alacena y Taller eran listas fijas; ahora son contenedores dentro de recintos.
+ * Las casas nuevas eligen sus lugares en house-setup; nunca reciben este patrón automáticamente.
  * Los nombres son datos: cada casa los renombra como quiera.
  */
 const DEFAULT_LAYOUT: { name: string; kind: SpaceKind; containers: { key?: "alacena" | "taller"; name: string; kind: ContainerKind }[] }[] = [

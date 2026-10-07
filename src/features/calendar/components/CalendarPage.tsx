@@ -18,6 +18,7 @@ import { DURATION, EASE_OUT } from "@/lib/motion";
 import type { CalendarEvent, Occurrence } from "../domain";
 import { useOccurrences } from "../hooks";
 import { EventModal } from "./EventModal";
+import { CalendarSettingsPanel } from "./CalendarOptions";
 
 type View = "week" | "month";
 
@@ -93,6 +94,7 @@ export function CalendarPage() {
         }
       />
 
+      <CalendarSettingsPanel />
       {/* Barra: período, navegación, vista y filtro por miembro. */}
       <Flex align="center" justify="space-between" gap={12} wrap style={{ marginBottom: 16 }}>
         <Flex align="center" gap={8} wrap style={{ minWidth: 0 }}>

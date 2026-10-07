@@ -2,6 +2,7 @@ import { DEMO_ENABLED, HOUSE_DB } from "@/lib/demo";
 import Dexie, { type EntityTable, type Transaction } from "dexie";
 import type { ActivityEntry } from "@/features/activity/domain";
 import type { CalendarEvent } from "@/features/calendar/domain";
+import type { CalendarSettings } from "@/features/calendar/settings";
 import type { Comment } from "@/features/comments/domain";
 import type { InventoryItem } from "@/features/inventory/domain";
 import type { Photo } from "@/features/media/domain";
@@ -15,7 +16,7 @@ import { buildDefaultStorage } from "@/features/storage/seed";
 import type { SyncRecord } from "@/lib/sync/merge";
 import { syncMiddleware } from "@/lib/sync/middleware";
 import type { PhotoDelete } from "@/lib/sync/photos";
-import { CONTAINER_BACKFILL } from "@/lib/sync/upgrades";
+import { CONTAINER_BACKFILL, SETTINGS_BACKFILL } from "@/lib/sync/upgrades";
 
 /**
  * Base de datos local (IndexedDB). Solo los servicios (`src/features/<x>/service.ts`)
@@ -39,6 +40,7 @@ export const db = new Dexie(HOUSE_DB) as Dexie & {
   prices: EntityTable<PriceRecord, "id">;
   members: EntityTable<Member, "id">;
   events: EntityTable<CalendarEvent, "id">;
+  houseSettings: EntityTable<CalendarSettings, "id">;
   recipes: EntityTable<Recipe, "id">;
   photos: EntityTable<Photo, "id">;
   comments: EntityTable<Comment, "id">;
@@ -199,20 +201,29 @@ export function declareSchema(target: Dexie, upTo = Infinity) {
         await tx.table("syncState").delete("cursor");
       }
     });
+  // v13: shared calendar location and optional school module. Recover only new-table ops.
+  if (upTo >= 13) target.version(13).stores({ houseSettings: "id" }).upgrade(async (tx) => {
+    const cursor = await tx.table("syncState").get("cursor");
+    const prior = await tx.table("syncState").get(CONTAINER_BACKFILL);
+    const through = Math.max(typeof cursor?.value === "number" ? cursor.value : 0, typeof prior?.value === "number" ? prior.value : 0);
+    if (through > 0) {
+      await tx.table("syncState").put({ key: SETTINGS_BACKFILL, value: through });
+      await tx.table("syncState").delete("cursor");
+    }
+  });
 }
 
 declareSchema(db);
 // Cada escritura de lo que se sincroniza queda anotada para subirla (solo con la casa en la nube).
 db.use(syncMiddleware);
 
-/** Casa nueva: arranca con lugares de ejemplo (Cocina con Heladera y Alacena, Taller) y los perfiles base. */
+/** Casa nueva: perfiles y lista base. Los espacios y artículos requieren elección explícita. */
 db.on("populate", async (tx) => {
   if (DEMO_ENABLED) {
     const { populateDemo } = await Dexie.waitFor(import("@/features/demo/seed"));
     await populateDemo(tx);
     return;
   }
-  await seedStorage(tx);
   await seedMembers(tx);
   await seedLists(tx);
 });

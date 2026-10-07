@@ -8,6 +8,8 @@ import { isPrivacy, type Privacy } from "@/lib/sync/scope";
 
 export const REPEATS = ["none", "daily", "weekly", "monthly", "yearly"] as const;
 export type Repeat = (typeof REPEATS)[number];
+export const EVENT_KINDS = ["event", "class", "homework", "break", "holiday"] as const;
+export type EventKind = (typeof EVENT_KINDS)[number];
 
 export interface CalendarEvent {
   id: string;
@@ -20,6 +22,9 @@ export interface CalendarEvent {
   end: number;
   allDay: boolean;
   repeat: Repeat;
+  repeatUntil?: number;
+  eventKind?: EventKind;
+  homeworkDone?: boolean;
   /** Miembros que participan (vacío = toda la casa). */
   participantIds: string[];
   color: AppearanceColor;
@@ -30,7 +35,7 @@ export interface CalendarEvent {
   updatedAt: number;
 }
 
-export type EventInput = Pick<CalendarEvent, "title" | "start" | "end" | "allDay" | "repeat" | "participantIds" | "color" | "icon" | "notes"> & { privacy?: Privacy };
+export type EventInput = Pick<CalendarEvent, "title" | "start" | "end" | "allDay" | "repeat" | "repeatUntil" | "eventKind" | "homeworkDone" | "participantIds" | "color" | "icon" | "notes"> & { privacy?: Privacy };
 
 export const EVENT_LIMITS = { titleMaxLength: 80, notesMaxLength: 1000 } as const;
 
@@ -42,6 +47,9 @@ export function parseEvent(input: EventInput): EventInput & { privacy: Privacy }
   if (!isPrivacy(privacy)) throw new ValidationError("errors.validation.kindInvalid");
   if (!Number.isFinite(input.start) || !Number.isFinite(input.end) || input.end < input.start) throw new ValidationError("errors.validation.dateInvalid");
   if (!REPEATS.includes(input.repeat)) throw new ValidationError("errors.validation.kindInvalid");
+  if (input.eventKind !== undefined && !EVENT_KINDS.includes(input.eventKind)) throw new ValidationError("errors.validation.kindInvalid");
+  if (input.repeatUntil !== undefined && (!Number.isFinite(input.repeatUntil) || input.repeatUntil < input.start)) throw new ValidationError("errors.validation.dateInvalid");
+  if (input.eventKind === "class" && (input.repeat !== "weekly" || input.repeatUntil === undefined || !input.participantIds?.length)) throw new ValidationError("errors.validation.dateInvalid");
   if (!isAppearanceColor(input.color) || (input.icon !== undefined && !isAppearanceIcon(input.icon))) {
     throw new ValidationError("errors.validation.appearanceInvalid");
   }
@@ -54,6 +62,9 @@ export function parseEvent(input: EventInput): EventInput & { privacy: Privacy }
     end: input.end,
     allDay: !!input.allDay,
     repeat: input.repeat,
+    ...(input.repeatUntil !== undefined ? { repeatUntil: input.repeatUntil } : {}),
+    ...(input.eventKind !== undefined ? { eventKind: input.eventKind } : {}),
+    ...(input.homeworkDone !== undefined ? { homeworkDone: !!input.homeworkDone } : {}),
     participantIds: [...new Set(input.participantIds ?? [])],
     color: input.color,
     icon: input.icon,
@@ -73,9 +84,10 @@ export interface Occurrence {
   color: AppearanceColor;
   icon?: AppearanceIcon;
   participantIds: string[];
-  /** Evento editable, o `null` si es un cumpleaños (derivado de un miembro). */
+  /** Editable event, or null for derived birthdays and bundled holidays. */
   event: CalendarEvent | null;
   birthdayOf?: string;
+  holiday?: boolean;
 }
 
 /** Suma `n` repeticiones respetando el calendario (31/1 + 1 mes = último día de febrero). */
@@ -107,11 +119,25 @@ export function expandEvents(events: CalendarEvent[], from: number, to: number):
     }
     for (let n = 0; n < MAX_OCCURRENCES; n++) {
       const start = addRepeat(event.start, event.repeat, n);
-      if (start >= to) break;
+      if (start >= to || (event.repeatUntil !== undefined && start > event.repeatUntil)) break;
       if (start + duration + (event.allDay ? 86_400_000 : 0) > from) out.push(toOccurrence(event, start, duration));
     }
   }
   return out;
+}
+
+/** School closures apply only to the matching pupils, or to everyone if none are specified. */
+export function applySchoolBreaks(occurrences: Occurrence[]): Occurrence[] {
+  const breaks = occurrences.filter((entry) => entry.event?.eventKind === "break");
+  return occurrences.flatMap((entry) => {
+    if (entry.event?.eventKind !== "class") return [entry];
+    const participantIds = entry.participantIds.filter((id) => !breaks.some((closure) => {
+      const end = new Date(closure.end);
+      if (closure.allDay) end.setDate(end.getDate() + 1);
+      return closure.start <= entry.start && end.getTime() > entry.start && (!closure.participantIds.length || closure.participantIds.includes(id));
+    }));
+    return participantIds.length ? [{ ...entry, participantIds }] : [];
+  });
 }
 
 function toOccurrence(event: CalendarEvent, start: number, duration: number): Occurrence {

@@ -2,7 +2,7 @@ import { expect, test } from "./fixtures";
 
 test("un QR abre fotos y contenido libre del taller, también sin conexión", async ({ home: page, context }, testInfo) => {
   await page.goto("/inventario");
-  await page.getByText("Estantería", { exact: true }).first().click();
+  await page.getByText("Estantería de herramientas", { exact: true }).first().click();
   await page.waitForURL(/inventario\/ver\?id=/);
   const code = (await page.getByText(/Código [A-Z0-9]{4}/).innerText()).match(/Código ([A-Z0-9]{4})/)![1];
   await page.getByRole("textbox", { name: "Contenido guardado" }).fill("Cables sueltos");

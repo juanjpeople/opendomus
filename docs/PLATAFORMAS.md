@@ -154,8 +154,8 @@ pero eso no implica que este MVP ya tenga firmware o emparejamiento implementado
 
 ## Administración y publicación
 
-La administración continúa separada de las cuentas domésticas: CLI y gateway privado
-protegido por Access, con identidad permitida y MFA configurado por el operador.
+La administración continúa separada de las cuentas domésticas: /admin y CLI con
+clave aleatoria de operador y autenticador TOTP, sin Zero Trust. Ver ADMIN.md.
 No hay una página pública de administración. Estos comandos no despliegan, no migran
 bases remotas ni crean cuentas. La publicación y la configuración de correo/OTP siguen
 siendo pasos manuales; consultar la sección de administración del README del repo.

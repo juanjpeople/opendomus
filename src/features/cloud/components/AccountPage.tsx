@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, Button, Card, Flex, Form, Input, Segmented, Steps, Typography, theme } from "antd";
+import { Alert, App, Button, Card, Flex, Form, Input, Segmented, Steps, Typography, theme } from "antd";
 import { CircleCheck, House, KeyRound, ShieldCheck, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -23,8 +23,10 @@ import { HouseTransfer } from "./HouseTransfer";
 import { RecoverForm } from "./RecoverForm";
 import { RecoveryKit } from "./RecoveryKit";
 import { useTransfer } from "./useTransfer";
+import { HouseSetup } from "@/features/house-setup/HouseSetup";
+import { canInitializeHouse } from "@/features/house-setup/service";
 
-type Step = "access" | "auth" | "kit" | "house" | "upload" | "replace" | "download" | "profile" | "done";
+type Step = "access" | "auth" | "kit" | "house" | "setup" | "upload" | "replace" | "download" | "profile" | "done";
 
 /**
  * `/cuenta?modo=crear|entrar&siguiente=casa`.
@@ -35,6 +37,7 @@ type Step = "access" | "auth" | "kit" | "house" | "upload" | "replace" | "downlo
  */
 export function AccountPage() {
   const t = useT();
+  const { message } = App.useApp();
   const router = useRouter();
   const params = useSearchParams();
   const [mode, setMode] = useState<"create" | "signin" | "recover">(() => {
@@ -65,6 +68,11 @@ export function AccountPage() {
     if (await transfer.run((progress) => uploadThisHouse(current, target, progress))) setStep("done");
   }
 
+  async function beginHouse() {
+    try { setStep(await canInitializeHouse() ? "setup" : "house"); }
+    catch { void message.error(t("errors.databaseLoad")); }
+  }
+
   async function download(target: CloudHousehold) {
     setHousehold(target);
     setStep("download");
@@ -90,7 +98,7 @@ export function AccountPage() {
     const linked = current?.households.find((entry) => entry.id === link?.householdId);
     if (linked && link?.userId === current?.user.id) return router.push("/");
     const existing = current?.households[0];
-    if (!existing) return wantsHouse ? setStep("house") : finishLocal();
+    if (!existing) return wantsHouse ? void beginHouse() : finishLocal();
     setHousehold(existing);
     // Con otra casa en este dispositivo (propia o de otra cuenta), se avisa antes de reemplazarla.
     if (hasLocalHouse() || link) setStep("replace");
@@ -103,12 +111,12 @@ export function AccountPage() {
       ? [t("cloud.steps.account"), t("cloud.steps.kit")]
       : [];
   const order: Step[] = wantsHouse ? ["access", "auth", "kit", "house"] : ["auth", "kit"];
-  const current = Math.max(0, order.indexOf(step === "upload" ? "house" : step));
+  const current = Math.max(0, order.indexOf(step === "upload" || step === "setup" ? "house" : step));
 
   return (
-    <PublicLayout width={520}>
+    <PublicLayout width={step === "setup" ? 820 : 520}>
       <Reveal>
-        {steps.length > 0 && ["access", "auth", "kit", "house", "upload"].includes(step) && (
+        {steps.length > 0 && ["access", "auth", "kit", "house", "setup", "upload"].includes(step) && (
           <Steps size="small" current={current} items={steps.map((title) => ({ title }))} style={{ marginBottom: 24 }} />
         )}
         <Card styles={{ body: { padding: "clamp(20px, 5vw, 32px)" } }}>
@@ -177,9 +185,14 @@ export function AccountPage() {
               </Flex>
             )}
             {step === "kit" && (
-              <RecoveryKit code={recoveryCode} email={session?.user.email ?? ""} onDone={() => (mode === "recover" ? afterSignIn() : wantsHouse ? setStep("house") : finishLocal())} />
+              <RecoveryKit code={recoveryCode} email={session?.user.email ?? ""} onDone={() => (mode === "recover" ? afterSignIn() : wantsHouse ? void beginHouse() : finishLocal())} />
             )}
             {step === "house" && <NameHouse accessCode={accessCode} onCreated={upload} />}
+            {step === "setup" && <HouseSetup onComplete={() => {
+              // The confirmed draft is already local data, even if cloud creation is cancelled.
+              if (useDeviceStore.getState().mode === "unset") setDeviceMode("local");
+              setStep("house");
+            }} onCancel={() => router.push("/empezar")} />}
             {step === "upload" && household && <HouseTransfer direction="up" name={household.name} state={transfer.state} onRetry={() => void upload(household)} />}
             {step === "replace" && household && (
               <ReplaceWarning name={household.name} onConfirm={() => void download(household)} onCancel={finishLocal} />

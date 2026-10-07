@@ -4,12 +4,14 @@ import { App } from "antd";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import { useMembers } from "@/features/members/hooks";
-import { useT } from "@/i18n";
+import { useI18n, useT } from "@/i18n";
 import { useCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
 import { canSee } from "@/lib/sync/scope";
-import { birthdayOccurrences, compareOccurrences, expandEvents, type EventInput, type Occurrence } from "./domain";
+import { applySchoolBreaks, birthdayOccurrences, compareOccurrences, expandEvents, type EventInput, type Occurrence } from "./domain";
+import { holidayOccurrences } from "./holidays";
+import { DEFAULT_CALENDAR } from "./settings";
 import { createEvent, deleteEvent, updateEvent } from "./service";
 
 /**
@@ -17,12 +19,14 @@ import { createEvent, deleteEvent, updateEvent } from "./service";
  * Los repetidos se leen todos (son pocos); los únicos, solo los cercanos al rango.
  */
 export function useOccurrences(from: number, to: number): Occurrence[] | undefined {
+  const { locale } = useI18n();
+  const preferences = useLiveQuery(() => db.houseSettings.get("calendar"));
   const members = useMembers();
   const viewer = useCurrentUser();
   const events = useLiveQuery(async () => {
     const [single, repeating] = await Promise.all([
-      // Un evento de varios días que empezó antes del rango también cuenta: margen de 60 días.
-      db.events.where("start").between(from - 60 * 86_400_000, to).filter((event) => event.repeat === "none").toArray(),
+      // Includes long school vacations starting before the visible range.
+      db.events.where("start").below(to).filter((event) => event.repeat === "none" && event.end + (event.allDay ? 86_400_000 : 0) > from).toArray(),
       db.events.where("repeat").notEqual("none").toArray(),
     ]);
     return [...single, ...repeating].filter((event) => canSee(viewer, event));
@@ -30,8 +34,8 @@ export function useOccurrences(from: number, to: number): Occurrence[] | undefin
 
   return useMemo(() => {
     if (!events || !members) return undefined;
-    return [...expandEvents(events, from, to), ...birthdayOccurrences(members, from, to)].sort(compareOccurrences);
-  }, [events, members, from, to]);
+    return [...applySchoolBreaks(expandEvents(events, from, to)), ...birthdayOccurrences(members, from, to), ...holidayOccurrences(preferences ?? DEFAULT_CALENDAR, from, to, locale)].sort(compareOccurrences);
+  }, [events, members, from, to, preferences, locale]);
 }
 
 export function useEventActions() {

@@ -16,7 +16,8 @@ import { enabledSocialProviders, socialProviders } from "./social-auth";
 import type { AppEnv, Env, SessionUser } from "./env";
 import { DAY, INACTIVITY_NOTICE_DAYS, inactivityNoticeWindow, inactiveBefore } from "./inactivity";
 import { PhotoStorageError, photoStorage } from "./photo-storage";
-import { isLocalOperatorTest, verifyOperatorToken } from "./operator-access";
+import { operatorAuth, operatorConfigured, operatorRequestAllowed, operatorSession } from "./operator-auth";
+import { operatorPage } from "./operator-page";
 import { OP_CONFLICT } from "./sync";
 import {
   acceptInviteInput,
@@ -899,22 +900,15 @@ app.get("/households/:id/ops", async (c) => {
 
 // --- Administración (licencias y planes) -----------------------------------------------------
 //
-// CLI privada: hostname exclusivo, identidad firmada por Access y token maestro, sin cookies.
+// Operador independiente: clave aleatoria + TOTP y sesión revocable. Sin proveedores externos.
 // Nunca ve contenido de las casas (está cifrado igual).
 
 const admin = new Hono<AppEnv>();
+app.route("/admin/auth", operatorAuth);
 
 admin.use("*", async (c, next) => {
-  const localTest = isLocalOperatorTest(c.req.raw, c.env);
-  if (!localTest && (!c.env.OPERATOR_HOST || new URL(c.req.url).hostname !== c.env.OPERATOR_HOST)) return c.json({ error: "not-found" }, 404);
-  const token = c.env.ADMIN_TOKEN;
-  const given = c.req.header("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  // Sin token configurado, la administración no existe.
-  // Rechazar antes de consultar claves remotas o D1: solicitudes anónimas no disparan consultas.
-  if (!token || token.length < 32 || !timingSafeEqual(given, token)) return c.json({ error: "not-found" }, 404);
-  const email = localTest
-    ? "operator@localhost.test"
-    : await verifyOperatorToken(c.req.header("Cf-Access-Jwt-Assertion") ?? "", c.env);
+  if (!operatorRequestAllowed(c.req.raw, c.env)) return c.json({ error: "not-found" }, 404);
+  const email = await operatorSession(c.req.raw, c.env);
   if (!email) return c.json({ error: "not-found" }, 404);
   c.set("operatorEmail", email);
   return next();
@@ -1041,7 +1035,7 @@ platformAdmin.get("/overview", async (c) => {
     },
     risks: [...rateSignals.results, ...sessionSignals.results.map((signal) => ({ type: "many-sessions", ...signal }))],
     credentials: {
-      adminTokenConfigured: Boolean(c.env.ADMIN_TOKEN && c.env.ADMIN_TOKEN.length >= 32),
+      operatorConfigured: operatorConfigured(c.env),
       supabaseConfigured: Boolean(c.env.SUPABASE_SERVICE_ROLE_KEY),
     },
     recentAudit: auditRows.results,
@@ -1218,9 +1212,10 @@ async function live(request: Request, env: Env, householdId: string) {
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
+    if (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) return operatorPage(request, env.ASSETS);
     const socket = url.pathname.match(/^\/api\/households\/([^/]+)\/live$/);
     if (socket) return live(request, env, socket[1]);
-    // `run_worker_first` manda acá solo /api/*; lo demás son los archivos de la app.
+    // `run_worker_first` incluye /admin y /api/*; lo demás son archivos de la app.
     if (url.pathname.startsWith("/api/")) return app.fetch(request, env, ctx);
     return env.ASSETS.fetch(request);
   },

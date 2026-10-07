@@ -2,7 +2,7 @@ import type { Locale } from "@/i18n/config";
 import { normalizeSearch } from "@/lib/search";
 import type { NewInventoryItem, Unit } from "./domain";
 
-export const CATALOG_CATEGORIES = ["food", "cleaning", "hardware", "electrical", "tools"] as const;
+export const CATALOG_CATEGORIES = ["food", "cleaning", "hygiene", "stationery", "hardware", "electrical", "tools", "ceramics"] as const;
 export type CatalogCategory = (typeof CATALOG_CATEGORIES)[number];
 
 /** Plantillas, nunca existencias: elegir una no presupone que haya stock en la casa. */
@@ -21,6 +21,19 @@ function product(id: string, category: CatalogCategory, es: string, en: string, 
 
 /** Identificadores estables y sin marcas; las variantes comerciales podrán agregarse después. */
 export const BASIC_CATALOG: readonly CatalogProduct[] = [
+  product("notebook", "stationery", "Cuaderno", "Notebook"),
+  product("pencil", "stationery", "Lápiz negro", "Pencil"),
+  product("pen", "stationery", "Lapicera", "Pen", "unidades", ["bolígrafo"]),
+  product("eraser", "stationery", "Goma de borrar", "Eraser"),
+  product("sharpener", "stationery", "Sacapuntas", "Pencil sharpener", "unidades", [], true),
+  product("ruler", "stationery", "Regla", "Ruler", "unidades", [], true),
+  product("school-scissors", "stationery", "Tijera escolar", "School scissors", "unidades", [], true),
+  product("glue-stick", "stationery", "Adhesivo en barra", "Glue stick"),
+  product("colored-pencils", "stationery", "Lápices de colores", "Colored pencils", "cajas"),
+  product("markers", "stationery", "Marcadores", "Markers", "cajas", ["fibras"]),
+  product("folder", "stationery", "Carpeta escolar", "School folder", "unidades", [], true),
+  product("paper-a4", "stationery", "Hojas A4", "A4 paper", "paquetes"),
+  product("backpack", "stationery", "Mochila", "Backpack", "unidades", [], true),
   product("sugar", "food", "Azúcar", "Sugar", "paquetes"),
   product("rice", "food", "Arroz", "Rice", "paquetes"),
   product("pasta", "food", "Fideos", "Pasta", "paquetes", ["pastas"]),
@@ -45,6 +58,25 @@ export const BASIC_CATALOG: readonly CatalogProduct[] = [
   product("tuna", "food", "Atún en lata", "Canned tuna"),
   product("crackers", "food", "Galletitas", "Biscuits", "paquetes", ["galletas"]),
   product("dulce-de-leche", "food", "Dulce de leche", "Dulce de leche"),
+  product("potatoes", "food", "Papas", "Potatoes", "gr"),
+  product("onions", "food", "Cebollas", "Onions", "gr"),
+  product("carrots", "food", "Zanahorias", "Carrots", "gr"),
+  product("fresh-tomatoes", "food", "Tomates", "Tomatoes", "gr"),
+  product("apples", "food", "Manzanas", "Apples", "gr"),
+  product("bananas", "food", "Bananas", "Bananas", "gr"),
+  product("chicken", "food", "Pollo", "Chicken", "gr"),
+  product("minced-beef", "food", "Carne picada", "Minced beef", "gr"),
+  product("cheese", "food", "Queso cremoso", "Soft cheese", "gr"),
+  product("butter", "food", "Manteca", "Butter", "gr"),
+  product("yogurt", "food", "Yogur", "Yogurt"),
+  product("bread", "food", "Pan", "Bread", "gr"),
+  product("chickpeas", "food", "Garbanzos", "Chickpeas", "paquetes"),
+  product("beans", "food", "Porotos", "Beans", "paquetes"),
+  product("toothpaste", "hygiene", "Pasta dental", "Toothpaste"),
+  product("toothbrush", "hygiene", "Cepillo de dientes", "Toothbrush", "unidades", [], true),
+  product("shampoo", "hygiene", "Champú", "Shampoo", "unidades", ["shampoo"]),
+  product("period-pads", "hygiene", "Toallitas menstruales", "Period pads", "paquetes"),
+  product("diapers", "hygiene", "Pañales", "Diapers", "paquetes"),
   product("bleach", "cleaning", "Lavandina", "Bleach", "litros", ["lejía", "cloro"]),
   product("dish-soap", "cleaning", "Detergente", "Dishwashing liquid", "litros", ["lavavajillas"]),
   product("laundry-liquid", "cleaning", "Jabón líquido para ropa", "Liquid laundry detergent", "litros", ["jabon liquido ropa"]),
@@ -83,6 +115,8 @@ export const BASIC_CATALOG: readonly CatalogProduct[] = [
   product("electrical-tape", "electrical", "Cinta aisladora", "Electrical tape", "unidades", ["cinta aislante"]),
   product("cable", "electrical", "Cable eléctrico", "Electrical cable", "metros"),
   product("plugs", "electrical", "Fichas eléctricas", "Electrical plugs", "unidades", ["enchufes"]),
+  product("usb-cable", "electrical", "Cable USB", "USB cable", "unidades", [], true),
+  product("charger", "electrical", "Cargador de celular", "Phone charger", "unidades", [], true),
   product("drill", "tools", "Taladro", "Drill", "unidades", [], true),
   product("angle-grinder", "tools", "Amoladora", "Angle grinder", "unidades", [], true),
   product("sander", "tools", "Lijadora", "Sander", "unidades", [], true),
@@ -92,6 +126,13 @@ export const BASIC_CATALOG: readonly CatalogProduct[] = [
   product("pliers", "tools", "Pinza universal", "Combination pliers", "unidades", ["alicate"], true),
   product("wrench", "tools", "Llave francesa", "Adjustable wrench", "unidades", [], true),
   product("tape-measure", "tools", "Cinta métrica", "Tape measure", "unidades", ["metro"], true),
+  product("screwdriver", "tools", "Destornillador", "Screwdriver", "unidades", [], true),
+  product("clay", "ceramics", "Arcilla para cerámica", "Pottery clay", "gr", ["pasta ceramica"]),
+  product("slip", "ceramics", "Barbotina", "Casting slip", "gr"),
+  product("glaze", "ceramics", "Esmalte cerámico", "Ceramic glaze", "gr"),
+  product("pottery-tools", "ceramics", "Estecas", "Modelling tools", "unidades", [], true),
+  product("brush", "ceramics", "Pincel", "Brush", "unidades", [], true),
+  product("clay-wire", "ceramics", "Hilo cortador de arcilla", "Clay cutting wire", "unidades", [], true),
 ];
 
 export function searchCatalog(query: string, category?: CatalogCategory): CatalogProduct[] {

@@ -1,8 +1,9 @@
 import type { HouseholdLog } from "./sync";
 import type { SocialAuthEnv } from "./social-auth";
+import type { OperatorConfig } from "./operator-auth";
 
 /** Lo que Cloudflare le da al Worker (ver `wrangler.jsonc` en la raíz y `.dev.vars` en desarrollo). */
-export interface Env extends SocialAuthEnv {
+export interface Env extends SocialAuthEnv, OperatorConfig {
   DB: D1Database;
   /** Registro de cambios cifrados de cada casa (un Durable Object por casa). */
   HOUSEHOLD: DurableObjectNamespace<HouseholdLog>;
@@ -27,16 +28,6 @@ export interface Env extends SocialAuthEnv {
    * licencia; solo para desarrollo). Cualquier otro valor, o ninguno, cuenta como `codes`.
    */
   HOUSEHOLD_ACCESS?: string;
-  /** Token de la API de administración (licencias, planes). Sin él, la API de administración no existe. */
-  ADMIN_TOKEN?: string;
-  /** Cloudflare Access: la política debe exigir OTP/IdP + MFA, sin bypass ni service tokens. */
-  OPERATOR_ACCESS_ISSUER?: string;
-  OPERATOR_ACCESS_AUD?: string;
-  OPERATOR_EMAILS?: string;
-  /** Hostname del gateway privado; el hostname público nunca sirve operaciones administrativas. */
-  OPERATOR_HOST?: string;
-  /** Solo tests con APP_ORIGIN y request en localhost HTTP. Nunca configurar en producción. */
-  OPERATOR_LOCAL_TEST?: string;
 }
 
 export interface SessionUser {

@@ -299,7 +299,7 @@ export const en: Messages = {
       open: "Choose from catalog", title: "Home essentials", hint: "Choose an essential and adjust how much you have. Stock is only added when you submit the form.",
       search: "Search: sugar, drill bits, bleach…", all: "All categories", empty: "Not in the catalog? You can enter any name in the form.",
       durable: "Tool", consumable: "Supply",
-      categories: { food: "Pantry and kitchen", cleaning: "Cleaning", hardware: "Hardware", electrical: "Electrical", tools: "Tools" },
+      categories: { food: "Pantry and kitchen", cleaning: "Cleaning", hygiene: "Personal hygiene", hardware: "Hardware", electrical: "Electrical", tools: "Tools", ceramics: "Ceramics", stationery: "Stationery and school" },
     },
     units: {
       unidades: { one: "unit", other: "units" },
