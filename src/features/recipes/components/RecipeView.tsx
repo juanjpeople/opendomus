@@ -174,36 +174,12 @@ export function RecipeView() {
                     {t("recipes.noSteps")}
                   </Typography.Paragraph>
                 )}
-                <Flex vertical gap={4}>
-                  {recipe.steps.map((step, index) => {
-                    const done = doneSteps.has(index);
-                    return (
-                      <motion.button
-                        key={index}
-                        type="button"
-                        aria-pressed={done}
-                        onClick={() => setDoneSteps((current) => {
-                          const next = new Set(current);
-                          if (next.has(index)) next.delete(index);
-                          else next.add(index);
-                          return next;
-                        })}
-                        whileTap={{ scale: 0.99 }}
-                        style={{ all: "unset", cursor: "pointer", display: "flex", gap: 14, padding: "10px 8px", borderRadius: token.borderRadius, alignItems: "flex-start" }}
-                      >
-                        <motion.span
-                          animate={{ backgroundColor: done ? token.colorSuccess : token.colorPrimaryBg, color: done ? token.colorTextLightSolid : token.colorPrimary }}
-                          style={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: token.fontSizeSM }}
-                        >
-                          {done ? <CircleCheck /> : index + 1}
-                        </motion.span>
-                        <Typography.Paragraph style={{ margin: 0, paddingTop: 3, whiteSpace: "pre-wrap", opacity: done ? 0.5 : 1, transition: "opacity 0.2s" }} delete={done}>
-                          {step}
-                        </Typography.Paragraph>
-                      </motion.button>
-                    );
-                  })}
-                </Flex>
+                <RecipeSteps steps={recipe.steps} done={doneSteps} onToggle={(index) => setDoneSteps((current) => {
+                  const next = new Set(current);
+                  if (next.has(index)) next.delete(index);
+                  else next.add(index);
+                  return next;
+                })} />
               </Card>
             </Reveal>
 
@@ -236,7 +212,8 @@ export function RecipeView() {
 
 const STATE_ICON: Record<IngredientState, typeof CircleCheck> = { ok: CircleCheck, short: TriangleAlert, missing: CircleAlert, unlinked: CircleDashed };
 
-function IngredientRow({ check, last }: { check: IngredientCheck; last: boolean }) {
+/** Un ingrediente con su estado según lo que hay en casa (alcanza, falta poco, no hay, sin vincular). */
+export function IngredientRow({ check, last }: { check: IngredientCheck; last: boolean }) {
   const { t, format } = useI18n();
   const { token } = theme.useToken();
   const { ingredient, needed, have, state } = check;
@@ -270,5 +247,39 @@ function IngredientRow({ check, last }: { check: IngredientCheck; last: boolean 
         </Typography.Text>
       </Flex>
     </StaggerItem>
+  );
+}
+
+/** Pasos que se tachan al tocarlos: el número pasa a un check verde. */
+export function RecipeSteps({ steps, done, onToggle }: { steps: string[]; done: ReadonlySet<number>; onToggle: (index: number) => void }) {
+  const { token } = theme.useToken();
+
+  return (
+    <Flex vertical gap={4}>
+      {steps.map((step, index) => {
+        const isDone = done.has(index);
+        return (
+          <motion.button
+            key={index}
+            type="button"
+            aria-pressed={isDone}
+            onClick={() => onToggle(index)}
+            whileTap={{ scale: 0.99 }}
+            className="od-focusable"
+            style={{ ["--od-ring" as string]: token.colorPrimary, cursor: "pointer", display: "flex", gap: 14, width: "100%", margin: 0, padding: "10px 8px", border: "none", background: "none", color: "inherit", font: "inherit", textAlign: "start", borderRadius: token.borderRadius, alignItems: "flex-start" }}
+          >
+            <motion.span
+              animate={{ backgroundColor: isDone ? token.colorSuccess : token.colorPrimaryBg, color: isDone ? token.colorTextLightSolid : token.colorPrimary }}
+              style={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: token.fontSizeSM }}
+            >
+              {isDone ? <CircleCheck /> : index + 1}
+            </motion.span>
+            <Typography.Paragraph style={{ margin: 0, paddingTop: 3, whiteSpace: "pre-wrap", opacity: isDone ? 0.5 : 1, transition: "opacity 0.2s" }} delete={isDone}>
+              {step}
+            </Typography.Paragraph>
+          </motion.button>
+        );
+      })}
+    </Flex>
   );
 }

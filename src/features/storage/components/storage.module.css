@@ -7,7 +7,8 @@
   border-radius: 14px;
   overflow: hidden;
 }
-.scene > svg { width: 170px; height: 120px; transition: transform 180ms ease; }
+/* Fluida: en fichas angostas se achica en vez de recortarse. */
+.scene > svg { width: min(170px, 94%); height: auto; aspect-ratio: 180 / 130; transition: transform 180ms ease; }
 .tile:hover .scene > svg { transform: translateY(-3px) rotate(-2deg); }
 .contentBadge {
   position: absolute;
@@ -50,7 +51,7 @@
 @media (max-width: 420px) {
   .roomFloor { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; gap: 8px; }
   .scene { height: 104px; }
-  .scene > svg { width: 140px; height: 100px; }
+  .scene > svg { width: min(140px, 94%); }
   .compact { height: 80px; width: 92px; }
   .compact > svg { width: 92px; height: 76px; }
 }

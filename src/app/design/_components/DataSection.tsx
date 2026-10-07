@@ -1,14 +1,14 @@
 "use client";
 
-import { Button, Col, Flex, Popconfirm, Row, Table, Typography, type TableColumnsType } from "antd";
-import { PackageOpen, Pencil, Refrigerator, Trash2, Wrench } from "lucide-react";
+import { Button, Flex, Popconfirm, Table, Typography, type TableColumnsType } from "antd";
+import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Can } from "@/components/auth/Can";
-import { EmptyState, IconTile, PageHeader, QuantityStepper, StockTag } from "@/components/ui";
+import { QuantityStepper, StockTag } from "@/components/ui";
 import { getStockStatus, STOCK_STATUS_META, type InventoryItem } from "@/features/inventory/domain";
 import { useT } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
-import { DemoBlock, DemoLabel } from "./DemoBlock";
+import { DemoBlock } from "./DemoBlock";
 
 type DemoItem = Pick<InventoryItem, "id" | "name" | "quantity" | "minThreshold" | "unit">;
 
@@ -105,64 +105,6 @@ const columns: TableColumnsType<InventoryItem> = [
               : undefined
           }
         />
-      </DemoBlock>
-
-      <DemoBlock
-        id="componentes"
-        title="Componentes propios (@/components/ui)"
-        description="Piezas reutilizables de la app. Antes de crear un componente nuevo, revisá si ya existe acá."
-        code={`
-import { EmptyState, IconTile, PageHeader, QuantityStepper, StockTag } from "@/components/ui";
-
-<PageHeader eyebrow="Inventario" title="Alacena" description="..." extra={<Button>Exportar</Button>} />
-<IconTile icon={Wrench} />            {/* solid para destacado */}
-<EmptyState icon={PackageOpen} title="Sin ítems" description="..." action={<Button>Agregar</Button>} />
-<StockTag status={getStockStatus(item)} />
-<QuantityStepper value={item.quantity} unit={item.unit} onStep={(delta) => adjust(item.id, delta)} />
-<QuantityStepper value={3} unit="kg" />   {/* solo lectura */}
-`}
-      >
-        <Row gutter={[24, 24]}>
-          <Col xs={24}>
-            <DemoLabel>PageHeader</DemoLabel>
-            <PageHeader
-              title="Título de página"
-              description="Descripción breve de la sección."
-              extra={<Button type="primary">Acción</Button>}
-            />
-          </Col>
-          <Col xs={24} md={12}>
-            <DemoLabel>StockTag</DemoLabel>
-            <Flex gap={8}>
-              <StockTag status="ok" />
-              <StockTag status="low" />
-              <StockTag status="empty" />
-            </Flex>
-          </Col>
-          <Col xs={24} md={12}>
-            <DemoLabel>QuantityStepper (editable / solo lectura)</DemoLabel>
-            <Flex gap={16}>
-              <QuantityStepper value={items[0]?.quantity ?? 0} unit="paquetes" onStep={(d) => step("1", d)} />
-              <QuantityStepper value={3} unit="kg" />
-            </Flex>
-          </Col>
-          <Col xs={24} md={12}>
-            <DemoLabel>IconTile (normal / solid)</DemoLabel>
-            <Flex gap={12}>
-              <IconTile icon={Refrigerator} />
-              <IconTile icon={Wrench} solid />
-            </Flex>
-          </Col>
-          <Col xs={24}>
-            <DemoLabel>EmptyState</DemoLabel>
-            <EmptyState
-              icon={PackageOpen}
-              title="Todavía no hay productos"
-              description="Cargá el primero y OpenDomus te avisa cuando quede poco."
-              action={<Button type="primary">Agregar</Button>}
-            />
-          </Col>
-        </Row>
       </DemoBlock>
     </>
   );

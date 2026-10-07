@@ -24,9 +24,9 @@ export function FormsSection() {
     <DemoBlock
       id="formularios"
       title="Formularios"
-      description='Layout vertical, grilla responsive (Row/Col), validación declarativa con rules y requiredMark="optional" (se marcan los opcionales, no los obligatorios). Los límites salen del dominio, así la UI y el servicio validan lo mismo.'
+      description='Layout vertical, grilla responsive (Row/Col), validación declarativa con rules y requiredMark={false} (sin asteriscos ni marcas: si un campo es opcional, lo dice el placeholder o la ayuda). Los límites salen del dominio, así la UI y el servicio validan lo mismo.'
       code={`
-<Form form={form} layout="vertical" requiredMark="optional" onFinish={handleFinish}>
+<Form form={form} layout="vertical" requiredMark={false} onFinish={handleFinish}>
   <Row gutter={16}>
     <Col xs={24} md={12}>
       <Form.Item
@@ -44,7 +44,7 @@ export function FormsSection() {
       <Form
         form={form}
         layout="vertical"
-        requiredMark="optional"
+        requiredMark={false}
         initialValues={{ kind: "pantry", quantity: 1, unit: "unidades", notify: true }}
         onFinish={(values) => message.success(`Formulario válido: ${values.name}`)}
         onFinishFailed={() => message.error("Revisá los campos marcados")}
