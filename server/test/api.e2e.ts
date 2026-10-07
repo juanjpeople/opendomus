@@ -4,7 +4,7 @@
  * Además, lo que NO tiene que poder pasar. Uso: `node --import ./scripts/test-hooks.mjs --test server/test/api.e2e.ts`
  */
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { operatorTotp } from "../src/operator-auth";
 import { test } from "node:test";
 import WebSocket from "ws";
 import {
@@ -69,20 +69,20 @@ async function signUp(name: string, email: string, password: string) {
 const unique = Date.now().toString(36);
 const anaEmail = `admin+${unique}@casa.test`;
 
-/** Token de administración del Worker local (de `.dev.vars`, o del entorno en CI). */
-function adminToken() {
-  if (process.env.ADMIN_TOKEN) return process.env.ADMIN_TOKEN;
-  const vars = existsSync(".dev.vars") ? readFileSync(".dev.vars", "utf8") : "";
-  return vars.match(/^ADMIN_TOKEN=(.+)$/m)?.[1].trim() ?? "";
-}
-
+let adminSession = "";
+function adminToken() { return "ab".repeat(32); }
 async function adminCall(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown, token = adminToken()) {
+  if (!adminSession && token === adminToken()) {
+    const login = await fetch(API + "/api/admin/auth/login", { method: "POST", headers: { Origin: API, "Content-Type": "application/json", "X-OpenDomus-Operator": "browser" }, body: JSON.stringify({ key: token, code: await operatorTotp("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", Math.floor(Date.now() / 30000)) }) });
+    assert.equal(login.status, 200);
+    adminSession = login.headers.get("set-cookie")!.split(";")[0];
+  }
   const response = await fetch(`${API}/api/admin${path}`, {
     method,
-    headers: { Authorization: `Bearer ${token}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    headers: { Cookie: token === adminToken() ? adminSession : "", Origin: API, "X-OpenDomus-Operator": "browser", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  return { status: response.status, body: await response.json().catch(() => null) };
+  return { status: response.status, body: JSON.parse(await response.text() || "null") };
 }
 
 test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async (t) => {

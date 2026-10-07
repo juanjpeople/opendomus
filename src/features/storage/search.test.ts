@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { indexStorage, searchStorage } from "./search";
+import { cameraContents } from "./camera-content";
 import type { Container, ContainerContent, Space } from "./domain";
 import type { InventoryItem } from "@/features/inventory/domain";
 
@@ -22,4 +23,12 @@ test("encuentra cosas sin stock y productos, con la ubicación anidada y sin dup
   assert.equal(searchStorage(index, "estante").length, 2);
   assert.deepEqual(searchStorage(index, "  "), []);
   assert.deepEqual(searchStorage(index, "inexistente"), []);
+});
+
+test("la cámara de una estantería incluye los productos y notas de sus cajas", () => {
+  const content = cameraContents("shelf", containers, items, notes, "");
+  assert.equal(content.items[0].name, "Mechas de acero");
+  assert.equal(content.notes[0].text, "Piezas del lavarropas viejo");
+  assert.equal(cameraContents("shelf", containers, items, notes, "lavarropas").items.length, 0);
+  assert.equal(cameraContents("box", containers, items, notes, "acero").items.length, 1);
 });

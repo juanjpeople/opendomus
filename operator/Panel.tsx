@@ -17,7 +17,7 @@ interface Overview {
     pendingNotices: number;
   };
   risks: Record<string, unknown>[];
-  credentials: { adminTokenConfigured: boolean; supabaseConfigured: boolean };
+  credentials: { operatorConfigured: boolean; supabaseConfigured: boolean };
   recentAudit: { action: string; targetType: string; targetId: string; createdAt: number; actorEmail?: string }[];
 }
 interface AdminUser {
@@ -173,7 +173,7 @@ export function PlatformAdminPage() {
       setBusy(false);
     }
   }
-  if (forbidden) return <OperatorLayout><Alert type="error" title="Sesión privada vencida o acceso no autorizado" description="Volvé a iniciar sesión en Cloudflare Access." /><Button href="/admin">Volver a ingresar</Button></OperatorLayout>;
+  if (forbidden) return <OperatorLayout><Alert type="error" title="Sesión privada vencida o acceso no autorizado" description="Volvé a ingresar con tu clave de operador y un código nuevo del autenticador." /><Button href="/admin">Volver a ingresar</Button></OperatorLayout>;
   if (failure) return <OperatorLayout><Alert type="error" title="No se pudo completar la consulta u operación" description={failure} /><Typography.Paragraph>Si estabas guardando un cambio, consultá el estado antes de repetirlo: la respuesta puede haberse perdido después de aplicarlo.</Typography.Paragraph><Button onClick={load}>Volver a consultar</Button></OperatorLayout>;
   if (!data) return <OperatorLayout><Skeleton active title={{ width: "50%" }} /><Typography.Text>Cargando administración privada…</Typography.Text></OperatorLayout>;
   const overview = data.overview;
@@ -194,7 +194,7 @@ export function PlatformAdminPage() {
               <Typography.Title level={2} style={{ margin: 0 }}>
                 {t("platformAdmin.title")}
               </Typography.Title>
-              <Typography.Text type="secondary">Acceso privado · Cloudflare Access</Typography.Text>
+              <Typography.Text type="secondary">Acceso privado · Clave y autenticador</Typography.Text>
             </div>
           </Flex>
           <Button icon={<RefreshCw />} loading={loading} disabled={busy} onClick={load}>
@@ -229,7 +229,7 @@ export function PlatformAdminPage() {
                 size="small"
                 column={1}
                 items={[
-                  { key: "admin", label: "ADMIN_TOKEN", children: <Tag color={overview.credentials.adminTokenConfigured ? "green" : "red"}>{t(overview.credentials.adminTokenConfigured ? "platformAdmin.configured" : "platformAdmin.missing")}</Tag> },
+                  { key: "admin", label: "Acceso de operador", children: <Tag color={overview.credentials.operatorConfigured ? "green" : "red"}>{t(overview.credentials.operatorConfigured ? "platformAdmin.configured" : "platformAdmin.missing")}</Tag> },
                   { key: "storage", label: "Supabase", children: <Tag color={overview.credentials.supabaseConfigured ? "green" : "red"}>{t(overview.credentials.supabaseConfigured ? "platformAdmin.configured" : "platformAdmin.missing")}</Tag> },
                 ]}
               />

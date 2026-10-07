@@ -1,7 +1,7 @@
 "use client";
 
 import { App, Button, Card, Dropdown, Flex, Skeleton, Tooltip, Typography, theme } from "antd";
-import { EllipsisVertical, MapPin, Pencil, Plus, Printer, ScanLine, Trash2 } from "lucide-react";
+import { Camera, EllipsisVertical, MapPin, Pencil, Plus, Printer, ScanLine, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState, type CSSProperties } from "react";
 import { Can } from "@/components/auth/Can";
@@ -19,6 +19,7 @@ import { AddTile, ContainerTile } from "./ContainerTiles";
 import { ContainerModal, SpaceModal } from "./StorageForms";
 import styles from "./storage.module.css";
 import { StorageSearch } from "./StorageSearch";
+import { cameraHref } from "@/lib/navigation/routes";
 
 type Dialog =
   | { kind: "space"; space?: Space }
@@ -44,6 +45,7 @@ export function StoragePage() {
         description={t("storage.description")}
         extra={
           <>
+            <Link href={cameraHref()}><Button icon={<Camera />}>{t("camera.openMode")}</Button></Link>
             <Link href="/inventario/escanear">
               <Button icon={<ScanLine />}>{t("storage.scan")}</Button>
             </Link>

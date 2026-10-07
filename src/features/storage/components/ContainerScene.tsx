@@ -6,8 +6,11 @@ import { tint } from "@/lib/appearance";
 import { containerAppearance, type Container } from "../domain";
 import styles from "./storage.module.css";
 
-/** Siluetas compartidas por tarjetas, fichas y editor. El color y el ícono siguen siendo configurables. */
-export function ContainerScene({ container, compact = false }: { container: Pick<Container, "kind" | "color" | "icon">; compact?: boolean }) {
+/**
+ * Siluetas compartidas por tarjetas, fichas y editor. El color y el ícono siguen siendo configurables.
+ * `bare`: solo la silueta, sin fondo ni insignia (sobre el visor de cámara u otra superficie propia).
+ */
+export function ContainerScene({ container, compact = false, bare = false }: { container: Pick<Container, "kind" | "color" | "icon">; compact?: boolean; bare?: boolean }) {
   const { token } = theme.useToken();
   const { color, Icon } = containerAppearance(container);
   const palette = tint(token, color);
@@ -28,13 +31,13 @@ export function ContainerScene({ container, compact = false }: { container: Pick
     toolbox: <><path d="M65 32V19h50v13" fill="none" strokeWidth="6" /><rect x="22" y="33" width="136" height="77" rx="9" /><path d="M23 62h134" /><rect x="51" y="55" width="13" height="20" rx="3" fill={panel} /><rect x="116" y="55" width="13" height="20" rx="3" fill={panel} /><path d="M42 93h96" opacity=".4" /></>,
     other: <><rect x="29" y="34" width="122" height="75" rx="18" /><path d="M67 34v-9h46v9M71 65h38" /><circle cx="90" cy="84" r="4" /></>,
   };
-  return <div className={`${styles.scene} ${compact ? styles.compact : ""}`} style={{ color: palette.solid, background: `linear-gradient(145deg, ${palette.bg}, ${token.colorBgContainer})` }} aria-hidden="true" data-container-kind={container.kind}>
+  return <div className={`${styles.scene} ${compact ? styles.compact : ""}`} style={{ color: palette.solid, background: bare ? undefined : `linear-gradient(145deg, ${palette.bg}, ${token.colorBgContainer})` }} aria-hidden="true" data-container-kind={container.kind}>
     <svg viewBox="0 0 180 130" fill="none" focusable="false">
       <ellipse cx="90" cy="119" rx="67" ry="5" fill="currentColor" opacity=".1" />
       <circle cx="147" cy="21" r="4" fill="currentColor" opacity=".18" />
       <path d="M23 22v8m-4-4h8" stroke="currentColor" opacity=".3" strokeLinecap="round" />
       <g fill={palette.bgHover} stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round">{shapes[container.kind]}</g>
     </svg>
-    <span className={styles.contentBadge} style={{ color: palette.text, background: panel, borderColor: palette.border }}><Icon /></span>
+    {!bare && <span className={styles.contentBadge} style={{ color: palette.text, background: panel, borderColor: palette.border }}><Icon /></span>}
   </div>;
 }

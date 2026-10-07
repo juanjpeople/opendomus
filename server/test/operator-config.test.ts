@@ -11,14 +11,14 @@ test("el origen administrativo rechaza credenciales, rutas y protocolos inseguro
 });
 
 test("el diagnóstico no expone secretos ni confunde configuración presente con autenticación verificada", () => {
-  const report = operatorDiagnostics({ OPENDOMUS_API: "https://private.example", OPENDOMUS_ADMIN_TOKEN: "master-secret", OPENDOMUS_ACCESS_TOKEN: "access-secret" }, true).join("\n");
+  const report = operatorDiagnostics({ OPENDOMUS_API: "https://private.example", OPENDOMUS_ADMIN_TOKEN: "master-secret", OPENDOMUS_ACCESS_TOKEN: "access-secret" }).join("\n");
   assert(!report.includes("master-secret"));
   assert(!report.includes("access-secret"));
   assert(report.includes("NO verificados"));
-  assert(report.includes("validez no comprobada"));
-  const missing = operatorDiagnostics({}, false).join("\n");
+
+  const missing = operatorDiagnostics({}).join("\n");
   assert(missing.includes("Pendiente: configurar OPENDOMUS_API"));
-  assert(missing.includes("El panel web no lo necesita"));
-  assert(missing.includes("CLI opcional: configurar OPENDOMUS_ADMIN_TOKEN"));
-  assert(report.includes("Panel privado: https://private.example/admin"));
+  assert(missing.includes("Sin Zero Trust"));
+
+  assert(report.includes("Panel: https://private.example/admin"));
 });

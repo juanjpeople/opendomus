@@ -4,8 +4,14 @@ import { expect, test as base, type Page } from "@playwright/test";
 async function signIn(page: Page) {
   await page.goto("/empezar");
   await page.getByRole("button", { name: "Empezar acá" }).click();
+  await selectTestSpaces(page);
   await page.getByText("Administrador", { exact: true }).first().click();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+}
+
+export async function selectTestSpaces(page: Page) {
+  for (const name of ["Cocina", "Taller de herramientas", "Heladera", "Alacena", "Estantería de herramientas"]) await page.getByRole("checkbox", { name, exact: true }).check();
+  await page.getByRole("button", { name: "Guardar esta selección" }).click();
 }
 
 /** Carga un producto en un contenedor (por nombre, desde el inventario). */

@@ -7,11 +7,11 @@ import { useEffect, useState } from "react";
 import { ColorSwatches, IconGrid, PrivacySelect } from "@/components/ui";
 import { MemberAvatar } from "@/components/ui/MemberAvatar";
 import { useMembers } from "@/features/members/hooks";
-import { useT } from "@/i18n";
+import { useI18n } from "@/i18n";
 import type { AppearanceColor, AppearanceIcon } from "@/lib/appearance";
 import { usePermission } from "@/lib/auth/hooks";
 import type { Privacy } from "@/lib/sync/scope";
-import { EVENT_LIMITS, REPEATS, type CalendarEvent, type Repeat } from "../domain";
+import { EVENT_LIMITS, EVENT_KINDS, REPEATS, type CalendarEvent, type Repeat, type EventKind } from "../domain";
 import { useEventActions } from "../hooks";
 
 interface FormValues {
@@ -22,6 +22,9 @@ interface FormValues {
   time: [Dayjs, Dayjs];
   days: [Dayjs, Dayjs];
   repeat: Repeat;
+  repeatUntil?: Dayjs;
+  eventKind: EventKind;
+  homeworkDone?: boolean;
   participantIds: string[];
   color: AppearanceColor;
   icon?: AppearanceIcon;
@@ -38,7 +41,8 @@ interface EventModalProps {
 }
 
 export function EventModal({ open, event, day, onClose }: EventModalProps) {
-  const t = useT();
+  const { t, locale } = useI18n();
+  const es = locale === "es";
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const { modal } = App.useApp();
@@ -48,6 +52,8 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
   const canManage = usePermission("calendar.manage");
   const [saving, setSaving] = useState(false);
   const allDay = Form.useWatch("allDay", form) as boolean | undefined;
+  const eventKind = Form.useWatch("eventKind", form) as EventKind | undefined;
+  const repeat = Form.useWatch("repeat", form) as Repeat | undefined;
   const color = (Form.useWatch("color", form) as AppearanceColor | undefined) ?? "blue";
 
   useEffect(() => {
@@ -63,6 +69,9 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
         time: [start, end],
         days: [start, end],
         repeat: event.repeat,
+        repeatUntil: event.repeatUntil === undefined ? undefined : dayjs(event.repeatUntil),
+        eventKind: event.eventKind ?? "event",
+        homeworkDone: event.homeworkDone ?? false,
         participantIds: event.participantIds,
         color: event.color,
         icon: event.icon,
@@ -78,6 +87,9 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
         time: [base.hour(10), base.hour(11)],
         days: [base, base],
         repeat: "none",
+        repeatUntil: undefined,
+        eventKind: "event",
+        homeworkDone: false,
         participantIds: [],
         color: "blue",
         icon: undefined,
@@ -98,6 +110,9 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
       end: end.valueOf(),
       allDay: values.allDay,
       repeat: values.repeat,
+      repeatUntil: values.repeat !== "none" ? values.repeatUntil?.endOf("day").valueOf() : undefined,
+      eventKind: values.eventKind,
+      homeworkDone: values.eventKind === "homework" ? values.homeworkDone : undefined,
       participantIds: values.participantIds,
       color: values.color,
       icon: values.icon,
@@ -150,6 +165,12 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
       }
     >
       <Form form={form} layout="vertical" requiredMark={false} disabled={!canManage} onFinish={onOk}>
+        <Form.Item name="eventKind" label={es ? "Tipo de evento" : "Event type"}>
+          <Select options={EVENT_KINDS.map((value) => ({ value, label: ({ event: es ? "Evento" : "Event", class: es ? "Materia escolar" : "School subject", homework: es ? "Tarea escolar" : "Homework", break: es ? "Sin clases / vacaciones" : "No school / vacation", holiday: es ? "Feriado propio" : "Custom holiday" })[value] }))} onChange={(kind: EventKind) => {
+            if (kind === "class") form.setFieldsValue({ repeat: "weekly", allDay: false });
+            else if (kind === "break" || kind === "holiday" || kind === "homework") form.setFieldsValue({ repeat: "none", allDay: true });
+          }} />
+        </Form.Item>
         <Form.Item
           name="title"
           label={t("calendar.fields.title")}
@@ -216,11 +237,11 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
         <Row gutter={12}>
           <Col xs={24} sm={10}>
             <Form.Item name="repeat" label={t("calendar.fields.repeat")}>
-              <Select options={REPEATS.map((repeat) => ({ value: repeat, label: t(`calendar.repeats.${repeat}`) }))} />
+              <Select disabled={eventKind === "class" || !canManage} options={REPEATS.map((repeat) => ({ value: repeat, label: t(`calendar.repeats.${repeat}`) }))} />
             </Form.Item>
           </Col>
           <Col xs={24} sm={14}>
-            <Form.Item name="participantIds" label={t("calendar.fields.participants")}>
+            <Form.Item name="participantIds" label={t("calendar.fields.participants")} rules={eventKind === "class" ? [{ required: true, type: "array", min: 1, message: es ? "Elegí quién cursa esta materia" : "Choose who attends this class" }] : []}>
               <Select
                 mode="multiple"
                 // Buscar por nombre (por defecto antd filtra por `value`, que es el id).
@@ -247,13 +268,17 @@ export function EventModal({ open, event, day, onClose }: EventModalProps) {
             </Form.Item>
           </Col>
         </Row>
+        {repeat !== "none" && <Form.Item name="repeatUntil" label={es ? "Repetir hasta (fin del ciclo lectivo)" : "Repeat until (end of school term)"} extra={eventKind === "class" ? (es ? "La fecha de arriba es la primera clase y define el día de la semana. Cargá otro evento si la materia se dicta otro día. Agregá vacaciones como Sin clases." : "The date above is the first lesson and sets the weekday. Add another event for another weekday. Add vacations as No school.") : undefined} rules={eventKind === "class" ? [{ required: true, message: es ? "Elegí el fin del ciclo lectivo" : "Choose the end of term" }] : []}>
+          <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+        </Form.Item>}
+        {eventKind === "homework" && <Form.Item name="homeworkDone" label={es ? "Tarea revisada" : "Homework checked"} valuePropName="checked"><Switch /></Form.Item>}
         <Form.Item name="color" label={t("appearance.color")}>
           <ColorSwatches fallback="blue" />
         </Form.Item>
         <Form.Item name="icon" label={t("appearance.icon")}>
           <IconGrid fallback="star" color={color} />
         </Form.Item>
-        <Form.Item name="notes" label={t("calendar.fields.notes")}>
+        <Form.Item name="notes" label={eventKind === "class" ? (es ? "Para la mochila: materiales y recordatorios" : "For the backpack: materials and reminders") : t("calendar.fields.notes")}>
           <Input.TextArea rows={2} maxLength={EVENT_LIMITS.notesMaxLength} />
         </Form.Item>
       </Form>

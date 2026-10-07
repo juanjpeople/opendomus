@@ -20,6 +20,11 @@ La [guía de plataformas](docs/PLATAFORMAS.md) explica Android/PWA, Windows/macO
 Raspberry/NAS, Caddy/HTTPS, límites del ESP, respaldos y el camino hacia un APK.
 El build local no necesita cuenta ni ofrece funciones que requieran la API.
 
+Al crear una casa podés empezar vacía o elegir espacios y artículos revisables.
+El [catálogo y las plantillas](docs/CATALOGO.md) incluyen referencias de precios
+con fuente y fecha, sin API keys ni servicios adicionales. Los precios se actualizan
+editorialmente y no se registran como compras de la casa.
+
 ### Testing on a phone
 
 Connect the phone and computer to the same Wi-Fi and open the Network URL printed by
@@ -123,85 +128,20 @@ la [hibernación de Cloudflare](https://developers.cloudflare.com/durable-object
 Si la API confirma que terminó la sesión o la membresía, el cliente detiene sus
 reintentos hasta volver a entrar o reiniciar el motor con una sesión válida.
 
-### Administración privada (panel web + CLI + Cloudflare Access)
+### Administración en /admin, sin Zero Trust
 
-Para saber qué falta configurar, ejecutar `npm run admin -- diagnostico`. Funciona
-sin cuenta doméstica ni tokens: revisa el formato del origen, presencia de variables
-y disponibilidad de `cloudflared`, sin contactar la red ni mostrar secretos; indica el URL privado si el origen está configurado.
-No valida credenciales, políticas, OTP o MFA. No hay que registrarse en la app pública
-para convertirse en operador; el acceso depende de la configuración privada siguiente.
-`OPENDOMUS_API` debe ser solo el origen del gateway (`https://HOST`), sin rutas,
-credenciales, parámetros ni fragmentos; HTTP se reserva a localhost para pruebas.
+El panel se sirve en el mismo sitio, en `/admin`. Se ingresa con una clave aleatoria
+exclusiva de operador y un código TOTP de una aplicación autenticadora. No requiere
+Cloudflare Access, Zero Trust, cloudflared, proveedor de email ni medio de pago nuevo.
+Reutiliza Workers y D1; se mantienen las cuotas del plan que tenga la cuenta.
 
-La app pública **no compila ni publica `/admin`**. Sus cuentas domésticas no otorgan
-permisos globales. El antiguo `/api/platform-admin/*` deja de existir, y las operaciones
-`/api/admin/*` solo funcionan desde el hostname del gateway privado, con una identidad
-firmada por Access, un correo explícitamente permitido y el secreto administrativo.
-Sin configuración, responden 404 antes de consultar D1. La tabla histórica de grants
-permanece para no alterar migraciones aplicadas, pero ya no autoriza a nadie.
+Las cuentas domésticas nunca otorgan permisos globales. El servidor guarda el hash de
+la clave de operador; la sesión dura una hora y se revoca al cerrar sesión. El código
+TOTP no puede reutilizarse. No hay bypass de pruebas habilitable por configuración.
 
-`wrangler.operator.jsonc` define un segundo Worker con el panel y sus assets privados, sin URLs de
-preview. Su service binding conecta con el Worker principal. Access debe proteger **todo
-el hostname** del gateway, incluyendo cualquier alias, antes de habilitar la operación.
-El sitio público sigue accesible para las familias; no se protege todo el sitio con Access.
-
-#### Preparación manual, sin desplegar desde este chat
-
-1. En Zero Trust, habilitar Independent MFA (Security key y Authenticator app). No
-   deshabilitar los factores existentes ni cambiar otras aplicaciones.
-2. Preparar la aplicación Access desde CLI; este comando solo muestra el plan:
-
-   ```bash
-   npm run admin:access -- --host opendomus-operator.TU-SUBDOMINIO.workers.dev --team TU-EQUIPO --emails operador@example.com,otro@example.com
-   ```
-
-   Usar los correos exactos del operador. No usar dominios completos, comodines ni
-   permitir todos los usuarios de GitHub. Para aplicar, configurar
-   `CLOUDFLARE_ACCOUNT_ID` y un `CLOUDFLARE_API_TOKEN` con permisos Access adecuados
-   en el entorno y repetir con `--apply`. El script no despliega Workers, no sobrescribe
-   aplicaciones existentes ni imprime el token. Crea una allowlist, un proveedor OTP y
-   exige MFA en cada login. Si falla a mitad, revisar la aplicación existente antes de
-   reintentar; no borrar políticas como workaround.
-3. Cargar los cuatro valores devueltos (`OPERATOR_HOST`, `OPERATOR_ACCESS_ISSUER`,
-   `OPERATOR_ACCESS_AUD`, `OPERATOR_EMAILS`) en **ambos** Workers, mediante
-   `wrangler secret put NOMBRE` y el mismo comando con `--config wrangler.operator.jsonc`.
-   Mantener `ADMIN_TOKEN` en el Worker principal; configurarlo también en la terminal solo si se usa el CLI de operación. Para el panel, guardar el mismo valor como `OPERATOR_BROWSER_TOKEN` en el gateway; nunca en variables de build, HTML o JavaScript.
-   Nunca configurar `OPERATOR_LOCAL_TEST` en producción.
-4. Aplicar migraciones pendientes manualmente y compilar: `npm run build` y `npm run build:operator`. Desplegar el
-   Worker principal con `npx wrangler deploy` y el gateway con
-   `npx wrangler deploy --config wrangler.operator.jsonc`. Si Cloudflare necesita crear el
-   Worker antes de asociarlo con Access, crearlo sin los cuatro valores: rechaza todo hasta
-   terminar la política. Confirmar en Domains & Routes que Access cubra su workers.dev.
-5. Abrir `https://HOST-DEL-GATEWAY/admin` en el navegador e ingresar con el correo
-   autorizado, OTP y segundo factor. **No requiere `cloudflared`, cuenta doméstica ni
-   token maestro en el navegador.** El CLI de habilitación muestra esa dirección;
-   desplegar y configurar Access es lo que la vuelve utilizable.
-   Solo para operar también por terminal: instalar `cloudflared`, configurar
-   `OPENDOMUS_API=https://HOST-DEL-GATEWAY` y `OPENDOMUS_ADMIN_TOKEN` en el entorno o
-   `.env.admin` (ignorado por Git), y ejecutar `npm run admin -- login`.
-   No pegar tokens, OTP ni códigos de recuperación en chats o issues.
-6. Verificar correo permitido + MFA, rechazo de otro correo, token vencido, peticiones
-   directas al hostname público y `/admin` ausente. **OTP/MFA no se considera operativo
-   hasta completar estas pruebas reales.** Revocar sesiones de Access al retirar un operador
-   y quitar su correo en Access y ambos Workers. Rotar `ADMIN_TOKEN` si se expuso.
-
-Comandos disponibles: `npm run admin -- metricas`, `usuarios`, `feedback`, `avisos`,
-`cuenta EMAIL`, `licencias`, `licencia nueva`, `revocar ID`, `casas`, `pausar ID`,
-`reanudar ID` y `resolver-feedback ID`. Las escrituras dejan la identidad verificada del
-operador en el registro de auditoría; no descifran contenido doméstico. El borrado de
-casas conserva sus validaciones de antigüedad y confirmación y no tiene un comando CLI
-abreviado. No hay borrado automático.
-
-Los OTP administrativos los envía Cloudflare Access y no requieren comprar un dominio.
-Google y GitHub se pueden integrar como proveedores de Access, conservando allowlist y
-MFA; necesitan configurar sus aplicaciones y verificar identidades. No están activados
-por este cambio. Para correos de las cuentas domésticas y avisos de inactividad hace
-falta un proveedor/remitente verificado separado: hoy esos avisos siguen en cola y la
-recuperación de datos usa el kit, no un email que prometa abrir claves cifradas.
-
-Fuentes: [OTP de Access](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/),
-[MFA independiente](https://developers.cloudflare.com/cloudflare-one/access-controls/access-settings/independent-mfa/),
-[validación de JWT](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/).
+La preparación, migración desde Access, límites y recuperación están en
+[Administración](docs/ADMIN.md). `npm run admin -- diagnostico` revisa la configuración
+local sin revelar credenciales. La publicación continúa siendo manual.
 
 Any static host works the same way (Netlify, GitHub Pages, nginx/Caddy on a NAS): serve
 `out/`. Household data stays on each device until sync exists (see `OPENDOMUS_PLAN.md`).
@@ -238,33 +178,13 @@ OpenDomus is free software under the [GNU AGPL v3](LICENSE) (or later): you can 
 study, modify and share it. If you run a modified version as a service for others, you
 must offer them its source code too.
 
-#### Usar el panel privado
+#### Pruebas del panel
 
-Después del despliegue manual y la configuración de Access, abrir
-`https://HOST-DEL-GATEWAY/admin` en el navegador. Access verifica el correo autorizado
-con OTP y MFA antes de entregar la página. No hace falta una cuenta doméstica ni
-pegar el token maestro en el navegador. El CLI `admin:access` sirve para preparar
-la autorización inicial; el CLI `admin` sigue disponible como alternativa al panel.
-
-El sitio público no contiene el panel. `npm run build:operator` genera únicamente
-`operator-dist/`, servido por el gateway con `run_worker_first: true`: tanto HTML
-como JavaScript requieren identidad verificada. Las respuestas son `no-store` y no
-se permite embeber el panel. La API del navegador exige peticiones del mismo origen;
-el gateway agrega la credencial del servidor al llamar al backend por su binding.
-No quitar Access ni habilitar assets-first como solución a un error de acceso.
-
-Validar antes de usar en producción: entrada con un operador permitido y MFA,
-rechazo de otro correo, sesión vencida, acceso directo a `/panel.js` sin sesión,
-rechazo de solicitudes desde otro sitio y operaciones auditadas con la identidad real.
-El panel y la configuración aún requieren despliegue manual; compilar no los activa.
-
-Pruebas del panel: `npm run build:operator` y
-`npx playwright test --config playwright.operator.config.ts`. Usan HTTPS local,
-un certificado temporal generado con OpenSSL y JWT firmados con claves efímeras.
-El gateway y el navegador son reales; los datos del backend son sintéticos. En
-Windows se usa OpenSSL de Git for Windows; `OPENSSL_BINARY` permite indicar otra
-instalación. Estas pruebas no sustituyen la validación de OTP/MFA en Cloudflare.
-
+`npm run build:operator` y `npx playwright test --config playwright.operator.config.ts`
+prueban ingreso con clave/TOTP, consultas, licencia y revocación con navegador real y
+SQLite local. Los datos del panel son sintéticos. Usan un certificado temporal de
+OpenSSL (Git for Windows, o `OPENSSL_BINARY`). La prueba de API completa también
+inicia una sesión real de operador, sin bypass de autenticación.
 
 ## Casas de ejemplo
 

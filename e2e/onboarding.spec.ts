@@ -41,6 +41,7 @@ test("la primera vez arranca por la landing y la bienvenida; después, directo a
   await page.goBack();
 
   await page.getByRole("button", { name: "Empezar acá" }).click();
+  await page.getByRole("button", { name: "Empezar sin precarga" }).click();
   await expect(page.getByText("¿Quién está en casa?")).toBeVisible();
   await expect(page.getByText("Este dispositivo")).toBeVisible();
   await page.getByText("Administrador", { exact: true }).first().click();

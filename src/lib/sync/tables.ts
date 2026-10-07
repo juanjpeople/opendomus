@@ -8,6 +8,7 @@
  */
 export const SYNC_TABLES = [
   "members",
+  "houseSettings",
   "spaces",
   "containers",
   "containerContents",

@@ -51,12 +51,25 @@ retira información previamente conocida.
 
 ## Identidad y administración
 
-Las cuentas domésticas y la administración de la plataforma tienen autorizaciones
-distintas. La administración se opera por CLI mediante el gateway privado descrito
-en el README; no basta con conocer su dirección. El Worker comprueba el JWT de
-Access y la lista de correos permitidos, además de los controles del gateway.
-La exigencia del segundo factor depende de la política de Access: el código por sí
-solo no demuestra que una instalación tenga MFA correctamente configurado.
+Las cuentas domésticas y el operador tienen autorizaciones independientes.
+`/admin` muestra un formulario público; toda consulta o acción privada exige una
+sesión de operador validada en el servidor. Iniciar sesión exige una clave aleatoria
+de 256 bits y TOTP. Solo se guarda el hash SHA-256 de esa clave, no una contraseña
+humana (no sustituirla por una contraseña elegida).
+
+Las sesiones se guardan por hash en D1, duran una hora y usan cookies HttpOnly,
+Secure y SameSite=Strict en HTTPS. Cerrar sesión borra el registro; cambiar cualquiera
+de los tres valores de operador invalida las sesiones existentes. Los códigos TOTP
+se consumen con una actualización atómica. Hay límites por bucket de IP y un límite
+adicional después de verificar la clave. La API exige origen y cabecera explícitos;
+no acepta tokens heredados ni identidades declaradas por el cliente.
+
+No depende de Access o Zero Trust. El email configurado es la etiqueta del operador
+en auditoría, no una prueba de propiedad ni un mecanismo de recuperación. La recuperación
+requiere acceso administrativo a Cloudflare para rotar las credenciales. Un XSS en
+el mismo sitio podría actuar con una sesión abierta; CSP y cookies reducen riesgos,
+pero no eliminan ese límite. TOTP tampoco es resistente al phishing como una passkey.
+Ver [operación y costos](docs/ADMIN.md).
 
 Google y GitHub requieren configurar y verificar las aplicaciones OAuth propias;
 la integración exige vinculación explícita y desbloqueo local de claves (ver

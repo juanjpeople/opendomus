@@ -27,6 +27,7 @@ test("las cabeceras conservan la marca y los controles a 320 px", async ({ page 
     await page.screenshot({ path: testInfo.outputPath(`${route}-320.png`), animations: "disabled" });
   }
   await page.getByRole("button", { name: "Empezar acá" }).click();
+  await page.getByRole("button", { name: "Empezar sin precarga" }).click();
   const profile = page.getByText("Administrador", { exact: true }).first();
   await expect(profile).toBeVisible();
   await expect.poll(() => profile.evaluate((element) => {
@@ -57,6 +58,7 @@ test("la distribución local funciona sin API ni formularios cloud", async ({ pa
   await page.getByRole("link", { name: "Continuar en este dispositivo" }).click();
   await expect(page.getByRole("link", { name: "Crear cuenta", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Empezar acá" }).click();
+  await page.getByRole("button", { name: "Empezar sin precarga" }).click();
   await expect(page.getByText("¿Quién está en casa?")).toBeVisible();
   await page.reload();
   await expect(page.getByText("Administrador", { exact: true }).first()).toBeVisible();

@@ -299,7 +299,7 @@ export const en: Messages = {
       open: "Choose from catalog", title: "Home essentials", hint: "Choose an essential and adjust how much you have. Stock is only added when you submit the form.",
       search: "Search: sugar, drill bits, bleach…", all: "All categories", empty: "Not in the catalog? You can enter any name in the form.",
       durable: "Tool", consumable: "Supply",
-      categories: { food: "Pantry and kitchen", cleaning: "Cleaning", hardware: "Hardware", electrical: "Electrical", tools: "Tools" },
+      categories: { food: "Pantry and kitchen", cleaning: "Cleaning", hygiene: "Personal hygiene", hardware: "Hardware", electrical: "Electrical", tools: "Tools", ceramics: "Ceramics", stationery: "Stationery and school" },
     },
     units: {
       unidades: { one: "unit", other: "units" },
@@ -623,6 +623,20 @@ export const en: Messages = {
     localhostWarning: "With “localhost” the QR only works on this same computer.",
     print: "Print",
     preview: "Preview",
+  },
+  camera: {
+    title: "Look and find", openMode: "Camera and AR", description: "Point at a label to see what's inside without opening its page. Search for something and find its box.",
+    search: "Find batteries, drill bits, spare parts…", start: "Look with the camera", unknown: "Unknown label", noMatch: "No matches in this container.",
+    empty: "No content recorded yet.", local: "QR codes are read on this device. No images are sent and no AI is used. Includes nested compartments.",
+    recorded: "Recorded inventory; not content detection", open: "Open details", visible: "Label in view", selected: "Selected container",
+  },
+  spatial: {
+    title: "Spatial AR", description: "Choose a container, slowly move your phone until a surface is found, then place its card there. You can place more containers in the same session.",
+    sessionOnly: "Cards stay in place as you walk. Positions last for this session and are released when AR closes. Your inventory is kept.",
+    unsupported: "This browser or device does not offer spatial AR. You can use the QR camera. On a compatible phone, try opening this page over HTTPS in Chrome for Android.",
+    failed: "AR could not start or continue. Check permissions and support for surfaces and AR controls. You can still use the QR camera.",
+    start: "Enter spatial AR", container: "Container to display", exit: "Exit AR", place: "Place here", clear: "Reset positions",
+    status: { searching: "Move your phone to find a surface", surface: "Surface found: ready to place", placed: "Card placed", "tracking-lost": "Tracking lost. Move your phone slowly", reset: "The space reference changed. Place the cards again" },
   },
   scan: {
     failed: "We could not read the camera. Try again or enter the label code.",

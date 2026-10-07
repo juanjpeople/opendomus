@@ -65,3 +65,22 @@ export function DemoLabel({ children }: { children: ReactNode }) {
     </Typography.Text>
   );
 }
+
+/**
+ * Para demos con componentes reales que llevan a otra página (Link): acá no navegan.
+ * `onLink` recibe el href, para que un flujo de ejemplo cambie de pantalla en su lugar.
+ */
+export function NoNavigate({ children, onLink }: { children: ReactNode; onLink?: (href: string) => void }) {
+  return (
+    <div
+      onClickCapture={(event) => {
+        const link = (event.target as Element).closest("a");
+        if (!link) return;
+        event.preventDefault();
+        onLink?.(link.getAttribute("href") ?? "");
+      }}
+    >
+      {children}
+    </div>
+  );
+}

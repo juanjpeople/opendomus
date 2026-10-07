@@ -14,7 +14,7 @@
     // Páginas inexistentes → 404.html, que además traduce URLs viejas (los QR impresos /c/<código>).
     "not_found_handling": "404-page",
     // Solo la API pasa por el código del Worker; la app se sirve directo (más rápido y sin costo).
-    "run_worker_first": ["/api/*"],
+    "run_worker_first": ["/api/*", "/admin", "/admin/*"],
   },
   "d1_databases": [
     {
@@ -35,7 +35,7 @@
     "SUPABASE_URL": "https://qaeqyeadwijphhlqcrku.supabase.co",
     "SUPABASE_PHOTOS_BUCKET": "opendomus-photos",
     "PHOTO_STORAGE": "supabase",
-    // OPERATOR_ACCESS_ISSUER, OPERATOR_ACCESS_AUD y OPERATOR_EMAILS se configuran fuera del repo.
+    // Operador: OPERATOR_EMAIL, OPERATOR_KEY_HASH y OPERATOR_TOTP_SECRET como secretos.
     // Crear una casa en la nube pide una licencia (en desarrollo, `.dev.vars` puede poner `open`).
     "HOUSEHOLD_ACCESS": "codes",
   },

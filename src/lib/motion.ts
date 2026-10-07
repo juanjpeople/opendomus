@@ -19,3 +19,13 @@ export const SPRING = {
 
 /** Separación entre elementos de una lista que entra escalonada. */
 export const STAGGER = 0.05;
+
+/**
+ * Cuánto sube (px) lo que se puede tocar al pasar el mouse. Siempre con SPRING.snappy.
+ * hero: tarjetas grandes de elección (perfiles, caminos de inicio) · card: tarjetas y fichas ·
+ * chip: opciones chicas, pestañas y eventos.
+ */
+export const HOVER_LIFT = { hero: -6, card: -4, chip: -2 } as const;
+
+/** Escala al apretar: tarjetas casi no ceden; controles chicos, un poco más. */
+export const TAP = { card: 0.98, control: 0.97 } as const;

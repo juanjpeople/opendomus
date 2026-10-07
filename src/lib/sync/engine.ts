@@ -28,7 +28,7 @@ import { opContext, opSigningData, type PullResponse, type PushResponse, type St
 import { PRIVACY_TABLES, resolveScope } from "./scope";
 import { useSyncStatus, type SyncErrorCode } from "./status";
 import { isSyncTable, SYNC_META_TABLES, SYNC_TABLES, type SyncTable } from "./tables";
-import { CONTAINER_BACKFILL, shouldApplyAfterStorageUpgrade, storageCompatibleGroups } from "./upgrades";
+import { CONTAINER_BACKFILL, SETTINGS_BACKFILL, shouldApplyAfterStorageUpgrade, storageCompatibleGroups } from "./upgrades";
 
 export interface RosterEntry {
   role: Role;
@@ -310,6 +310,7 @@ async function decode(ctx: SyncContext, op: StoredOp): Promise<{ payload: OpPayl
 async function pull(ctx: SyncContext, onProgress?: Progress) {
   let cursor = (await readState<number>(STATE.cursor)) ?? 0;
   const previousCursor = await readState<number>(CONTAINER_BACKFILL);
+  const settingsCursor = await readState<number>(SETTINGS_BACKFILL);
   for (;;) {
     const page = await api<PullResponse>("GET", `/households/${ctx.link.householdId}/ops?since=${cursor}`);
     const decoded: { op: StoredOp; payload: OpPayload; author: { userId: string; role: Role } }[] = [];
@@ -325,7 +326,7 @@ async function pull(ctx: SyncContext, onProgress?: Progress) {
         break;
       }
       if (result === "invalid") rejected++;
-      else if (result !== "own" && shouldApplyAfterStorageUpgrade(op.seq, previousCursor, result.payload.changes)) decoded.push({ op, ...result });
+      else if (result !== "own" && shouldApplyAfterStorageUpgrade(op.seq, previousCursor, result.payload.changes, settingsCursor)) decoded.push({ op, ...result });
     }
 
     await db.transaction("rw", [...SYNC_TABLES, ...SYNC_META_TABLES], async (tx) => {
@@ -353,6 +354,7 @@ async function pull(ctx: SyncContext, onProgress?: Progress) {
       }
       await db.syncState.put({ key: STATE.cursor, value: next });
       if (previousCursor !== undefined && next >= previousCursor) await db.syncState.delete(CONTAINER_BACKFILL);
+      if (settingsCursor !== undefined && next >= settingsCursor) await db.syncState.delete(SETTINGS_BACKFILL);
     });
 
     if (rejected) useSyncStatus.getState().update({ rejected: useSyncStatus.getState().rejected + rejected });

@@ -8,6 +8,7 @@ import { CATALOG_CATEGORIES, catalogDefaults, searchCatalog, type CatalogCategor
 import type { NewInventoryItem } from "../domain";
 import { CATEGORY_APPEARANCE } from "../catalog-appearance";
 import { IconTile } from "@/components/ui";
+import { ReferencePrice } from "@/features/prices/components/ReferencePrice";
 
 export function CatalogPicker({ onSelect }: { onSelect: (values: NewInventoryItem) => void }) {
   const { t, locale } = useI18n();
@@ -29,9 +30,9 @@ export function CatalogPicker({ onSelect }: { onSelect: (values: NewInventoryIte
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 8 }}>
             {matches.map((entry) => {
               const { Icon, color } = CATEGORY_APPEARANCE[entry.category];
-              return <Button key={entry.id} icon={<IconTile icon={Icon} color={color} size={32} />} style={{ height: "auto", minHeight: 56, padding: 12, justifyContent: "flex-start", whiteSpace: "normal", textAlign: "left" }} onClick={() => { onSelect(catalogDefaults(entry, locale)); setOpen(false); }}>
+              return <div key={entry.id}><Button block icon={<IconTile icon={Icon} color={color} size={32} />} style={{ height: "auto", minHeight: 56, padding: 12, justifyContent: "flex-start", whiteSpace: "normal", textAlign: "left" }} onClick={() => { onSelect(catalogDefaults(entry, locale)); setOpen(false); }}>
                 <span>{entry.name[locale]}<Typography.Text type="secondary" style={{ display: "block", fontSize: 12 }}>{t(`inventory.units.${entry.unit}`, { count: 2 })} · {t(entry.durable ? "inventory.catalog.durable" : "inventory.catalog.consumable")}</Typography.Text></span>
-              </Button>;
+              </Button><details style={{ padding: "6px 12px" }}><summary>{locale === "es" ? "Precio de referencia" : "Reference price"}</summary><ReferencePrice catalogId={entry.id} /></details></div>;
             })}
           </div>
         </div>

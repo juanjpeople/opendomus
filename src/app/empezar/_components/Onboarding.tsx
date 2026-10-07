@@ -2,7 +2,10 @@
 import { DemoLauncher } from "@/features/demo/DemoLauncher";
 
 import { DEMO_ENABLED, SAMPLE_HOUSE } from "@/lib/demo";
-import { Button, Col, Flex, Row, Tag, Typography, theme } from "antd";
+import { App, Button, Col, Flex, Row, Tag, Typography, theme } from "antd";
+import { useState } from "react";
+import { HouseSetup } from "@/features/house-setup/HouseSetup";
+import { canInitializeHouse } from "@/features/house-setup/service";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, HardDrive, House, ShieldCheck, UserPlus, type LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -44,14 +47,25 @@ export function Onboarding() {
   const { token } = theme.useToken();
   const router = useRouter();
   const setMode = useDeviceStore((s) => s.setMode);
+  const [setup, setSetup] = useState(false);
+  const { message } = App.useApp();
 
-  function choose(choice: Choice) {
-    if (choice.soon) return;
-    if (choice.id === "create") return router.push("/cuenta?modo=crear&siguiente=casa");
-    if (choice.id === "join") return router.push("/unirme");
+  function finishLocal() {
     setMode("local");
     router.push("/");
   }
+
+  async function choose(choice: Choice) {
+    if (choice.soon) return;
+    if (choice.id === "create") return router.push("/cuenta?modo=crear&siguiente=casa");
+    if (choice.id === "join") return router.push("/unirme");
+    try {
+      if (!DEMO_ENABLED && await canInitializeHouse()) setSetup(true);
+      else finishLocal();
+    } catch { void message.error(t("errors.unexpected")); }
+  }
+
+  if (setup) return <PublicLayout><HouseSetup onComplete={finishLocal} onCancel={() => setSetup(false)} /></PublicLayout>;
 
   if (DEMO_ENABLED) return (
     <PublicLayout>

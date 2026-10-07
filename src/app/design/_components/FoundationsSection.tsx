@@ -23,7 +23,8 @@ import { DemoBlock, DemoLabel } from "./DemoBlock";
 const APP_ICONS = { House, Refrigerator, Wrench, ShoppingCart, Palette, UserRound, Bell, Search, Plus, Trash2, Settings };
 
 const PRINCIPLES = [
-  ["Componentes", "antd primero. Si un patrón se repite 2+ veces, se extrae a @/components/ui y se documenta acá."],
+  ["Esta página es el estándar", "Nada se usa en una pantalla si antes no está acá. Primero se arma o se arregla la pieza en @/components/ui, después se muestra acá con sus variantes, y recién ahí se adopta. Una prueba (design-lint) verifica que todo lo exportado esté documentado."],
+  ["Componentes", "antd primero. Si un patrón se repite 2+ veces, se extrae a @/components/ui. Antes de crear uno, revisá Componentes propios y Flujos."],
   ["Colores y espacios", "Siempre desde theme.useToken(). Nunca hex escritos a mano: rompen el modo oscuro y el color de marca."],
   ["Íconos", "Solo lucide-react. El tamaño lo hereda del texto (1em) vía LucideProvider."],
   ["Permisos", "Preguntar por permisos (can, usePermission, <Can>), nunca por rol. La matriz vive en lib/auth/permissions.ts."],
@@ -33,14 +34,14 @@ const PRINCIPLES = [
   ["Navegación", "Toda página se registra en lib/navigation/routes.ts: de ahí salen el menú, las migas, la búsqueda (Ctrl+K), los recientes y el título de la pestaña."],
   ["Historial", "Cada cambio de datos llama a recordActivity() dentro de la transacción del servicio. Sin registro no hay cambio."],
   ["Preferencias", "Por perfil: usePreferences() / useSetPreference(), nunca el store directo. Lo que se lee de localStorage se valida."],
-  ["Movimiento", "Usar @/components/motion (Reveal, Stagger, AnimatedNumber) y los tokens de lib/motion. Corto, solo transform/opacity, nunca bloquea una acción."],
+  ["Movimiento", "Usar @/components/motion (Reveal, Stagger, AnimatedNumber) y los tokens de lib/motion (DURATION, SPRING, HOVER_LIFT, TAP). Corto, solo transform/opacity, nunca bloquea una acción. Toda pantalla entra en cascada y todo lo que se toca responde."],
 ] as const;
 
 const STRUCTURE = `
 src/
   app/                      rutas. page.tsx finito; _components/ = privado de la ruta
   components/
-    ui/                     componentes reutilizables (PageHeader, StockTag, ...)
+    ui/                     componentes reutilizables (todos documentados en /design)
     auth/                   Can, RequirePermission
     layout/                 AppShell, Navigation, HeaderActions, ProfilePicker
     providers/              ThemeProvider

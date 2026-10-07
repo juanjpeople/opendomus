@@ -26,7 +26,6 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build:operator
-      - run: npx wrangler deploy --config wrangler.operator.jsonc --dry-run
 
   api:
     name: API (Worker + D1 local)
@@ -46,12 +45,13 @@ jobs:
         run: |
           {
             echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32 | tr -d '=+/')"
-            echo "APP_ORIGIN=http://localhost:8787"
+            echo "APP_ORIGIN=http://127.0.0.1:8787"
             echo "DEV_ORIGINS=http://localhost:3000"
             # Como en producción: crear una casa pide licencia (el test la emite por la API de administración).
             echo "HOUSEHOLD_ACCESS=codes"
-            echo "ADMIN_TOKEN=$(openssl rand -hex 32)"
-            echo "OPERATOR_LOCAL_TEST=1"
+            echo "OPERATOR_EMAIL=operator@localhost.test"
+            echo "OPERATOR_KEY_HASH=$(printf 'abababababababababababababababababababababababababababababababab' | openssl dgst -sha256 | awk '{print $NF}')"
+            echo "OPERATOR_TOTP_SECRET=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"
             # Nunca contacta servicios externos: el backend en memoria solo se habilita en localhost.
             echo "PHOTO_STORAGE=memory"
           } > .dev.vars
@@ -75,6 +75,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: npx wrangler deploy --dry-run
       - run: npx playwright install --with-deps chromium
       - run: npm run build:operator
       - run: npx playwright test --config playwright.operator.config.ts

@@ -3,6 +3,7 @@
  * servicios de verdad: lo que hace la app queda anotado para subir, en la misma transacción.
  */
 import "fake-indexeddb/auto";
+import { buildDefaultStorage } from "@/features/storage/seed";
 import assert from "node:assert/strict";
 import { before, describe, test } from "node:test";
 import { consumeInventoryItem, createInventoryItem, deleteInventoryItem, updateInventoryItem } from "@/features/inventory/service";
@@ -18,6 +19,11 @@ describe("registro de cambios locales", () => {
 
   before(async () => {
     await db.open();
+    if (!await db.containers.count()) {
+      const seed = buildDefaultStorage();
+      await db.spaces.bulkAdd(seed.spaces);
+      await db.containers.bulkAdd(seed.containers);
+    }
     containerId = (await db.containers.toCollection().first())!.id;
   });
 

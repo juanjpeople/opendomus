@@ -1,4 +1,5 @@
 import "fake-indexeddb/auto";
+import { buildDefaultStorage } from "@/features/storage/seed";
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { db } from "@/lib/db";
@@ -10,6 +11,9 @@ after(() => db.close());
 
 test("usar un taladro no lo consume; admite ajustes, persiste la preferencia y no sugiere compras", async () => {
   await db.open();
+  const seed = buildDefaultStorage();
+  await db.spaces.bulkAdd(seed.spaces);
+  await db.containers.bulkAdd(seed.containers);
   const container = (await db.containers.toArray())[0];
   const drill = BASIC_CATALOG.find((entry) => entry.id === "drill")!;
   const id = await createInventoryItem(admin, container.id, catalogDefaults(drill, "es"));

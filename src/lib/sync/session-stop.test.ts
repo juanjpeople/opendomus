@@ -1,4 +1,5 @@
 import "fake-indexeddb/auto";
+import { buildDefaultStorage } from "@/features/storage/seed";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createIdentity, derivePasswordKeys } from "@/lib/crypto";
@@ -37,6 +38,11 @@ for (const code of [401, 404]) {
       return Response.json({ error: code === 401 ? "unauthorized" : "not-found" }, { status: code });
     });
     await db.open();
+    if (!await db.containers.count()) {
+      const seed = buildDefaultStorage();
+      await db.spaces.bulkAdd(seed.spaces);
+      await db.containers.bulkAdd(seed.containers);
+    }
     const before = await db.containers.count();
     assert.ok(before > 0);
     const keys = await derivePasswordKeys("test@example.com", "test password", 1000);

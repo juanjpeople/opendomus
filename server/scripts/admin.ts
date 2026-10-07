@@ -15,12 +15,11 @@
  *   npm run admin -- feedback
  *   npm run admin -- avisos
  *
- * Necesita OPENDOMUS_API (gateway privado) y OPENDOMUS_ADMIN_TOKEN en el entorno o en
- * `.env.admin` (ignorado por git), además de cloudflared con una sesión Access OTP + MFA.
- * La cuenta doméstica no otorga permisos de operación. Ver README, administración privada.
+ * Necesita OPENDOMUS_API y una sesión creada con login (clave de operador + TOTP).
+ * Las cuentas domésticas no otorgan permisos globales. Ver docs/ADMIN.md.
  */
 import { existsSync, readFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { operatorCookie, operatorLogin, operatorLogout } from "./operator-login.ts";
 import { operatorDiagnostics, operatorOrigin } from "./operator-config.ts";
 
 function loadEnvFile(path: string) {
@@ -33,7 +32,7 @@ function loadEnvFile(path: string) {
 
 loadEnvFile(".env.admin");
 const API = (process.env.OPENDOMUS_API ?? "").replace(/\/$/, "");
-const TOKEN = process.env.OPENDOMUS_ADMIN_TOKEN ?? "";
+
 
 function flag(args: string[], name: string) {
   const index = args.indexOf(`--${name}`);
@@ -42,13 +41,10 @@ function flag(args: string[], name: string) {
 
 async function call<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<T> {
   const url = operatorOrigin(API);
-  const local = url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
-  if (!local && url.protocol !== "https:") throw new Error("La administración requiere HTTPS.");
-  const access = local ? "" : process.env.OPENDOMUS_ACCESS_TOKEN ?? execFileSync("cloudflared", ["access", "token", "--app", API], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
   const response = await fetch(`${API}/api/admin${path}`, {
     method,
     redirect: "error",
-    headers: { Authorization: `Bearer ${TOKEN}`, ...(access ? { "Cf-Access-Token": access, "Cf-Access-Jwt-Assertion": access } : {}), ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    headers: { Cookie: operatorCookie(url.origin), Origin: url.origin, "X-OpenDomus-Operator": "browser", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = (await response.json().catch(() => null)) as (T & { error?: string }) | null;
@@ -65,22 +61,13 @@ async function main(args: string[]) {
     return;
   }
   if (command === "diagnostico") {
-    let available = false;
-    try {
-      execFileSync("cloudflared", ["--version"], { stdio: "ignore", timeout: 5000, windowsHide: true });
-      available = true;
-    } catch { /* Ausente o no ejecutable: se informa sin mostrar salida del proceso. */ }
-    console.log(operatorDiagnostics(process.env, available).join("\n"));
+    console.log(operatorDiagnostics(process.env).join("\n"));
     return;
   }
-  if (!API) throw new Error("Falta OPENDOMUS_API: usá el Worker administrativo protegido por Access.");
+  if (!API) throw new Error("Falta OPENDOMUS_API: usá el origen de OpenDomus.");
   operatorOrigin(API);
-  if (command === "login") {
-    if (new URL(API).protocol !== "https:") throw new Error("El login requiere HTTPS.");
-    execFileSync("cloudflared", ["access", "login", API], { stdio: "inherit" });
-    return;
-  }
-  if (!TOKEN) throw new Error("Falta OPENDOMUS_ADMIN_TOKEN (en el entorno o en .env.admin).");
+  if (command === "login") return operatorLogin(operatorOrigin(API).origin);
+  if (command === "logout") return operatorLogout(operatorOrigin(API).origin);
   const reports: Record<string, string> = { metricas: "overview", usuarios: "users", feedback: "feedback", avisos: "notices" };
   if (Object.hasOwn(reports, command)) {
     console.log(JSON.stringify(await call("GET", `/platform/${reports[command]}`), null, 2));

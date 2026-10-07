@@ -1,7 +1,7 @@
 "use client";
 
 import { App, Button, Card, Flex, Skeleton, Tooltip, Typography, theme } from "antd";
-import { ArrowLeft, PackageX, Pencil, Printer, QrCode, Trash2 } from "lucide-react";
+import { ArrowLeft, Camera, PackageX, Pencil, Printer, QrCode, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -22,7 +22,7 @@ import { useT } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
 import { tint } from "@/lib/appearance";
 import { useTrackVisit } from "@/components/layout/useShell";
-import { containerHref } from "@/lib/navigation/routes";
+import { cameraHref, containerHref } from "@/lib/navigation/routes";
 import { usePageCrumbs } from "@/store/useBreadcrumbStore";
 import { InventoryForm } from "./InventoryForm";
 import { InventoryList } from "./InventoryList";
@@ -90,6 +90,7 @@ export function ContainerPage() {
         description={`${t(`storage.containerKinds.${container.kind}`)} · ${t("storage.code")} ${container.code}`}
         extra={
           <>
+            <Link href={cameraHref(container.id)}><Button icon={<Camera />}>{t("camera.openMode")}</Button></Link>
             <Button icon={<QrCode />} onClick={() => setLabels([labelOf(container, container.spaceName, container.ancestors)])}>
               {t("storage.label")}
             </Button>

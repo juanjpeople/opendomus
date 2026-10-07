@@ -304,7 +304,7 @@ export const es = {
       open: "Elegir del catálogo", title: "Básicos de casa", hint: "Elegí un básico y ajustá cuánto tenés. El catálogo no agrega existencias hasta que confirmás el formulario.",
       search: "Buscar: azúcar, mechas, lavandina…", all: "Todos los rubros", empty: "No está en el catálogo. Podés cargarlo con el nombre que quieras.",
       durable: "Herramienta", consumable: "Reposición",
-      categories: { food: "Almacén y cocina", cleaning: "Limpieza", hardware: "Ferretería", electrical: "Electricidad", tools: "Herramientas" },
+      categories: { food: "Almacén y cocina", cleaning: "Limpieza", hygiene: "Higiene personal", hardware: "Ferretería", electrical: "Electricidad", tools: "Herramientas", ceramics: "Cerámica", stationery: "Librería y escuela" },
     },
     units: {
       unidades: { one: "unidad", other: "unidades" },
@@ -628,6 +628,20 @@ export const es = {
     localhostWarning: "Con «localhost» el QR solo funciona en este mismo equipo.",
     print: "Imprimir",
     preview: "Vista previa",
+  },
+  camera: {
+    title: "Mirar y encontrar", openMode: "Cámara y AR", description: "Apuntá a una etiqueta para ver qué hay adentro, sin abrir la ficha. Buscá algo y encontrá su caja.",
+    search: "Buscá algo: pilas, mechas, repuestos…", start: "Mirar con la cámara", unknown: "Etiqueta desconocida", noMatch: "No hay coincidencias en este contenedor.",
+    empty: "Todavía no hay contenido registrado.", local: "La cámara lee los QR en este dispositivo. No envía imágenes ni usa IA. Incluye el contenido de los compartimentos.",
+    recorded: "Inventario registrado; no detección del contenido", open: "Abrir ficha", visible: "Etiqueta a la vista", selected: "Contenedor seleccionado",
+  },
+  spatial: {
+    title: "AR espacial", description: "Elegí un contenedor, mové suavemente el teléfono hasta encontrar una superficie y fijá su tarjeta ahí. Después podés ubicar otros contenedores en la misma sesión.",
+    sessionOnly: "Las tarjetas quedan en su lugar mientras caminás. Las posiciones duran esta sesión: al cerrar AR, se liberan. El inventario se conserva.",
+    unsupported: "Este navegador o dispositivo no ofrece AR espacial. Podés usar la cámara con QR. En un teléfono compatible, probá abrir esta página por HTTPS en Chrome para Android.",
+    failed: "No pudimos iniciar o mantener AR. Revisá los permisos y la compatibilidad con superficies y controles en AR. Podés seguir usando la cámara con QR.",
+    start: "Entrar en AR espacial", container: "Contenedor para mostrar", exit: "Salir de AR", place: "Fijar acá", clear: "Volver a ubicar",
+    status: { searching: "Mové el teléfono para encontrar una superficie", surface: "Superficie encontrada: podés fijar la tarjeta", placed: "Tarjeta ubicada", "tracking-lost": "Se perdió el seguimiento. Mové el teléfono despacio", reset: "Cambió la referencia del espacio. Volvé a ubicar las tarjetas" },
   },
   scan: {
     failed: "No pudimos leer la cámara. Intentá de nuevo o escribí el código de la etiqueta.",

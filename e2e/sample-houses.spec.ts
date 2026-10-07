@@ -1,15 +1,16 @@
 import { test, expect } from '@playwright/test';
-import { addItem } from './fixtures';
+import { addItem, selectTestSpaces } from './fixtures';
 
 test('casas integradas: demo y pruebas conservan cambios sin tocar la casa habitual', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/empezar?house=home');
   await page.getByRole('button', { name: 'Empezar acá', exact: true }).click();
+  await selectTestSpaces(page);
   await page.getByRole('heading', { name: 'Administrador', exact: true }).click();
   await page.goto('/inventario');
   await expect(page.getByRole('link', { name: /^Herramientas inventariadas/ })).toHaveCount(0);
-  await addItem(page, 'Estantería', 'Herramienta de mi casa habitual', 2, 0);
+  await addItem(page, 'Estantería de herramientas', 'Herramienta de mi casa habitual', 2, 0);
   const ordinarySession = await page.evaluate(() => localStorage.getItem('opendomus-session'));
   await page.goto('/ajustes');
   await page.getByRole('link', { name: 'Explorar casa demo', exact: true }).click();
@@ -37,7 +38,7 @@ test('casas integradas: demo y pruebas conservan cambios sin tocar la casa habit
   await page.getByRole('link', { name: 'Volver a mi casa', exact: true }).click();
   await page.goto('/inventario');
   await expect(page.getByRole('link', { name: /^Herramientas inventariadas/ })).toHaveCount(0);
-  await page.getByText('Estantería', { exact: true }).first().click();
+  await page.getByText('Estantería de herramientas', { exact: true }).first().click();
   await expect(page.getByRole('button', { name: 'Ver detalle de Herramienta de mi casa habitual', exact: true })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('opendomus-session'))).toBe(ordinarySession);
   expect(errors).toEqual([]);

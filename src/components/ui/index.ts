@@ -1,8 +1,17 @@
 export { ColorSwatches, IconGrid } from "./AppearancePicker";
+export { CameraViewport, type CameraDetection } from "./CameraViewport";
 export { ChoiceCards, type ChoiceOption } from "./ChoiceCards";
 export { EmptyState } from "./EmptyState";
 export { IconTile } from "./IconTile";
+export { ListRow } from "./ListRow";
+export { MemberAvatar } from "./MemberAvatar";
+export { NavCard } from "./NavCard";
 export { PageHeader } from "./PageHeader";
 export { PRIVACY_META, PrivacyBadge, PrivacySelect } from "./PrivacySelect";
+export { PulseDot, type PulseTone } from "./PulseDot";
 export { QuantityStepper } from "./QuantityStepper";
+export { RoomFloor, type FloorPattern } from "./RoomFloor";
+export { SectionHeader } from "./SectionHeader";
+export { StatTile, type StatTone } from "./StatTile";
 export { StockTag } from "./StockTag";
+export { VisualTile } from "./VisualTile";

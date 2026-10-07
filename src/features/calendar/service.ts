@@ -8,6 +8,13 @@ import { db } from "@/lib/db";
 import { NotFoundError } from "@/lib/errors";
 import { createId } from "@/lib/id";
 import { parseEvent, type EventInput } from "./domain";
+import { parseCalendarPreferences, type CalendarPreferences } from "./settings";
+
+export async function saveCalendarPreferences(actor: Actor | null, preferences: CalendarPreferences) {
+  assertCan(actor, "calendar.manage");
+  const data = parseCalendarPreferences(preferences);
+  await db.houseSettings.put({ ...data, id: "calendar", updatedAt: Date.now() });
+}
 
 /** Descarta participantes que ya no son miembros (ej. se borró un perfil). */
 async function existingParticipants(ids: string[]) {
@@ -36,7 +43,7 @@ export async function updateEvent(actor: Actor | null, id: string, input: EventI
     if (!event) throw new NotFoundError("errors.notFound.event");
     await setActivityPrivacy("calendar", id, data.privacy, event.createdBy);
     const participantIds = await existingParticipants(data.participantIds);
-    await db.events.update(id, { ...data, participantIds, updatedAt: Date.now() });
+    await db.events.update(id, { ...data, repeatUntil: data.repeatUntil, eventKind: data.eventKind, homeworkDone: data.homeworkDone, participantIds, updatedAt: Date.now() });
     await recordActivity(actor, { module: "calendar", action: "update", entityId: id, entityName: data.title, privacy: data.privacy, createdBy: event.createdBy });
   });
 }

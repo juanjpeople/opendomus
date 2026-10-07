@@ -1,4 +1,5 @@
 import "fake-indexeddb/auto";
+import { buildDefaultStorage } from "@/features/storage/seed";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import Dexie from "dexie";
@@ -15,6 +16,9 @@ let containerId: string;
 
 before(async () => {
   await db.open();
+  const seed = buildDefaultStorage();
+  await db.spaces.bulkAdd(seed.spaces);
+  await db.containers.bulkAdd(seed.containers);
   const space = (await db.spaces.toArray())[0];
   containerId = await createContainer(admin, { name: "Caja de recuerdos", kind: "box", spaceId: space.id });
 });
@@ -72,7 +76,7 @@ test("anotaciones y fotos se exportan y recuperan con el mismo QR; no se borran 
   const id = await saveContainerContent(admin, containerId, "Piezas por identificar");
   await db.photos.add({ id: "photo", ownerType: "container", ownerId: containerId, blob: new Blob(["imagen"]), width: 20, height: 20, createdAt: 1, createdBy: admin.id });
   const exported = await exportAllData(admin);
-  assert.equal(exported.schemaVersion, 12);
+  assert.equal(exported.schemaVersion, 13);
   await importAllData(admin, parseExport(JSON.parse(JSON.stringify(exported))));
   assert.equal((await db.containers.get(containerId))?.code, code);
   assert.equal((await db.containerContents.get(id))?.text, "Piezas por identificar");
