@@ -8,7 +8,9 @@ test("estadísticas públicas sin consultar trackers ni servicios de GitHub desd
   await page.goto("/bienvenida");
   const region = page.getByRole("region", { name: "Un proyecto abierto, con cifras claras" });
   await region.scrollIntoViewIfNeeded();
-  await expect(region.locator("dt")).toHaveCount(4);
+  for (const label of ["Estrellas en GitHub", "Forks del código", "Versiones publicadas", "Descargas de archivos"]) {
+    await expect(region.getByText(label, { exact: true })).toBeVisible();
+  }
   await expect(region.getByText("Esta sección no mide tu actividad dentro de la app.", { exact: false })).toBeVisible();
   await expect(region.getByRole("link", { name: "Ver la fuente en GitHub" })).toHaveAttribute("href", "https://github.com/juanjpeople/opendomus");
   await expect(region.getByText(/Consultado el/)).toBeVisible();

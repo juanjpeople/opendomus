@@ -2,7 +2,7 @@
 
 import { App, Button, Card, Col, Flex, Row, Tag, Typography, theme } from "antd";
 import { motion } from "framer-motion";
-import { FingerprintPattern as Fingerprint, KeyRound, Pencil, ShieldAlert, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { Cake, FingerprintPattern as Fingerprint, KeyRound, Pencil, ShieldAlert, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { Stagger, StaggerItem } from "@/components/motion";
@@ -12,7 +12,7 @@ import { useI18n } from "@/i18n";
 import { tint } from "@/lib/appearance";
 import { usePermission } from "@/lib/auth/hooks";
 import { useCurrentUser } from "@/lib/auth/session";
-import { SPRING } from "@/lib/motion";
+import { HOVER_LIFT, SPRING } from "@/lib/motion";
 import { isSecured, type Member } from "../domain";
 import { useMemberActions, useMembers } from "../hooks";
 import { CloudHouseholdPanel } from "@/features/cloud/components/CloudHouseholdPanel";
@@ -72,7 +72,7 @@ function MemberCard({ member, onEdit, onSecurity }: { member: Member; onEdit: ()
   const birthday = member.birthday?.match(/-(\d{2})-(\d{2})$/);
 
   return (
-    <motion.div whileHover={{ y: -4 }} transition={SPRING.snappy} style={{ height: "100%" }}>
+    <motion.div whileHover={{ y: HOVER_LIFT.card }} transition={SPRING.snappy} style={{ height: "100%" }}>
       <Card
         style={{ height: "100%", borderColor: palette.border, background: `linear-gradient(160deg, ${palette.bg} 0%, ${token.colorBgContainer} 60%)` }}
         styles={{ body: { padding: 20 } }}
@@ -88,8 +88,8 @@ function MemberCard({ member, onEdit, onSecurity }: { member: Member; onEdit: ()
             </Flex>
             <Typography.Text type="secondary">{t(`roles.${member.role}`)}</Typography.Text>
             {birthday && (
-              <Typography.Text type="secondary" style={{ display: "block", fontSize: token.fontSizeSM }}>
-                🎂 {t("members.birthday", { date: format.date(new Date(2000, Number(birthday[1]) - 1, Number(birthday[2])), { day: "numeric", month: "long" }) })}
+              <Typography.Text type="secondary" style={{ display: "flex", alignItems: "baseline", gap: token.marginXXS, fontSize: token.fontSizeSM }}>
+                <Cake aria-hidden style={{ flexShrink: 0 }} /> <span>{t("members.birthday", { date: format.date(new Date(2000, Number(birthday[1]) - 1, Number(birthday[2])), { day: "numeric", month: "long" }) })}</span>
               </Typography.Text>
             )}
           </div>

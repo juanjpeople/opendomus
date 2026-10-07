@@ -1,8 +1,12 @@
 import { billboard, multiply } from "./matrix";
 import type { SpatialCard, XRViewLike } from "./types";
 
+export interface SpatialPalette {
+  background: string; accent: string; text: string; secondary: string; reticle: string; reticleCenter: string;
+}
+
 /** Un quad texturado por etiqueta. Recursos GPU limitados y liberados al cerrar la sesión. */
-export function createSpatialRenderer(gl: WebGLRenderingContext) {
+export function createSpatialRenderer(gl: WebGLRenderingContext, palette: SpatialPalette) {
   const shaders: WebGLShader[] = [];
   const compile = (type: number, source: string) => {
     const shader = gl.createShader(type);
@@ -56,14 +60,14 @@ export function createSpatialRenderer(gl: WebGLRenderingContext) {
       return image;
     }
     const reticle = texture("__reticle", "reticle", (context) => {
-      context.strokeStyle = "#63e6be"; context.lineWidth = 24;
+      context.strokeStyle = palette.reticle; context.lineWidth = 24;
       context.beginPath(); context.arc(384, 240, 160, 0, 2 * Math.PI); context.stroke();
-      context.fillStyle = "#fff"; context.beginPath(); context.arc(384, 240, 25, 0, 2 * Math.PI); context.fill();
+      context.fillStyle = palette.reticleCenter; context.beginPath(); context.arc(384, 240, 25, 0, 2 * Math.PI); context.fill();
     });
     function update(card: SpatialCard) {
       texture(card.id, JSON.stringify(card), (context) => {
-        context.fillStyle = "#102338"; context.beginPath(); context.roundRect(0, 0, 768, 480, 28); context.fill();
-        context.fillStyle = "#63e6be"; context.fillRect(28, 32, 8, 56);
+        context.fillStyle = palette.background; context.beginPath(); context.roundRect(0, 0, 768, 480, 28); context.fill();
+        context.fillStyle = palette.accent; context.fillRect(28, 32, 8, 56);
         const text = (value: string, y: number, size: number, color: string) => {
           context.font = `${size >= 30 ? "600 " : ""}${size}px system-ui, sans-serif`; context.fillStyle = color;
           let label = value;
@@ -71,9 +75,9 @@ export function createSpatialRenderer(gl: WebGLRenderingContext) {
           if (label !== value) label = `${label.slice(0, -1)}…`;
           context.fillText(label, 48, y);
         };
-        text(card.title, 70, 36, "#fff");
-        card.lines.slice(0, 6).forEach((line, index) => text(line, 128 + index * 46, 28, "#e8f1f8"));
-        text(card.footer, 449, 22, "#8ce9cf");
+        text(card.title, 70, 36, palette.text);
+        card.lines.slice(0, 6).forEach((line, index) => text(line, 128 + index * 46, 28, palette.text));
+        text(card.footer, 449, 22, palette.secondary);
       });
     }
     function draw(view: XRViewLike, world: ArrayLike<number>, id?: string) {

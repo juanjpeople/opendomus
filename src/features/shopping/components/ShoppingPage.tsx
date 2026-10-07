@@ -1,5 +1,7 @@
 "use client";
 
+import { formatQuantity, formatUnit } from "@/features/inventory/format";
+
 import { App, Button, Card, Col, Dropdown, Flex, Grid, Progress, Row, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { Archive, ArchiveRestore, ArrowLeftRight, ClipboardList, Ellipsis, Eraser, FolderOpen, MapPin, Pencil, ShoppingBag, ShoppingBasket, Trash2, Wallet, type LucideIcon } from "lucide-react";
@@ -9,7 +11,7 @@ import { useState, type ReactNode } from "react";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { AnimatedNumber, Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { EmptyState, IconTile, PageHeader, QuantityStepper } from "@/components/ui";
-import { isUnit } from "@/features/inventory/domain";
+
 import type { Currency } from "@/features/prices/domain";
 import { useI18n } from "@/i18n";
 import { APPEARANCE_ICONS } from "@/lib/appearance";
@@ -370,7 +372,7 @@ function RowItem({ row, currency, targets }: { row: ShoppingRow; currency: Curre
   const canManage = usePermission("shopping.manage");
   const { buy, unbuy, setQuantity, remove, move } = useShoppingActions();
   const done = row.status === "bought";
-  const unit = (count: number) => (isUnit(row.unit) ? t(`inventory.units.${row.unit}`, { count }) : row.unit);
+  const unit = (count: number) => (formatUnit(t, count, row.unit));
   // Precio conocido en la moneda de la lista (si es de otra, no se mezcla: se puede estimar a mano).
   const knownPrice = row.estimateCents === undefined && row.price?.latest.currency === currency ? row.price : undefined;
   const cheapest = knownPrice?.cheapest;
@@ -401,7 +403,7 @@ function RowItem({ row, currency, targets }: { row: ShoppingRow; currency: Curre
             </Typography.Text>
             <Flex gap={8} align="center" wrap style={{ fontSize: token.fontSizeSM }}>
               <Typography.Text type="secondary" style={{ fontSize: "inherit" }}>
-                {row.quantity} {unit(row.quantity)}
+                {formatQuantity(t, row.quantity, row.unit, format.number)}
               </Typography.Text>
               {row.linked?.place && (
                 <Tag variant="filled" icon={<MapPin />} style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 4 }}>

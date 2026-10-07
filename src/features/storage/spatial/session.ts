@@ -1,4 +1,4 @@
-import { createSpatialRenderer } from "./renderer";
+import { createSpatialRenderer, type SpatialPalette } from "./renderer";
 import { spatialSystem, type SpatialCard, type SpatialStatus, type XRAnchorLike, type XRFrameLike, type XRHitSourceLike, type XRLayerLike, type XRSessionLike, type XRSpaceLike } from "./types";
 
 export const MAX_SPATIAL_LABELS = 12;
@@ -16,7 +16,7 @@ export async function startSpatialSession(overlay: HTMLElement, selectedId: stri
   status: (status: SpatialStatus, count: number) => void;
   ended: () => void;
   failed: () => void;
-}): Promise<SpatialController> {
+}, palette: SpatialPalette): Promise<SpatialController> {
   const xr = spatialSystem();
   if (!xr) throw new Error("WebXR unavailable");
   const session = await xr.requestSession("immersive-ar", {
@@ -74,7 +74,7 @@ export async function startSpatialSession(overlay: HTMLElement, selectedId: stri
     if (ended) throw new Error("Session ended");
     hitSource = await session.requestHitTestSource({ space: viewer });
     if (ended) { hitSource.cancel(); throw new Error("Session ended"); }
-    renderer = createSpatialRenderer(gl);
+    renderer = createSpatialRenderer(gl, palette);
     const space = local;
     const source = hitSource;
     const scene = renderer;

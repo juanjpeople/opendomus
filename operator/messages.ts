@@ -1,4 +1,27 @@
 export const messages = {
+  operator: {
+    section: "Sección del panel", brand: "OpenDomus", badge: "Operador", title: "Acceso de operador",
+    intro: "Ingresá con tu clave de administración y el código de tu autenticador.",
+    checking: "Comprobando sesión…", loading: "Cargando administración privada…",
+    notConfigured: "El acceso de operador todavía no está configurado.",
+    tooMany: "Demasiados intentos. Esperá 15 minutos antes de volver a intentar.",
+    invalid: "No se pudo ingresar. Revisá la clave y usá un código nuevo del autenticador.",
+    key: "Clave de operador", code: "Código del autenticador", codeRequired: "Ingresá los 6 dígitos.", keyRequired: "Ingresá tu clave de operador.",
+    login: "Ingresar", logout: "Cerrar sesión privada", logoutFailed: "No se pudo cerrar la sesión. Volvé a intentar.",
+    expired: "Sesión privada vencida o acceso no autorizado", expiredHelp: "Volvé a ingresar con tu clave de operador y un código nuevo del autenticador.",
+    loginAgain: "Volver a ingresar", failed: "No se pudo completar la consulta u operación",
+    failedHelp: "Si estabas guardando un cambio, consultá el estado antes de repetirlo. La respuesta puede haberse perdido después de aplicarlo.",
+    retry: "Volver a consultar", error: "No se pudo completar la operación. Revisá tu sesión privada y volvé a intentar.",
+    private: "Acceso privado · Clave y autenticador", storage: "Supabase", id: "ID",
+    states: { active: "Activa", paused: "Pausada", revoked: "Revocada", pending: "Pendiente", sent: "Enviado", cancelled: "Cancelado" },
+    categories: { idea: "Idea", problem: "Problema", question: "Consulta", other: "Otro" },
+    risks: {
+      type: "Señal", sources: "Orígenes", maxCount: "Máximo de intentos", sessions: "Sesiones activas", email: "Cuenta",
+      "many-sessions": "Varias sesiones abiertas", "recovery-ip": "Recuperación desde una dirección", "recovery-email": "Recuperación de una cuenta",
+      "license-check": "Consultas de licencia", feedback: "Envío de mensajes", password: "Intentos de contraseña", other: "Otros intentos",
+      help: "Revisá estas señales antes de tomar una medida. Por sí solas no confirman abuso.",
+    },
+  },
   platformAdmin: {
     title: "Administración de OpenDomus",
     signIn: "Entrá con la cuenta autorizada para gestionar la plataforma.",

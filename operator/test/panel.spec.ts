@@ -13,6 +13,12 @@ import { operatorPage } from "../../server/src/operator-page";
 // No network, production credentials or authentication bypass in the deployed Worker.
 test("panel privado: rechazo, datos, licencia y revocación de identidad", async ({ page }, testInfo) => {
   const { app, env, database } = await operatorFixture();
+  async function openSection(name: string) {
+    if (testInfo.project.name === "mobile") {
+      await page.getByRole("combobox", { name: "Sección del panel" }).click();
+      await page.getByRole("option", { name, exact: true }).click();
+    } else await page.getByRole("tab", { name, exact: true }).click();
+  }
   let writes = 0;
   let unavailable = false;
   app.all("/api/admin/platform/*", async c => {
@@ -25,12 +31,17 @@ test("panel privado: rechazo, datos, licencia y revocación de identidad", async
         writes++;
         return c.json({ licenses: [{ code: "OD-SYNTHETIC-LICENSE" }] });
       }
-      if (key === "overview") return c.json({ metrics: { users: 2, households: 1, activeHouseholds: 1, pausedHouseholds: 0, activeSessions: 2, licenses: 1, availableLicenses: 1, openFeedback: 0, pendingNotices: 0 }, risks: [], credentials: { operatorConfigured: true, supabaseConfigured: false }, recentAudit: [] });
+      if (key === "overview") return c.json({ metrics: { users: 2, households: 1, activeHouseholds: 1, pausedHouseholds: 0, activeSessions: 2, licenses: 1, availableLicenses: 1, openFeedback: 0, pendingNotices: 0 }, risks: [{ type: "recovery-ip", sources: 3, maxCount: 12 }, { type: "many-sessions", email: "risk@example.com", sessions: 7 }], credentials: { operatorConfigured: true, supabaseConfigured: false }, recentAudit: [] });
+      if (key === "households") return c.json({ households: [{ id: "house-synthetic", members: 2, status: "active", lastActivityAt: 0, deletionEligible: 0 }] });
+      if (key === "licenses") return c.json({ licenses: [{ id: "license-synthetic", note: "Licencia de prueba", used: 0, maxHouseholds: 1, status: "active", expiresAt: null }] });
+      if (key === "feedback") return c.json({ feedback: [{ id: "feedback-synthetic", email: null, category: "question", status: "open", message: "Mensaje de ejemplo", createdAt: 0 }] });
+      if (key === "notices") return c.json({ notices: [{ householdId: "house-synthetic", daysBeforePause: 7, dueAt: 0, status: "pending", memberEmails: "notice@example.com" }] });
       return c.json({ [key]: key === "users" ? [{ id: "synthetic", name: "Persona de prueba", email: "synthetic@example.com", households: 1, activeSessions: 1, lastSessionAt: null }] : [] });
   });
   const assets = { fetch: async (request: Request) => {
-    const script = new URL(request.url).pathname === "/admin/panel.js";
-    return new Response(await readFile(script ? "operator-dist/panel.js" : "operator-dist/index.html", "utf8"), { headers: { "Content-Type": script ? "application/javascript" : "text/html" } });
+    const path = new URL(request.url).pathname;
+    const file = path.endsWith("panel.js") ? "panel.js" : path.endsWith("panel.css") ? "panel.css" : "index.html";
+    return new Response(await readFile(`operator-dist/${file}`, "utf8"), { headers: { "Content-Type": file.endsWith(".js") ? "application/javascript" : file.endsWith(".css") ? "text/css" : "text/html" } });
   } };
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -56,16 +67,36 @@ test("panel privado: rechazo, datos, licencia y revocación de identidad", async
   const base = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
   try {
   env.APP_ORIGIN = base;
+  if (testInfo.project.name === "mobile") await page.setViewportSize({ width: 320, height: 740 });
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
   await page.goto(base + "/admin");
   await expect(page.getByRole("heading", { name: "Acceso de operador" })).toBeVisible();
+  await expect(page.getByText("Estado de la plataforma", { exact: true })).toHaveCount(0);
+  await expect.poll(() => page.locator("main [style]").evaluateAll(elements => elements.every(el => Number(getComputedStyle(el).opacity) === 1))).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("private-login.png") });
+  await page.getByLabel("Clave de operador").fill("incorrect-key");
+  await page.getByLabel("Código del autenticador").fill("000000");
+  await page.getByRole("button", { name: "Ingresar", exact: true }).click();
+  await expect(page.getByText("No se pudo ingresar. Revisá la clave y usá un código nuevo del autenticador.")).toBeVisible();
   await expect(page.getByText("Estado de la plataforma", { exact: true })).toHaveCount(0);
   await page.getByLabel("Clave de operador").fill(TEST_KEY);
   await page.getByLabel("Código del autenticador").fill(await operatorTotp(TEST_TOTP, Math.floor(Date.now() / 30000)));
   await page.getByRole("button", { name: "Ingresar", exact: true }).click();
   await expect(page.getByText("Estado de la plataforma", { exact: true })).toBeVisible();
-  await page.getByRole("tab", { name: "Usuarios", exact: true }).click();
+  await expect(page.getByText("Recuperación desde una dirección", { exact: true })).toBeVisible();
+  await expect(page.getByText("Varias sesiones abiertas", { exact: true })).toBeVisible();
+  await expect(page.locator("pre")).toHaveCount(0);
+  await expect(page.getByRole("cell", { name: "Activa", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: /1969|1970/ })).toBeVisible();
+  const refreshIcon = page.getByRole("button", { name: "Actualizar", exact: true }).locator("svg");
+  expect(await refreshIcon.evaluate(el => el.getBoundingClientRect().width)).toBeLessThan(20);
+  await openSection("Feedback");
+  await expect(page.getByRole("cell", { name: "Consulta", exact: true })).toBeVisible();
+  await openSection("Avisos");
+  await expect(page.getByRole("cell", { name: "Pendiente", exact: true })).toBeVisible();
+  await openSection("Usuarios");
   await expect(page.getByText("synthetic@example.com")).toBeVisible();
-  await page.getByRole("tab", { name: "Licencias", exact: true }).click();
+  await openSection("Licencias");
   await page.getByRole("button", { name: "Generar licencias", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Generar licencias", exact: true }).click();
   await expect(page.getByText("OD-SYNTHETIC-LICENSE", { exact: true })).toBeVisible();
@@ -83,10 +114,12 @@ test("panel privado: rechazo, datos, licencia y revocación de identidad", async
   unavailable = false;
   await page.getByRole("button", { name: "Volver a consultar", exact: true }).click();
   await expect(page.getByText("Estado de la plataforma", { exact: true })).toBeVisible();
+  const lightBackground = await page.locator("#root > .ant-app > div").evaluate(el => getComputedStyle(el).backgroundColor);
   await page.emulateMedia({ colorScheme: "dark" });
-  await page.reload();
+  await expect.poll(() => page.locator("#root > .ant-app > div").evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe(lightBackground);
   await expect(page.getByText("Estado de la plataforma", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect.poll(() => page.locator("main [style]").evaluateAll(elements => elements.every(el => Number(getComputedStyle(el).opacity) === 1))).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("private-panel-dark.png"), fullPage: true });
   env.OPERATOR_EMAIL = "other@example.com"; // La sesión existe pero se retiró el permiso.
   await page.getByRole("button", { name: "Actualizar", exact: true }).click();
@@ -97,6 +130,7 @@ test("panel privado: rechazo, datos, licencia y revocación de identidad", async
   await expect(page.getByRole("heading", { name: "Acceso de operador" })).toBeVisible();
   expect(errors).toEqual([]);
   } finally {
+    await testInfo.attach("browser-errors", { body: JSON.stringify(errors), contentType: "application/json" });
     database.close();
     await new Promise<void>(resolve => server.close(() => resolve()));
     if (dirname(resolve(certDir)) !== resolve(tmpdir()) || !basename(certDir).startsWith("opendomus-operator-test-")) throw new Error("Unexpected test certificate directory");

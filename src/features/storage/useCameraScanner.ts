@@ -6,7 +6,7 @@ import { createQrDetector, type QrDetection } from "./qr-reader";
 export type CameraStatus = "idle" | "starting" | "scanning" | "denied" | "failed";
 
 /** Una cámara por pantalla. Cancela permisos tardíos, timers y tracks al salir o ir a segundo plano. */
-export function useCameraScanner(onFrame: (detection: QrDetection | null) => void) {
+export function useCameraScanner(onFrame: (detection: QrDetection | null, stop: () => void) => void) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -50,7 +50,7 @@ export function useCameraScanner(onFrame: (detection: QrDetection | null) => voi
         try {
           const detections = await detector.detect(video);
           if (!active()) return;
-          callback.current(detections[0] ?? null);
+          callback.current(detections[0] ?? null, stop);
           if (active()) timer.current = setTimeout(tick, 250);
         } catch {
           if (active()) { release(); setStatus("failed"); }

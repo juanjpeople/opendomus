@@ -1,6 +1,9 @@
-import { App, Button, theme } from "antd";
+import { App, Button, Flex, Tag, Typography, theme } from "antd";
 
 import type { ReactNode } from "react";
+
+import { HouseMark } from "../src/components/illustrations/HouseMark";
+import { Reveal } from "../src/components/motion/Reveal";
 
 import { messages } from "./messages";
 
@@ -14,9 +17,9 @@ const translate = (key: string, values: Record<string, string | number> = {}) =>
 
 export const useT = () => translate;
 
-export class CloudError extends Error { constructor(public status: number) { super("No se pudo completar la operación. Revisá tu sesión privada y volvé a intentar."); } }
+export class CloudError extends Error { constructor(public status: number) { super(translate("operator.error")); } }
 
-export const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : "No se pudo completar la operación.";
+export const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : translate("operator.error");
 
 export async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
 
@@ -29,15 +32,25 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
 
 }
 
-export function OperatorLayout({ children, width = 1200 }: { children: ReactNode; width?: number }) {
+export function OperatorLayout({ children, width = 1200, authenticated = true }: { children: ReactNode; width?: number; authenticated?: boolean }) {
 
+  const t = useT();
   const { token } = theme.useToken();
   const { message } = App.useApp();
   async function logout() {
     try { await api("POST", "/api/admin/auth/logout"); window.location.replace("/admin"); }
-    catch { message.error("No se pudo cerrar la sesión. Volvé a intentar."); }
+    catch { message.error(t("operator.logoutFailed")); }
   }
 
-  return <main style={{ maxWidth: width, margin: "0 auto", padding: "32px 20px", color: token.colorText }}><Button onClick={logout}>Cerrar sesión privada</Button>{children}</main>;
-
+  return <main style={{ maxWidth: width, margin: "0 auto", padding: `${token.paddingLG}px ${token.padding}px`, color: token.colorText }}>
+    <Flex align="center" justify="space-between" gap={token.marginSM} wrap style={{ marginBottom: token.marginXL }}>
+      <Flex align="center" gap={token.marginSM}>
+        <HouseMark size={token.controlHeight} />
+        <Typography.Text strong style={{ fontSize: token.fontSizeLG }}>{t("operator.brand")}</Typography.Text>
+        <Tag>{t("operator.badge")}</Tag>
+      </Flex>
+      {authenticated && <Button onClick={logout} style={{ minHeight: 44 }}>{t("operator.logout")}</Button>}
+    </Flex>
+    <Reveal>{children}</Reveal>
+  </main>;
 }

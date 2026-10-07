@@ -4,7 +4,7 @@ import { App, Button, Flex, Form, Input, Modal, Progress, Skeleton, Tag, Tooltip
 import { KeyRound, Lock, LogIn, LogOut, Monitor, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { SettingRow } from "@/features/settings/components/SettingRow";
+import { SettingRow } from "@/components/ui";
 import { useI18n, useT } from "@/i18n";
 import { describeUserAgent, deviceLabel } from "@/lib/device";
 import { getErrorMessage } from "@/lib/errors";
@@ -28,7 +28,7 @@ export function AccountSettings() {
     return (
       <SettingRow label={t("cloud.account.signedOutTitle")} description={t("cloud.account.signedOutText")} last>
         <Link href="/cuenta?modo=entrar">
-          <Button icon={<LogIn size={16} />}>{t("cloud.auth.signIn")}</Button>
+          <Button icon={<LogIn />}>{t("cloud.auth.signIn")}</Button>
         </Link>
       </SettingRow>
     );
@@ -42,12 +42,12 @@ export function AccountSettings() {
         </Tag>
       </SettingRow>
       <SettingRow label={t("cloud.account.passwordTitle")} description={t("cloud.account.passwordText")}>
-        <Button icon={<Lock size={16} />} onClick={() => setDialog("password")}>
+        <Button icon={<Lock />} onClick={() => setDialog("password")}>
           {t("cloud.account.passwordButton")}
         </Button>
       </SettingRow>
       <SettingRow label={t("cloud.account.kitTitle")} description={t("cloud.account.kitText")}>
-        <Button icon={<KeyRound size={16} />} onClick={() => setDialog("kit")}>
+        <Button icon={<KeyRound />} onClick={() => setDialog("kit")}>
           {t("cloud.account.kitButton")}
         </Button>
       </SettingRow>
@@ -113,7 +113,7 @@ function Devices() {
             style={{ padding: "10px 12px", borderRadius: token.borderRadiusLG, border: `1px solid ${token.colorBorderSecondary}`, background: device.current ? token.colorPrimaryBg : undefined }}
           >
             <span aria-hidden style={{ display: "inline-flex", color: device.current ? token.colorPrimary : token.colorTextSecondary }}>
-              <Icon size={20} />
+              <Icon />
             </span>
             <Flex vertical style={{ flex: 1, minWidth: 0 }}>
               <Flex align="center" gap={8} wrap>
@@ -132,7 +132,7 @@ function Devices() {
             </Flex>
             {!device.current && (
               <Tooltip title={t("cloud.account.revoke")}>
-                <Button type="text" danger icon={<LogOut size={16} />} aria-label={t("cloud.account.revoke")} onClick={() => revoke(device)} />
+                <Button type="text" danger icon={<LogOut />} aria-label={t("cloud.account.revoke")} onClick={() => revoke(device)} />
               </Tooltip>
             )}
           </Flex>
@@ -248,7 +248,7 @@ function NewKitModal({ open, onClose }: { open: boolean; onClose: () => void }) 
           <Form.Item name="password" label={t("cloud.auth.password")} rules={[{ required: true, message: t("cloud.auth.passwordRequired") }]}>
             <Input.Password autoComplete="current-password" autoFocus />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block loading={busy} icon={<KeyRound size={16} />}>
+          <Button type="primary" htmlType="submit" block loading={busy} icon={<KeyRound />}>
             {busy ? t("cloud.auth.working") : t("cloud.account.kitButton")}
           </Button>
         </Form>

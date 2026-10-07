@@ -46,11 +46,11 @@ export function SyncSummary() {
           {lastSyncAt ? t("cloud.sync.lastSync", { time: format.relative(lastSyncAt) }) : t("cloud.sync.never")}
           {pending > 0 && ` · ${t("cloud.sync.pending", { count: pending })}`}
         </Typography.Text>
-        <Button size="small" icon={<RefreshCw size={14} />} loading={phase === "syncing"} disabled={phase === "off"} onClick={syncNow}>
+        <Button size="small" icon={<RefreshCw />} loading={phase === "syncing"} disabled={phase === "off"} onClick={syncNow}>
           {t("cloud.sync.now")}
         </Button>
         <Tooltip title={t("cloud.diagnostic.hint")}>
-          <Button size="small" type="text" icon={<ClipboardCopy size={14} />} onClick={copyDiagnostic}>
+          <Button size="small" type="text" icon={<ClipboardCopy />} onClick={copyDiagnostic}>
             {t("cloud.diagnostic.copy")}
           </Button>
         </Tooltip>
@@ -64,7 +64,7 @@ export function SyncSummary() {
           action={
             error === "session" ? (
               <Link href="/cuenta?modo=entrar">
-                <Button size="small" icon={<LogIn size={14} />}>
+                <Button size="small" icon={<LogIn />}>
                   {t("cloud.sync.signInAgain")}
                 </Button>
               </Link>
@@ -99,7 +99,7 @@ export function LeaveCloudButton() {
 
   return (
     <>
-      <Button icon={<CloudOff size={16} />} onClick={() => setOpen(true)}>
+      <Button icon={<CloudOff />} onClick={() => setOpen(true)}>
         {t("cloud.leave.button")}
       </Button>
       <Modal

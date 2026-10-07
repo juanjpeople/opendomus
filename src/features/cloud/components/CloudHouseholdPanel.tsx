@@ -198,7 +198,7 @@ function HouseholdCard({ household }: { household: CloudHousehold }) {
                           .filter((role) => role !== member.role)
                           .map((role) => ({ key: role, label: t("cloud.panel.makeRole", { role: t(`roles.${role}`) }), onClick: () => changeRole(member, role) })),
                         { type: "divider" as const },
-                        { key: "remove", danger: true, icon: <UserMinus size={16} />, label: t("cloud.panel.remove"), onClick: () => remove(member) },
+                        { key: "remove", danger: true, icon: <UserMinus />, label: t("cloud.panel.remove"), onClick: () => remove(member) },
                       ],
                     }}
                   >
@@ -298,7 +298,7 @@ function InviteModal({ open, household, onClose, onCreated }: { open: boolean; h
       ) : (
         <Flex vertical gap={16} align="center">
           {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada en el dispositivo (data URL). */}
-          <img src={result.qr} alt={t("cloud.invite.qrLabel")} width={220} height={220} style={{ padding: 12, background: "#fff", borderRadius: token.borderRadiusLG }} />
+          <img src={result.qr} alt={t("cloud.invite.qrLabel")} width={220} height={220} style={{ padding: 12, background: token.colorWhite, borderRadius: token.borderRadiusLG }} />
           <Input.Search value={result.link} readOnly enterButton={<Copy />} onSearch={async () => {
             await navigator.clipboard.writeText(result.link);
             message.success(t("cloud.invite.copied"));

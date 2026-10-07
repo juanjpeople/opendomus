@@ -2,8 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { componentFiles, inspect, undocumented } from "./design-lint.mjs";
 
-/** Usos legítimos: lugares que no pueden leer el tema de antd. No son deuda. */
+/** Usos legítimos: valores fuera del tema y cálculos por locale que no son textos. */
 const ALLOWED = {
+  // Inicio de semana: calcula un día, no elige textos por idioma.
+  "src/features/calendar/components/CalendarPage.tsx": { localeTernary: 1 },
   // themeColor del navegador: metadata, se resuelve antes de que exista el tema.
   "src/app/layout.tsx": { color: 2 },
   // Etiqueta impresa: blanco y negro puros, para que el QR se lea en cualquier impresora.
@@ -17,23 +19,6 @@ const ALLOWED = {
  * archivo, bajá su número acá (o borralo). Un archivo nuevo o un número más alto hace fallar la prueba.
  */
 const DEBT = {
-  "src/app/bienvenida/_components/Landing.tsx": { iconSize: 3 },
-  "src/features/calendar/components/CalendarOptions.tsx": { localeTernary: 16 },
-  "src/features/calendar/components/CalendarPage.tsx": { localeTernary: 1 },
-  "src/features/calendar/components/EventModal.tsx": { localeTernary: 12 },
-  "src/features/calendar/components/SchoolToday.tsx": { localeTernary: 7 },
-  "src/features/cloud/components/AccountSettings.tsx": { iconSize: 5 },
-  "src/features/cloud/components/ChooseProfile.tsx": { iconSize: 2 },
-  "src/features/cloud/components/CloudDataPanel.tsx": { iconSize: 4 },
-  "src/features/cloud/components/CloudHouseholdPanel.tsx": { color: 1, iconSize: 1 },
-  "src/features/cloud/components/CloudSteps.tsx": { iconSize: 3 },
-  "src/features/cloud/components/HouseTransfer.tsx": { iconSize: 1 },
-  "src/features/house-setup/HouseSetup.tsx": { localeTernary: 25 },
-  "src/features/inventory/components/CatalogPicker.tsx": { localeTernary: 1 },
-  "src/features/prices/components/ReferencePrice.tsx": { localeTernary: 6 },
-  "src/features/storage/components/CameraInventory.tsx": { color: 4 },
-  "src/features/storage/components/SpatialPanel.tsx": { color: 2 },
-  "operator/main.tsx": { color: 1 },
 };
 
 const FIX = {

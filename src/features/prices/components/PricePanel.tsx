@@ -51,7 +51,6 @@ export function PricePanel({ itemId, itemName }: { itemId: string; itemName: str
 
   return (
     <Flex vertical gap={16}>
-      {catalogProduct && <ReferencePrice catalogId={catalogProduct.id} />}
       {summary && (
         <Row gutter={12}>
           <Col span={12}>
@@ -77,6 +76,8 @@ export function PricePanel({ itemId, itemName }: { itemId: string; itemName: str
           </Col>
         </Row>
       )}
+
+      {catalogProduct && <ReferencePrice catalogId={catalogProduct.id} />}
 
       {canManage && (
         <Form

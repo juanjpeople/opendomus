@@ -41,7 +41,7 @@ export function HouseTransfer({ direction, name, state, onRetry }: { direction: 
             boxShadow: `0 0 0 3px ${token.colorBgContainer}`,
           }}
         >
-          <LockKeyhole size={14} />
+          <LockKeyhole />
         </span>
       </div>
       <div>

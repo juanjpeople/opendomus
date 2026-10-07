@@ -30,7 +30,7 @@ export function ChooseProfile({ candidates, accountName, onChoose }: { candidate
       hint: t("cloud.profile.newHint", { name: accountName }),
       avatar: (
         <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 999, background: token.colorFillSecondary, color: token.colorTextSecondary }}>
-          <UserPlus size={20} />
+          <UserPlus />
         </span>
       ),
     },
@@ -80,7 +80,7 @@ export function ChooseProfile({ candidates, accountName, onChoose }: { candidate
                   {option.hint}
                 </Typography.Text>
               </span>
-              {active && <Check size={18} color={token.colorPrimary} />}
+              {active && <Check color={token.colorPrimary} />}
             </motion.button>
           );
         })}

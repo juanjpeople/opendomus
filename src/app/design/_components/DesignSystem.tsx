@@ -16,6 +16,8 @@ import { SecuritySection } from "./SecuritySection";
 import { SignatureSection } from "./SignatureSection";
 import { StorageFlow } from "./StorageFlow";
 import { VoiceSection } from "./VoiceSection";
+import { EntryFlow, EntrySection } from "./EntrySection";
+import { CatalogSection } from "./CatalogSection";
 
 // El orden de cada grupo es el orden en la página (el índice sigue el scroll).
 const TOC = [
@@ -26,9 +28,9 @@ const TOC = [
   { group: "Componentes antd", items: [["botones", "Botones"], ["feedback", "Feedback"], ["formularios", "Formularios"], ["tablas", "Tablas"]] },
   {
     group: "Componentes propios",
-    items: [["componentes-estructura", "Estructura"], ["componentes-estados", "Estados"], ["componentes-seleccion", "Selección"], ["componentes-datos", "Datos"], ["componentes-espacios", "Espacios"]],
+    items: [["componentes-estructura", "Estructura"], ["componentes-estados", "Estados"], ["componentes-seleccion", "Selección"], ["componentes-datos", "Datos"], ["componentes-espacios", "Espacios"], ["componentes-entrada", "Entrada"]],
   },
-  { group: "Flujos", items: [["flujo-almacenamiento", "Almacenamiento"], ["flujo-recetas", "Recetas"]] },
+  { group: "Flujos", items: [["flujo-almacenamiento", "Almacenamiento"], ["flujo-catalogo", "Catálogo"], ["flujo-recetas", "Recetas"], ["flujo-entrada", "Entrada"]] },
   { group: "Calidad", items: [["revision", "Revisión antes de un PR"]] },
   { group: "Seguridad", items: [["permisos", "Matriz de permisos"], ["can", "<Can>"], ["servicios", "Servicios"]] },
 ] as const;
@@ -67,10 +69,13 @@ export function DesignSystem() {
           </Section>
           <Section title="Componentes propios">
             <PrimitivesSection />
+            <EntrySection />
           </Section>
           <Section title="Flujos">
             <StorageFlow />
+            <CatalogSection />
             <RecipesFlow />
+            <EntryFlow />
           </Section>
           <Section title="Calidad">
             <ReviewSection />

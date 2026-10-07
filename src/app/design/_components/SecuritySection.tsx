@@ -23,8 +23,12 @@ export function SecuritySection() {
         type="warning"
         showIcon
         icon={<ShieldAlert />}
-        title="Permisos de experiencia, todavía no de seguridad"
-        description="La app hoy corre 100% en el navegador: cualquiera con DevTools puede editar los datos locales. Los permisos ordenan la experiencia y evitan errores. Cuando exista el servidor, la misma matriz se evalúa allí y ahí pasa a ser seguridad real."
+        title="Permisos locales y controles de sincronización"
+        description={<>
+          <Typography.Paragraph>En este dispositivo, la interfaz y los servicios aplican la matriz de permisos. Quien controla el navegador puede modificar sus datos locales.</Typography.Paragraph>
+          <Typography.Paragraph>En la nube, el servidor verifica la sesión, la pertenencia a la casa, el nivel de acceso y la firma de los cambios. No puede leer su contenido cifrado.</Typography.Paragraph>
+          <Typography.Paragraph style={{ marginBottom: 0 }}>Al recibir y descifrar un cambio, cada dispositivo comprueba los permisos del autor antes de aplicarlo. Ocultar un botón con Can no reemplaza estas comprobaciones.</Typography.Paragraph>
+        </>}
       />
 
       <MatrixBlock />

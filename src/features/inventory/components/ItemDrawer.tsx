@@ -1,5 +1,7 @@
 "use client";
 
+import { formatQuantity } from "@/features/inventory/format";
+
 import { App, Button, Col, Divider, Drawer, Flex, Form, Grid, Input, InputNumber, Row, Select, Space, Switch, Typography, theme } from "antd";
 import { ListPlus, PackageMinus, Save } from "lucide-react";
 import { useState } from "react";
@@ -12,7 +14,7 @@ import { useContainers } from "@/features/storage/hooks";
 import { useNow } from "@/hooks/useNow";
 import { useI18n, useT } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
-import { getStockStatus, INVENTORY_LIMITS, isUnit, UNITS, type InventoryItem, type InventoryItemPatch } from "../domain";
+import { getStockStatus, INVENTORY_LIMITS, UNITS, type InventoryItem, type InventoryItemPatch } from "../domain";
 import { useConsumption, useInventoryActions, useInventoryItem } from "../hooks";
 import { useConsumeWithUndo } from "./ConsumeButton";
 
@@ -91,7 +93,7 @@ function ItemForm({ item }: { item: InventoryItem }) {
       <Form.Item
         name="name"
         label={t("inventory.form.name")}
-        rules={[{ required: true, whitespace: true, message: t("inventory.form.nameRequired") }, { max: INVENTORY_LIMITS.nameMaxLength }]}
+        rules={[{ required: true, whitespace: true, message: t("errors.validation.nameRequired") }, { max: INVENTORY_LIMITS.nameMaxLength }]}
       >
         <Input maxLength={INVENTORY_LIMITS.nameMaxLength} />
       </Form.Item>
@@ -138,7 +140,6 @@ function ConsumptionPanel({ item }: { item: InventoryItem }) {
   const { add } = useShoppingActions();
   const { message } = App.useApp();
   const [amount, setAmount] = useState(1);
-  const unit = (count: number) => (isUnit(item.unit) ? t(`inventory.units.${item.unit}`, { count }) : item.unit);
 
   return (
     <Flex vertical gap={16}>
@@ -147,7 +148,7 @@ function ConsumptionPanel({ item }: { item: InventoryItem }) {
           {t("inventory.consume.last30")}
         </Typography.Text>
         <div style={{ fontSize: token.fontSizeHeading4, fontWeight: 600, letterSpacing: "-0.02em" }}>
-          {stats ? `${format.number(stats.last30)} ${unit(stats.last30)}` : "—"}
+          {stats ? formatQuantity(t, stats.last30, item.unit, format.number) : "—"}
         </div>
         <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
           {stats?.lastAt

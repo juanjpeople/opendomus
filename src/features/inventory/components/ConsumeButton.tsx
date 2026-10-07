@@ -1,11 +1,13 @@
 "use client";
 
-import { App, Button, Flex, Grid, Tooltip } from "antd";
+import { formatUnit } from "@/features/inventory/format";
+
+import { App, Button, Flex, Grid, Tooltip, theme } from "antd";
 import { motion } from "framer-motion";
 import { PackageMinus } from "lucide-react";
 import { useT } from "@/i18n";
-import { SPRING } from "@/lib/motion";
-import { isUnit, type InventoryItem } from "../domain";
+import { SPRING, TAP } from "@/lib/motion";
+import { type InventoryItem } from "../domain";
 import { useInventoryActions } from "../hooks";
 
 /**
@@ -20,7 +22,7 @@ export function useConsumeWithUndo() {
   return async (item: Pick<InventoryItem, "id" | "name" | "unit">, amount = 1) => {
     const result = await consume(item.id, amount);
     if (!result) return false;
-    const unit = (count: number) => (isUnit(item.unit) ? t(`inventory.units.${item.unit}`, { count }) : item.unit);
+    const unit = (count: number) => (formatUnit(t, count, item.unit));
     const key = `consume:${item.id}`;
 
     if (result.consumed === 0) {
@@ -64,19 +66,20 @@ export function useConsumeWithUndo() {
 export function ConsumeButton({ item }: { item: InventoryItem }) {
   const t = useT();
   const screens = Grid.useBreakpoint();
+  const { token } = theme.useToken();
   const consume = useConsumeWithUndo();
   const empty = item.quantity <= 0;
   const label = t("inventory.consume.button");
 
   return (
     <Tooltip title={empty ? t("inventory.consume.empty") : t("inventory.consume.tooltip")}>
-      <motion.span whileTap={empty ? undefined : { scale: 0.92 }} transition={SPRING.snappy} style={{ display: "inline-flex" }}>
+      <motion.span whileTap={empty ? undefined : { scale: TAP.control }} transition={SPRING.snappy} style={{ display: "inline-flex" }}>
         <Button
           icon={<PackageMinus />}
           disabled={empty}
           aria-label={t("inventory.consume.aria", { name: item.name })}
           onClick={() => consume(item)}
-          style={screens.sm ? undefined : { width: 40, height: 40 }}
+          style={{ minWidth: token.controlHeightLG + token.paddingXXS, minHeight: token.controlHeightLG + token.paddingXXS }}
         >
           {screens.sm && label}
         </Button>

@@ -1,10 +1,12 @@
 "use client";
 
+import { formatUnit } from "@/features/inventory/format";
+
 import { Badge, Button, Card, Dropdown, Flex, Tooltip, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
 import { BellOff, CheckCheck, ChevronDown, CircleAlert, Plus, X } from "lucide-react";
 import { IconTile } from "@/components/ui";
-import { isUnit } from "@/features/inventory/domain";
+
 import { useI18n } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
 import { SPRING } from "@/lib/motion";
@@ -69,7 +71,7 @@ function CandidateItem({ candidate, canManage }: { candidate: CandidateRow; canM
   const { token } = theme.useToken();
   const { confirm, dismiss } = useShoppingActions();
   const { item, place } = candidate.linked;
-  const unit = (count: number) => (isUnit(item.unit) ? t(`inventory.units.${item.unit}`, { count }) : item.unit);
+  const unit = (count: number) => (formatUnit(t, count, item.unit));
   const empty = candidate.reason === "empty";
 
   return (

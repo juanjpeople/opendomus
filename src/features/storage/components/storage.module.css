@@ -3,59 +3,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 128px;
-  border-radius: 14px;
+  height: calc(var(--scene-unit) * 4);
+  border-radius: var(--scene-radius);
   overflow: hidden;
 }
-/* Fluida: en fichas angostas se achica en vez de recortarse. */
-.scene > svg { width: min(170px, 94%); height: auto; aspect-ratio: 180 / 130; transition: transform 180ms ease; }
-.tile:hover .scene > svg { transform: translateY(-3px) rotate(-2deg); }
+/* Proporciones de la ilustración; la escala y los radios vienen del tema. */
+.scene > svg { width: min(calc(var(--scene-unit) * 5.3125), 94%); height: auto; aspect-ratio: 180 / 130; }
 .contentBadge {
   position: absolute;
-  right: 9px;
-  bottom: 9px;
+  right: var(--badge-inset);
+  bottom: var(--badge-inset);
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  font-size: 17px;
+  width: var(--badge-size);
+  height: var(--badge-size);
+  font-size: var(--badge-font);
   border: 1px solid;
-  border-radius: 10px;
+  border-radius: var(--scene-radius);
 }
-.compact { width: 112px; height: 88px; flex-shrink: 0; }
-.compact > svg { width: 112px; height: 82px; }
-.compact .contentBadge { width: 24px; height: 24px; font-size: 14px; right: 3px; bottom: 3px; }
-.tile { height: 100%; }
-.tile:focus-within { outline: 2px solid var(--storage-accent); outline-offset: 4px; border-radius: 16px; }
-.roomFloor {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  padding: 12px;
-  border-radius: 18px;
-  border: 1px solid var(--storage-border);
-  background-color: var(--storage-floor);
-  background-image: radial-gradient(var(--storage-border) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
-.roomFloor[data-space-kind="kitchen"], .roomFloor[data-space-kind="bathroom"] {
-  background-image: linear-gradient(var(--storage-border) 1px, transparent 1px), linear-gradient(90deg, var(--storage-border) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
-.roomFloor[data-space-kind="bedroom"], .roomFloor[data-space-kind="living"] {
-  background-image: repeating-linear-gradient(0deg, transparent 0 25px, var(--storage-border) 25px 26px);
-}
-.roomFloor[data-space-kind="garden"] {
-  background-image: repeating-linear-gradient(120deg, transparent 0 18px, var(--storage-border) 18px 19px);
-}
+.compact { width: calc(var(--scene-unit) * 3.5); height: calc(var(--scene-unit) * 2.75); flex-shrink: 0; }
+.compact > svg { width: 100%; height: auto; }
+.compact .contentBadge { width: var(--badge-size-compact); height: var(--badge-size-compact); font-size: var(--badge-font-compact); right: var(--badge-inset-compact); bottom: var(--badge-inset-compact); }
 @media (max-width: 420px) {
-  .roomFloor { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; gap: 8px; }
-  .scene { height: 104px; }
-  .scene > svg { width: min(140px, 94%); }
-  .compact { height: 80px; width: 92px; }
-  .compact > svg { width: 92px; height: 76px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .scene > svg { transition: none; }
-  .tile:hover .scene > svg { transform: none; }
+  .scene { height: calc(var(--scene-unit) * 3.25); }
+  .scene > svg { width: min(calc(var(--scene-unit) * 4.375), 94%); }
+  .compact { height: calc(var(--scene-unit) * 2.5); width: calc(var(--scene-unit) * 2.875); }
+  .compact > svg { width: 100%; }
 }

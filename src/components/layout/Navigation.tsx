@@ -116,7 +116,7 @@ function NavLink({
         paddingInline: 14,
         borderRadius: token.borderRadiusLG,
         backgroundColor: "rgba(0,0,0,0)",
-        color: active ? token.colorPrimary : token.colorText,
+        color: token.colorText,
         fontWeight: active ? 600 : 400,
         transition: "color 0.2s",
         overflow: "hidden",

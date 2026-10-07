@@ -1,25 +1,29 @@
 "use client";
 
 import { App, Button, Card, Dropdown, Flex, Skeleton, Tooltip, Typography, theme } from "antd";
-import { Camera, EllipsisVertical, MapPin, Pencil, Plus, Printer, ScanLine, Trash2 } from "lucide-react";
+import { Camera, EllipsisVertical, MapPin, Pencil, Plus, Printer, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
-import { Stagger, StaggerItem } from "@/components/motion";
-import { EmptyState, IconTile, PageHeader } from "@/components/ui";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion";
+import { EmptyState, IconTile, PageHeader, RoomFloor, type FloorPattern } from "@/components/ui";
 import { useT } from "@/i18n";
 import { tint } from "@/lib/appearance";
 import { usePermission } from "@/lib/auth/hooks";
-import { spaceAppearance, type Container, type Space } from "../domain";
+import { spaceAppearance, type Container, type Space, type SpaceKind } from "../domain";
 import { useStorageActions, useStorageOverview, type ContainerOverview, type SpaceOverview } from "../hooks";
 import type { LabelData } from "./ContainerLabel";
 import { LabelModal } from "./LabelModal";
 import { AddTile, ContainerTile } from "./ContainerTiles";
 import { ContainerModal, SpaceModal } from "./StorageForms";
-import styles from "./storage.module.css";
 import { StorageSearch } from "./StorageSearch";
 import { cameraHref } from "@/lib/navigation/routes";
+
+const FLOOR: Record<SpaceKind, FloorPattern> = {
+  kitchen: "tiles", bathroom: "tiles", bedroom: "boards", living: "boards", garden: "diagonal",
+  workshop: "dots", shed: "dots", garage: "dots", other: "dots",
+};
 
 type Dialog =
   | { kind: "space"; space?: Space }
@@ -33,6 +37,7 @@ type Dialog =
  */
 export function StoragePage() {
   const t = useT();
+  const { token } = theme.useToken();
   const spaces = useStorageOverview();
   const [dialog, setDialog] = useState<Dialog>(null);
   const close = () => setDialog(null);
@@ -46,9 +51,6 @@ export function StoragePage() {
         extra={
           <>
             <Link href={cameraHref()}><Button icon={<Camera />}>{t("camera.openMode")}</Button></Link>
-            <Link href="/inventario/escanear">
-              <Button icon={<ScanLine />}>{t("storage.scan")}</Button>
-            </Link>
             <Can perform="storage.manage">
               <Button type="primary" icon={<Plus />} onClick={() => setDialog({ kind: "space" })}>
                 {t("storage.addSpace")}
@@ -58,7 +60,7 @@ export function StoragePage() {
         }
       />
 
-      <StorageSearch />
+      {!!spaces?.length && <Reveal><StorageSearch /></Reveal>}
       {!spaces && <Skeleton active />}
       {spaces?.length === 0 && (
         <Card>
@@ -77,9 +79,9 @@ export function StoragePage() {
         </Card>
       )}
 
-      <Stagger delay={0.1} stagger={0.08} style={{ columnWidth: 480, columnGap: 20 }}>
+      <Stagger delay={0.1} stagger={0.08} style={{ columnWidth: token.controlHeightLG * 10, columnGap: token.marginLG }}>
         {spaces?.map((space) => (
-          <StaggerItem key={space.id} style={{ breakInside: "avoid", marginBottom: 20 }}>
+          <StaggerItem key={space.id} style={{ breakInside: "avoid", marginBottom: token.marginLG }}>
             <SpaceRoom space={space} onDialog={setDialog} />
           </StaggerItem>
         ))}
@@ -113,7 +115,7 @@ function SpaceRoom({ space, onDialog }: { space: SpaceOverview; onDialog: (dialo
       id={`recinto-${space.id}`}
       style={{
         scrollMarginTop: 88,
-        padding: 16,
+        padding: token.padding,
         borderRadius: token.borderRadiusLG * 2,
         border: `1px solid ${palette.border}`,
         background: `linear-gradient(160deg, ${palette.bg} 0%, ${token.colorBgContainer} 55%)`,
@@ -121,11 +123,11 @@ function SpaceRoom({ space, onDialog }: { space: SpaceOverview; onDialog: (dialo
       }}
     >
       {/* Encabezado del ambiente. */}
-      <Flex align="center" justify="space-between" gap={12} style={{ marginBottom: 14 }}>
-        <Flex align="center" gap={12} style={{ minWidth: 0 }}>
-          <IconTile icon={Icon} color={color} size={44} solid />
+      <Flex align="center" justify="space-between" gap={token.marginSM} wrap style={{ marginBottom: token.margin }}>
+        <Flex align="center" gap={token.marginSM} style={{ minWidth: 0, flex: `1 1 ${token.controlHeight * 6}px` }}>
+          <IconTile icon={Icon} color={color} size={token.controlHeightLG + token.paddingXXS} solid />
           <div style={{ minWidth: 0 }}>
-            <Typography.Title level={4} style={{ margin: 0, letterSpacing: "-0.02em" }} ellipsis>
+            <Typography.Title level={4} style={{ margin: 0, letterSpacing: "-0.02em", overflowWrap: "anywhere" }}>
               {space.name}
             </Typography.Title>
             <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
@@ -133,7 +135,7 @@ function SpaceRoom({ space, onDialog }: { space: SpaceOverview; onDialog: (dialo
             </Typography.Text>
           </div>
         </Flex>
-        <Flex gap={4} style={{ flexShrink: 0 }}>
+        <Flex gap={token.marginXXS} style={{ flexShrink: 0 }}>
           {space.containers.length > 0 && (
             <Tooltip title={t("storage.printLabels")}>
               <Button
@@ -176,24 +178,17 @@ function SpaceRoom({ space, onDialog }: { space: SpaceOverview; onDialog: (dialo
       </Flex>
 
       {/* El "piso" del ambiente: acá se ubican los contenedores. */}
-      <div
-        className={styles.roomFloor}
-        data-space-kind={space.kind}
-        style={{
-          "--storage-border": palette.border,
-          "--storage-floor": token.colorBgLayout,
-        } as CSSProperties}
-      >
+      <RoomFloor pattern={FLOOR[space.kind]} color={color}>
         {space.containers.map((container) => (
           <ContainerTile key={container.id} container={container} onLabel={() => onDialog({ kind: "labels", labels: [toLabel(container)] })} />
         ))}
         {canManage && <AddTile color={palette.solid} label={t("storage.addContainer")} onClick={() => onDialog({ kind: "container", spaceId: space.id })} />}
         {!canManage && space.containers.length === 0 && (
-          <Typography.Text type="secondary" style={{ padding: 12 }}>
+          <Typography.Text type="secondary" style={{ padding: token.paddingSM }}>
             {t("storage.noContainers")}
           </Typography.Text>
         )}
-      </div>
+      </RoomFloor>
     </section>
   );
 }

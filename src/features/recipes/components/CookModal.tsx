@@ -1,10 +1,12 @@
 "use client";
 
+import { formatUnit } from "@/features/inventory/format";
+
 import { Alert, App, Button, Flex, InputNumber, Modal, Typography, theme } from "antd";
 import { ChefHat } from "lucide-react";
 import { useState } from "react";
 import { QuantityStepper } from "@/components/ui";
-import { isUnit, type InventoryItem } from "@/features/inventory/domain";
+import { type InventoryItem } from "@/features/inventory/domain";
 import { useI18n } from "@/i18n";
 import { RECIPE_LIMITS, scaleQuantity, type Recipe } from "../domain";
 import { useRecipeActions } from "../hooks";
@@ -39,7 +41,7 @@ function CookForm({ recipe, items, initialServings, onClose }: { recipe: Recipe;
   const [servings, setServings] = useState(initialServings);
   const [amounts, setAmounts] = useState<Record<string, number>>(() => defaults(initialServings));
   const [saving, setSaving] = useState(false);
-  const unit = (item: InventoryItem, count: number) => (isUnit(item.unit) ? t(`inventory.units.${item.unit}`, { count }) : item.unit);
+  const unit = (item: InventoryItem, count: number) => (formatUnit(t, count, item.unit));
   const short = linked.filter((ingredient) => (amounts[ingredient.itemId!] ?? 0) > items.get(ingredient.itemId!)!.quantity);
 
   function changeServings(next: number) {

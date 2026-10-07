@@ -117,6 +117,8 @@ function SelectionBlock() {
   const [color, setColor] = useState<AppearanceColor | undefined>();
   const [icon, setIcon] = useState<AppearanceIcon | undefined>();
   const [privacy, setPrivacy] = useState<Privacy>("family");
+  const [rooms, setRooms] = useState<string[]>([]);
+  const [quantity, setQuantity] = useState(3);
 
   return (
     <DemoBlock
@@ -147,6 +149,16 @@ PRIVACY_META.adults   // { icon, color }: para mostrar un nivel en otro formato 
               { value: "list", title: "Lista", description: "Filas compactas, para cargar rápido.", preview: <IconTile icon={List} size={40} /> },
             ]}
           />
+        </Col>
+        <Col xs={24}>
+          <DemoLabel>ChoiceCards · selección múltiple, ícono o avatar, lista compacta y opción deshabilitada. Tab recorre las opciones; Espacio cambia la selección.</DemoLabel>
+          <ChoiceCards multiple compact layout="list" aria-label="Ambientes de ejemplo" value={rooms} onChange={setRooms} options={[
+            { value: "kitchen", title: "Cocina", leading: <IconTile icon={Refrigerator} /> },
+            { value: "workshop", title: "Taller", leading: <IconTile icon={Wrench} color="gold" /> },
+            { value: "later", title: "Disponible después", disabled: true, description: "Las opciones deshabilitadas no se eligen ni reciben foco." },
+          ]} />
+          <DemoLabel>QuantityStepper · edición directa, límites y botones. El campo conserva su nombre accesible.</DemoLabel>
+          <QuantityStepper aria-label="Cantidad de ejemplo" value={quantity} onChange={setQuantity} min={0} max={10} precision={0} />
         </Col>
         <Col xs={24} md={12}>
           <DemoLabel>ColorSwatches</DemoLabel>
@@ -187,7 +199,7 @@ function DataBlock() {
     <DemoBlock
       id="componentes-datos"
       title="Datos: StatTile, ListRow, QuantityStepper, IconTile y MemberAvatar"
-      description="StatTile resume con una cifra que cuenta. ListRow es la fila estándar de una lista en Card (entra y sale deslizándose, el detalle se abre desde la izquierda con foco visible, los controles van a la derecha). Si una fila tiene ícono, todas lo tienen."
+      description="StatTile resume con una cifra que cuenta. ListRow es la fila estándar de una lista en Card (entra y sale deslizándose, el detalle se abre desde la izquierda con foco visible, los controles van a la derecha). Si una fila tiene ícono, todas lo tienen. Para navegar, usa href: conserva abrir en otra pestaña. Para un diálogo, onOpen. Las anotaciones usan wrapTitle para mostrar el texto completo y se editan en la misma fila (ver el flujo de almacenamiento)."
       code={`
 <Stagger><Row gutter={[12, 12]}>
   <Col xs={8}><StaggerItem><StatTile label="Productos" value={128} tone="primary" /></StaggerItem></Col>
@@ -310,7 +322,7 @@ function SpacesBlock() {
     <DemoBlock
       id="componentes-espacios"
       title="Espacios: VisualTile, RoomFloor y CameraViewport"
-      description="VisualTile es la ficha de una entidad con ilustración: sube, el borde toma su color y la ilustración se acerca. Como mucho tres líneas (título, una de contexto, un pie); el resto va al detalle. RoomFloor es el piso de un ambiente. CameraViewport es el único visor de cámara: fondo oscuro en ambos temas y todo animado con transform."
+      description="VisualTile es la ficha de una entidad con ilustración: sube, el borde toma su color y la ilustración se acerca. Como mucho tres líneas (título, una de contexto, un pie); el resto va al detalle. RoomFloor es el piso de un ambiente. ContainerScene conserva las proporciones del dibujo y toma escala, insignia y radios del tema; el CSS solo resuelve la geometría adaptable. CameraViewport es el único visor de cámara: fondo oscuro en ambos temas y todo animado con transform. useOverlayPalette resuelve los colores del tema para las tarjetas y el indicador de superficie del canvas de AR."
       code={`
 <RoomFloor pattern="tiles" color="volcano">
   <VisualTile

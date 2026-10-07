@@ -17,7 +17,8 @@ import { House } from "@/components/illustrations/House";
 import { HouseMark } from "@/components/illustrations/HouseMark";
 import { AccountLinks } from "@/features/cloud/components/AccountLinks";
 import { LanguageSwitch, ThemeModeSwitch } from "@/components/layout/HeaderActions";
-import { IconTile } from "@/components/ui";
+import { Reveal } from "@/components/motion";
+import { IconTile, SectionTitle } from "@/components/ui";
 import { useT } from "@/i18n";
 import { GUIDELINES, ROADMAP, TRANSPARENCY_STAGES, TRUST_PROOFS, VALUES } from "./content";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -28,14 +29,18 @@ const MAX_WIDTH = 1160;
 
 export function Landing() {
   const { token } = theme.useToken();
+  const t = useT();
 
   return (
     <div style={{ background: token.colorBgLayout, color: token.colorText, minHeight: "100vh" }}>
       <LandingHeader />
       <Hero />
-      <Container><DemoLauncher /></Container>
+      <Container><Reveal inView style={{ paddingBlock: token.paddingXL }}>
+        <SectionTitle eyebrow={t("demo.badge")} title={t("demo.title")} description={t("demo.description")} />
+        <DemoLauncher />
+      </Reveal></Container>
       <ProjectIntroduction />
-      <AccountLinks />
+      <AccountLinks editorial />
       <ValuesSection />
       <TransparencySection />
       <GuidelinesSection />
@@ -54,15 +59,14 @@ function ProjectIntroduction() {
       <Container>
         <Row gutter={[40, 24]}>
           <Col xs={24} md={12}>
-            <Typography.Title id="project-introduction" level={2} style={{ marginTop: 0 }}>{t("landing.introduction.title")}</Typography.Title>
-            <Typography.Paragraph style={{ fontSize: token.fontSizeLG }}>{t("landing.introduction.what")}</Typography.Paragraph>
+            <SectionTitle id="project-introduction" eyebrow={t("landing.introduction.eyebrow")} title={t("landing.introduction.title")} description={t("landing.introduction.what")} />
           </Col>
-          <Col xs={24} md={12}>
+          <Col xs={24} md={12}><Reveal inView delay={0.1}>
             <Typography.Title level={3} style={{ marginTop: 0 }}>{t("landing.introduction.whoTitle")}</Typography.Title>
             <Typography.Paragraph type="secondary">{t("landing.introduction.who")}</Typography.Paragraph>
             <Typography.Paragraph type="secondary">{t("landing.introduction.invitation")}</Typography.Paragraph>
             <Button href="https://github.com/juanjpeople/opendomus" target="_blank" rel="noopener noreferrer" icon={<ExternalLink />} iconPlacement="end">{t("landing.introduction.repository")}</Button>
-          </Col>
+          </Reveal></Col>
         </Row>
       </Container>
     </section>
@@ -127,30 +131,6 @@ function LandingHeader() {
 }
 
 /** Título de sección con entrada al hacer scroll. */
-function SectionTitle({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
-  const { token } = theme.useToken();
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.6 }}
-      transition={{ duration: 0.6 }}
-      style={{ maxWidth: 680, marginBottom: 48 }}
-    >
-      <Typography.Text strong style={{ color: token.colorPrimary, textTransform: "uppercase", letterSpacing: "0.12em", fontSize: token.fontSizeSM }}>
-        {eyebrow}
-      </Typography.Text>
-      <Typography.Title level={2} style={{ margin: "8px 0 12px", fontSize: "clamp(1.9rem, 4vw, 2.75rem)", letterSpacing: "-0.02em" }}>
-        {title}
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ fontSize: "1.25rem", margin: 0 }}>
-        {description}
-      </Typography.Paragraph>
-    </motion.div>
-  );
-}
-
 function Hero() {
   const { token } = theme.useToken();
   const t = useT();
@@ -390,7 +370,7 @@ function TransparencySection() {
                 </motion.div>
                 {index < TRANSPARENCY_STAGES.length - 1 && (
                   <Flex align="center" justify="center" aria-hidden style={{ color: token.colorPrimary, flex: "0 0 auto" }}>
-                    {isDesktop ? <ArrowRight size={18} /> : <ArrowDown size={18} />}
+                    {isDesktop ? <ArrowRight /> : <ArrowDown />}
                   </Flex>
                 )}
               </div>
@@ -436,7 +416,7 @@ function TransparencySection() {
                     <Typography.Link href={href} target="_blank" rel="noreferrer">
                       <Flex component="span" align="center" gap={6}>
                         {t(`landing.transparency.proofs.${key}.link`)}
-                        <ExternalLink size={14} aria-hidden />
+                        <ExternalLink aria-hidden />
                       </Flex>
                     </Typography.Link>
                   )}

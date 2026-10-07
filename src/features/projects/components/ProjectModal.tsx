@@ -75,7 +75,7 @@ export function ProjectModal({ open, project, onClose, onSaved }: { open: boolea
             {name || "—"}
           </Typography.Text>
         </Flex>
-        <Form.Item name="name" label={t("projects.name")} rules={[{ required: true, whitespace: true, message: t("inventory.form.nameRequired") }]}>
+        <Form.Item name="name" label={t("projects.name")} rules={[{ required: true, whitespace: true, message: t("errors.validation.nameRequired") }]}>
           <Input maxLength={PROJECT_LIMITS.nameMaxLength} placeholder={t("projects.namePlaceholder")} autoFocus />
         </Form.Item>
         <Form.Item name="privacy" label={t("privacy.label")}>

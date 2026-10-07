@@ -35,8 +35,9 @@ backdropFilter: "blur(12px)",
 background: \`color-mix(in srgb, \${token.colorBgContainer} 75%, transparent)\`,
 borderBottom: \`1px solid \${token.colorBorderSecondary}\`,
 
+// Eyebrow legible también con marcas oscuras. La marca queda en el brillo y los acentos:
 // Eyebrow + título héroe:
-<Typography.Text strong style={{ color: token.colorPrimary, textTransform: "uppercase", letterSpacing: "0.12em", fontSize: token.fontSizeSM }}>Tu casa</Typography.Text>
+<Typography.Text strong style={{ color: token.colorTextSecondary, textTransform: "uppercase", letterSpacing: "0.12em", fontSize: token.fontSizeSM }}>Tu casa</Typography.Text>
 <Typography.Title style={{ letterSpacing: "-0.035em", fontSize: "clamp(1.9rem, 4vw, 2.75rem)", lineHeight: 1.1 }}>Todo en orden</Typography.Title>
 
 // Tarjeta que lleva a otra página (sube, el ícono gira, aparece la flecha):
@@ -79,7 +80,7 @@ borderBottom: \`1px solid \${token.colorBorderSecondary}\`,
               </Tag>
             </Flex>
             <div style={{ padding: "32px 24px", background: `radial-gradient(ellipse 70% 40% at 60% -5%, ${token.colorPrimaryBg}, transparent 70%)` }}>
-              <Typography.Text strong style={{ color: token.colorPrimary, textTransform: "uppercase", letterSpacing: "0.12em", fontSize: token.fontSizeSM }}>
+              <Typography.Text strong style={{ color: token.colorTextSecondary, textTransform: "uppercase", letterSpacing: "0.12em", fontSize: token.fontSizeSM }}>
                 Martes 7 de octubre
               </Typography.Text>
               <Typography.Title style={{ margin: "6px 0 12px", letterSpacing: "-0.035em", fontSize: "clamp(1.9rem, 4vw, 2.75rem)", lineHeight: 1.1 }}>

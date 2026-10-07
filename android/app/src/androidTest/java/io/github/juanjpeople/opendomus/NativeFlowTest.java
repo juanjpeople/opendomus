@@ -130,8 +130,8 @@ public class NativeFlowTest {
             evaluate(scenario, "[...document.querySelectorAll('h5')].find(e => e.textContent === 'Administrador').click()");
             await(scenario, "JSON.parse(localStorage.getItem('opendomus-session') || '{}').state?.currentProfileId");
             scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario"));
-            await(scenario, "document.body.innerText.includes('Estantería')");
-            evaluate(scenario, "[...document.querySelectorAll('span,h3,h4,h5')].find(e => e.textContent === 'Estantería').click()");
+            await(scenario, "[...document.querySelectorAll('a')].some(e => /Estantería de herramientas|Tool shelf/.test(e.textContent))");
+            tap(scenario, "[...document.querySelectorAll('a')].find(e => /Estantería de herramientas|Tool shelf/.test(e.textContent))");
             await(scenario, "location.pathname === '/inventario/ver' && document.querySelector('input[aria-label=\"Stored contents\"],input[aria-label=\"Contenido guardado\"]')");
             evaluate(scenario, "(() => {const e=document.querySelector('input[aria-label=\"Stored contents\"],input[aria-label=\"Contenido guardado\"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'Cables Android'); e.dispatchEvent(new Event('input',{bubbles:true}));})()");
             evaluate(scenario, "[...document.querySelectorAll('button')].find(b => /^(Anotar|Add note)$/.test(b.textContent.trim())).click()");
@@ -196,6 +196,11 @@ public class NativeFlowTest {
             await(scenario, "[...document.querySelectorAll('svg path[pathLength=\"1\"]')].every(p => parseFloat(getComputedStyle(p).strokeDasharray) >= 0.99)");
             screenshot("onboarding");
             tap(scenario, "[...document.querySelectorAll('button')].find(b => /Empezar acá|Start here/.test(b.textContent))");
+            // The initial house is now explicit: create the shelf used by the backup and QR round trips.
+            await(scenario, "[...document.querySelectorAll('button')].some(b => /Guardar esta selección|Save this selection/.test(b.textContent))");
+            tap(scenario, "[...document.querySelectorAll('[role=checkbox]')].find(e => /^(Taller de herramientas|Tool workshop)$/.test(e.textContent.trim()))");
+            tap(scenario, "[...document.querySelectorAll('[role=checkbox]')].find(e => /^(Estantería de herramientas|Tool shelf)$/.test(e.textContent.trim()))");
+            tap(scenario, "[...document.querySelectorAll('button')].find(b => /Guardar esta selección|Save this selection/.test(b.textContent))");
             await(scenario, "/Who.s home|Quién está en casa/.test(document.body.innerText) && /Administrador|Administrator/.test(document.body.innerText)");
             scenario.recreate();
             ready(scenario);

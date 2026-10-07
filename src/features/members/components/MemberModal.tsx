@@ -69,7 +69,7 @@ export function MemberModal({ open, member, onClose }: { open: boolean; member?:
         <Form.Item
           name="name"
           label={t("members.fields.name")}
-          rules={[{ required: true, whitespace: true, message: t("inventory.form.nameRequired") }, { max: MEMBER_LIMITS.nameMaxLength }]}
+          rules={[{ required: true, whitespace: true, message: t("errors.validation.nameRequired") }, { max: MEMBER_LIMITS.nameMaxLength }]}
         >
           <Input maxLength={MEMBER_LIMITS.nameMaxLength} autoFocus />
         </Form.Item>

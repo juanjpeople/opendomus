@@ -1,9 +1,11 @@
 "use client";
 
+import { formatUnit } from "@/features/inventory/format";
+
 import { AutoComplete, Button, Flex, Grid, InputNumber, Popover, Select, Space, Tooltip, Typography, theme } from "antd";
 import { Calculator, Tag as PriceTag } from "lucide-react";
 import { useState } from "react";
-import { isUnit } from "@/features/inventory/domain";
+
 import { CURRENCIES, type Currency } from "@/features/prices/domain";
 import { useKnownStores } from "@/features/prices/hooks";
 import { useI18n } from "@/i18n";
@@ -25,7 +27,7 @@ export function QuickPrice({ row, currency: listCurrency }: { row: ShoppingRow; 
   const [currency, setCurrency] = useState<Currency>(row.paidCurrency ?? listCurrency);
   const [store, setStore] = useState(row.store ?? row.price?.latest.store ?? "");
   const [saving, setSaving] = useState(false);
-  const unitLabel = isUnit(row.unit) ? t(`inventory.units.${row.unit}`, { count: 1 }) : row.unit;
+  const unitLabel = formatUnit(t, 1, row.unit);
   const label = row.paidCents !== undefined ? format.money(row.paidCents, row.paidCurrency ?? listCurrency) : t("shopping.price.button");
 
   async function save() {
@@ -87,7 +89,7 @@ export function EstimatePrice({ row, currency }: { row: ShoppingRow; currency: C
   const { setEstimate } = useShoppingActions();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<number | null>(row.estimateCents !== undefined ? row.estimateCents / 100 : null);
-  const unitLabel = isUnit(row.unit) ? t(`inventory.units.${row.unit}`, { count: 1 }) : row.unit;
+  const unitLabel = formatUnit(t, 1, row.unit);
 
   async function save(value: number | null) {
     if ((await setEstimate(row.id, value)) !== null) setOpen(false);

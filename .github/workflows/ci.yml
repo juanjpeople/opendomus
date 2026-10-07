@@ -134,7 +134,7 @@ jobs:
       - run: npm run e2e:demo
       - run: npx wrangler deploy --config wrangler.demo.jsonc --dry-run
       - uses: actions/upload-artifact@v7
-        if: failure()
+        if: always()
         with:
           name: demo-test-results
           path: test-results
