@@ -5,7 +5,7 @@ import { formatUnit } from "@/features/inventory/format";
 import { Alert, App, Button, Flex, InputNumber, Modal, Typography, theme } from "antd";
 import { ChefHat } from "lucide-react";
 import { useState } from "react";
-import { QuantityStepper } from "@/components/ui";
+import { IconTile, QuantityStepper } from "@/components/ui";
 import { type InventoryItem } from "@/features/inventory/domain";
 import { useI18n } from "@/i18n";
 import { RECIPE_LIMITS, scaleQuantity, type Recipe } from "../domain";
@@ -66,9 +66,7 @@ function CookForm({ recipe, items, initialServings, onClose }: { recipe: Recipe;
   return (
     <Flex vertical gap={16}>
       <Flex align="center" gap={12}>
-        <span style={{ display: "inline-flex", padding: 10, borderRadius: token.borderRadiusLG, background: token.colorPrimaryBg, color: token.colorPrimary, fontSize: 22 }}>
-          <ChefHat />
-        </span>
+        <IconTile icon={ChefHat} size={token.controlHeightLG} />
         <div>
           <Typography.Title level={4} style={{ margin: 0 }}>
             {t("recipes.cook.title")}

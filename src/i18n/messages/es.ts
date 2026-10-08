@@ -542,6 +542,8 @@ export const es = {
     color: "Color",
     icon: "Ícono",
     auto: "Usar el del tipo",
+    fromKind: "Color e ícono del tipo",
+    chosen: "Color e ícono elegidos",
     colors: {
       blue: "Azul",
       geekblue: "Índigo",

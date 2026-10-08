@@ -1,6 +1,6 @@
 "use client";
 
-import { Flex, Form, Input, Modal, TreeSelect, Typography, theme } from "antd";
+import { Collapse, Flex, Form, Input, Modal, TreeSelect, Typography, theme } from "antd";
 import { useEffect, useState } from "react";
 import { ChoiceCards, ColorSwatches, IconGrid, IconTile } from "@/components/ui";
 import { useT } from "@/i18n";
@@ -24,30 +24,56 @@ import { useContainers, useSpaces, useStorageActions } from "../hooks";
 import { descendantIds, subtreeHeight } from "../tree";
 import { ContainerScene } from "./ContainerScene";
 
-/** Color + ícono con vista previa en vivo. Sin elección, se usa la apariencia del tipo. */
+/**
+ * Vista previa en vivo que, al tocarla, despliega color e ícono. Sin elección se usa la apariencia
+ * del tipo, así que queda plegado. forceRender mantiene los campos registrados aunque no se abra.
+ */
 function AppearanceFields({ defaults, containerKind }: { defaults: { color: AppearanceColor; icon: AppearanceIcon }; containerKind?: ContainerKind }) {
   const t = useT();
   const { token } = theme.useToken();
   const form = Form.useFormInstance();
-  const color = (Form.useWatch("color", form) as AppearanceColor | undefined) ?? defaults.color;
-  const icon = (Form.useWatch("icon", form) as AppearanceIcon | undefined) ?? defaults.icon;
+  const chosenColor = Form.useWatch("color", form) as AppearanceColor | undefined;
+  const chosenIcon = Form.useWatch("icon", form) as AppearanceIcon | undefined;
+  const color = chosenColor ?? defaults.color;
+  const icon = chosenIcon ?? defaults.icon;
   const name = Form.useWatch("name", form) as string | undefined;
 
   return (
-    <>
-      <Flex align="center" gap={token.marginSM} style={{ padding: token.paddingSM, marginBottom: token.margin, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
-        <div style={{ width: token.controlHeightLG * 2, flexShrink: 0 }}>{containerKind ? <ContainerScene container={{ kind: containerKind, color, icon }} compact /> : <IconTile icon={APPEARANCE_ICONS[icon]} color={color} size={token.controlHeightLG} />}</div>
-        <Typography.Text strong style={{ fontSize: token.fontSizeLG }} ellipsis>
-          {name || "—"}
-        </Typography.Text>
-      </Flex>
-      <Form.Item name="color" label={t("appearance.color")}>
-        <ColorSwatches fallback={defaults.color} />
-      </Form.Item>
-      <Form.Item name="icon" label={t("appearance.icon")}>
-        <IconGrid fallback={defaults.icon} color={color} />
-      </Form.Item>
-    </>
+    <Collapse
+      ghost
+      expandIconPlacement="end"
+      style={{ marginBottom: token.margin }}
+      styles={{
+        header: { alignItems: "center", padding: token.paddingSM, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary },
+        body: { paddingInline: 0, paddingBlockEnd: 0 },
+      }}
+      items={[{
+        key: "appearance",
+        forceRender: true,
+        label: (
+          <Flex align="center" gap={token.marginSM} style={{ minWidth: 0 }}>
+            {/* La escena compacta define su ancho y no se achica: no la envuelvas en un ancho fijo. */}
+            {containerKind ? <ContainerScene container={{ kind: containerKind, color, icon }} compact /> : <IconTile icon={APPEARANCE_ICONS[icon]} color={color} size={token.controlHeightLG} />}
+            <Flex vertical style={{ minWidth: 0 }}>
+              <Typography.Text strong style={{ fontSize: token.fontSizeLG }} ellipsis>
+                {name || "—"}
+              </Typography.Text>
+              <Typography.Text type="secondary">{t(chosenColor || chosenIcon ? "appearance.chosen" : "appearance.fromKind")}</Typography.Text>
+            </Flex>
+          </Flex>
+        ),
+        children: (
+          <>
+            <Form.Item name="color" label={t("appearance.color")}>
+              <ColorSwatches fallback={defaults.color} />
+            </Form.Item>
+            <Form.Item name="icon" label={t("appearance.icon")} style={{ marginBottom: 0 }}>
+              <IconGrid fallback={defaults.icon} color={color} />
+            </Form.Item>
+          </>
+        ),
+      }]}
+    />
   );
 }
 
@@ -77,7 +103,7 @@ export function SpaceModal({ open, space, onClose }: { open: boolean; space?: Sp
 
   return (
     <Modal open={open} onCancel={onClose} onOk={onOk} confirmLoading={saving} title={t(space ? "storage.editSpace" : "storage.addSpace")} width={600} destroyOnHidden>
-      <Form form={form} layout="vertical" requiredMark={false} onFinish={onOk} disabled={saving}>
+      <Form form={form} name="space" layout="vertical" requiredMark={false} onFinish={onOk} disabled={saving}>
         <Form.Item name="kind" label={t("storage.fields.kind")}>
           <ChoiceCards<SpaceKind> compact value={kind} aria-label={t("storage.fields.kind")} disabled={saving}
             options={SPACE_KINDS.map((value) => ({ value, title: t(`storage.spaceKinds.${value}`), leading: <IconTile icon={SPACE_ICONS[value]} color={SPACE_DEFAULTS[value].color} size={token.controlHeight} /> }))}
@@ -199,7 +225,7 @@ export function ContainerModal({
       width={600}
       destroyOnHidden
     >
-      <Form form={form} layout="vertical" requiredMark={false} onFinish={onOk} disabled={saving}>
+      <Form form={form} name="container" layout="vertical" requiredMark={false} onFinish={onOk} disabled={saving}>
         <Form.Item name="kind" label={t("storage.fields.kind")}>
           <ChoiceCards<ContainerKind> compact value={kind} aria-label={t("storage.fields.kind")} disabled={saving}
             options={CONTAINER_KINDS.map((value) => ({ value, title: t(`storage.containerKinds.${value}`), leading: <IconTile icon={CONTAINER_ICONS[value]} color={CONTAINER_DEFAULTS[value].color} size={token.controlHeight} /> }))}

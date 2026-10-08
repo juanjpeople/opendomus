@@ -31,5 +31,5 @@ recetas). Antes de tocar una pantalla, recorrela (casa demo → perfil Administr
 - Todo texto por `t()`; voseo, una idea por oración (ver "Voz y textos" en `/design`).
 - Ante una decisión de UI, gana la opción de mejor calidad visual, fiel a la firma original.
 - `scripts/design-lint.test.mjs` (corre con `npm test`) frena colores fijos, textos por idioma en
-  componentes, íconos con `size` y piezas sin documentar. El plan y su estado están en
+  componentes, íconos con `size`, tamaños de letra fijos y piezas sin documentar. El plan y su estado están en
   `docs/UNIFICACION_VISUAL.md`; repasá la lista "Revisión antes de un PR" de `/design`.

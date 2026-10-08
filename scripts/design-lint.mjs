@@ -4,6 +4,7 @@
  * - colores escritos a mano (hex, rgb) en componentes: rompen el modo oscuro y el color de marca;
  * - textos por idioma escritos en el componente (`locale === "es" ? … : …`): van por t();
  * - íconos lucide con `size={n}`: no siguen la preferencia de tamaño de letra;
+ * - tamaños de letra fijos (`fontSize: 18`): tampoco la siguen, van con los tokens del tema;
  * - piezas de @/components/ui y @/components/motion que no aparecen en /design.
  */
 import { readdirSync, readFileSync } from "node:fs";
@@ -35,6 +36,7 @@ const HEX = /["'`][^"'`\n]*#[0-9a-fA-F]{3,8}\b/g;
 // rgba(0, 0, 0, 0) es "transparente que framer puede interpolar", no un color elegido.
 const RGB = /rgba?\((?!\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\))/g;
 const LOCALE_TERNARY = /locale\s*===\s*["'](?:es|en)["']\s*\?|\bes\s*\?\s*["'`]/g;
+const FONT_SIZE = /\bfontSize\s*:\s*\d/g;
 
 function count(source, pattern) {
   return source.match(pattern)?.length ?? 0;
@@ -61,6 +63,7 @@ export function inspect(file) {
     color: count(source, HEX) + count(source, RGB),
     localeTernary: count(source, LOCALE_TERNARY),
     iconSize,
+    fontSize: count(source, FONT_SIZE),
   };
 }
 

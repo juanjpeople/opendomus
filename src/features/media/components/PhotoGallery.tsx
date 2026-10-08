@@ -76,7 +76,7 @@ export function PhotoGallery({ ownerType, ownerId, editable, coverId, onSetCover
                 fontSize: token.fontSizeSM,
               }}
             >
-              <span style={{ fontSize: 22, display: "inline-flex" }}>
+              <span style={{ fontSize: token.fontSizeXL, display: "inline-flex" }}>
                 <ImagePlus />
               </span>
               {uploading ? t("media.uploading") : t("media.add")}

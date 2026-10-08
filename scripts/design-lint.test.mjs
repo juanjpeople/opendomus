@@ -25,11 +25,12 @@ const FIX = {
   color: "colores escritos a mano: usá theme.useToken() (o tint() para el color de una entidad)",
   localeTernary: "textos por idioma en el componente: pasalos a i18n/messages y usá t()",
   iconSize: "íconos lucide con size: sacá el size y subí el font-size del contenedor",
+  fontSize: "tamaños de letra fijos: usá token.fontSizeSM, fontSizeLG, fontSizeXL o fontSizeHeadingN",
 };
 
 const files = [...componentFiles("src"), ...componentFiles("operator")];
 
-test("ningún componente suma colores fijos, textos por idioma ni íconos con tamaño fijo", () => {
+test("ningún componente suma colores fijos, textos por idioma, íconos con tamaño fijo ni tamaños de letra fijos", () => {
   const problems = [];
   for (const file of files) {
     const found = inspect(file);
@@ -49,7 +50,7 @@ test("cada pieza de @/components/ui y @/components/motion está documentada en /
 test("la deuda registrada sigue existiendo (si bajó, actualizá DEBT)", (t) => {
   const stale = [];
   for (const [file, rules] of Object.entries(DEBT)) {
-    const found = files.includes(file) ? inspect(file) : { color: 0, localeTernary: 0, iconSize: 0 };
+    const found = files.includes(file) ? inspect(file) : { color: 0, localeTernary: 0, iconSize: 0, fontSize: 0 };
     for (const [rule, limit] of Object.entries(rules)) {
       if (found[rule] < limit) stale.push(`${file}: ${rule} ${found[rule]} (registrado ${limit})`);
     }

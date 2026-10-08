@@ -8,10 +8,13 @@ import { DURATION, EASE_OUT } from "@/lib/motion";
 
 type FlowAction = { label: string; onClick: () => void; disabled?: boolean; loading?: boolean };
 
-/** Ancho estable; el dueño del flujo conserva borradores y decide qué pasos se pueden volver a abrir. */
-export function StepFlow({ steps = [], current = 0, screenKey, header, children, back, primary, footer, busy = false, framed = true }: {
+/**
+ * Ancho estable; el dueño del flujo conserva borradores y decide qué pasos se pueden volver a abrir.
+ * `secondary` es otra salida del paso (por ejemplo, empezar sin precarga): va junto a la principal.
+ */
+export function StepFlow({ steps = [], current = 0, screenKey, header, children, back, primary, secondary, footer, busy = false, framed = true }: {
   steps?: string[]; current?: number; screenKey: string; header?: ReactNode; children: ReactNode;
-  back?: FlowAction; primary?: FlowAction; footer?: ReactNode; busy?: boolean; framed?: boolean;
+  back?: FlowAction; primary?: FlowAction; secondary?: FlowAction; footer?: ReactNode; busy?: boolean; framed?: boolean;
 }) {
   const { token } = theme.useToken();
   const preference = usePreferences().motion;
@@ -32,10 +35,14 @@ export function StepFlow({ steps = [], current = 0, screenKey, header, children,
           <Flex vertical gap={token.marginLG}>
             {header}
             {children}
-            {(back || primary || footer) && <Flex wrap align="center" justify="space-between" gap={token.marginSM}>
+            {(back || primary || secondary || footer) && <Flex wrap align="center" justify="space-between" gap={token.marginSM}>
               {back && <Button size="large" disabled={busy || primary?.loading || back.disabled} onClick={back.onClick}>{back.label}</Button>}
               {footer}
-              {primary && <Button type="primary" size="large" loading={busy || primary.loading} disabled={busy || primary.disabled} onClick={primary.onClick} style={{ marginInlineStart: "auto" }}>{primary.label}</Button>}
+              {/* Volver queda a la izquierda. Si las dos salidas no entran en una fila, cada una ocupa el ancho. */}
+              {(secondary || primary) && <Flex wrap justify="flex-end" gap={token.marginSM} style={{ marginInlineStart: "auto" }}>
+                {secondary && <Button size="large" loading={secondary.loading} disabled={busy || secondary.disabled} onClick={secondary.onClick} style={{ flexGrow: 1 }}>{secondary.label}</Button>}
+                {primary && <Button type="primary" size="large" loading={busy || primary.loading} disabled={busy || primary.disabled} onClick={primary.onClick} style={{ flexGrow: 1 }}>{primary.label}</Button>}
+              </Flex>}
             </Flex>}
           </Flex>
         </motion.div>

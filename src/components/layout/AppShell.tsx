@@ -13,6 +13,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useT } from "@/i18n";
 import { useCurrentUser, useIsLocked, useLockStore, useMembersStore, useSessionStore } from "@/lib/auth/session";
+import { FONT_SIZES } from "@/lib/theme";
 import { APP_ROUTES } from "@/lib/navigation/routes";
 import { useDeviceStore } from "@/store/useDeviceStore";
 import { useUiStore } from "@/store/useNavigationStore";
@@ -273,7 +274,7 @@ function KidsLayout({ children }: { children: ReactNode }) {
   useAutoLock();
 
   return (
-    <ConfigProvider componentSize="large" theme={{ token: { fontSize: 18, borderRadius: 16 } }}>
+    <ConfigProvider componentSize="large" theme={{ token: { fontSize: FONT_SIZES.xl, borderRadius: 16 } }}>
       <Layout style={{ minHeight: "100vh", background: token.colorWarningBg }}>
         <Header style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", background: "transparent" }}>
           <HeaderActions />
@@ -290,7 +291,7 @@ function KidsLayout({ children }: { children: ReactNode }) {
               </motion.span>{" "}
               {t("shell.kidsTitle")}
             </Typography.Title>
-            <Typography.Text strong style={{ color: token.colorWarningText, fontSize: 18 }}>
+            <Typography.Text strong style={{ color: token.colorWarningText, fontSize: FONT_SIZES.xl }}>
               {t("shell.kidsSubtitle")}
             </Typography.Text>
           </div>

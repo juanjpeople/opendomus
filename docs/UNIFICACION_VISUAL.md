@@ -58,6 +58,7 @@ Las funciones agregadas después la siguieron cada vez menos. Una auditoría del
   - un color escrito a mano;
   - un `locale === "es" ? … : …`;
   - un ícono lucide con `size`;
+  - un tamaño de letra fijo (`fontSize: 18`);
   - una pieza de `components/ui` o `components/motion` sin documentar en `/design`.
 
   La deuda que ya existe está anotada en `DEBT`, con un número por archivo. Al arreglar un archivo, ese número baja (y la prueba avisa cuando se puede bajar). Nunca sube.
@@ -93,14 +94,15 @@ Cada fase es un PR. Antes de empezar una, recorré `/design` y el flujo correspo
 - `main` en `f7089e6`: CI 37585591101 terminó correctamente. El Android anterior
   fallaba porque su recorrido omitía la configuración de casa incorporada en #36.
   El test ahora elige taller y estantería antes de guardar; el respaldo y el QR usan
-  ese contenedor explícito. Falta ejecutarlo en el emulador Android del CI.
+  ese contenedor explícito. El emulador Android del CI lo aprobó en el run 37619903081
+  (ver «Validación fuera del navegador»).
 - Calendario escolar: el CI 37583946966 agotó 60 segundos esperando “Marcar revisada”
   y pasó al reintentar. La suite completa reprodujo una tarjeta con opacidad cero.
   `setFixedTime` también instala el reloj de Playwright y reemplaza performance/RAF,
   lo que puede desfasarlos del timeline nativo de las animaciones. El test ahora
   fija solo `Date` antes de cargar el documento y conserva los temporizadores reales.
   Comprueba el tipo seleccionado, la tarea visible y la opacidad antes de marcarla.
-  La estabilidad en el runner todavía requiere confirmación del CI.
+  El CI del PR #38 lo aprobó con `failOnFlakyTests`: un reintento no alcanza para pasar.
 - Almacenamiento: se conserva la cámara única con modos y el orden productos →
   compartimentos → anotaciones. En móvil, los selectores de la referencia pasan a
   vertical para que sus nombres sigan siendo legibles.
@@ -125,7 +127,7 @@ Cada fase es un PR. Antes de empezar una, recorré `/design` y el flujo correspo
   límite cero, exclusión de artículos, nombre conservado al cambiar de tipo,
   vista previa única y persistencia del contenedor después de recargar.
 
-### Fase 1: `/design` como estándar ✅ (parcial)
+### Fase 1: `/design` como estándar ✅
 - [x] Nuevo índice:
   - Fundamentos (con Firma visual y Voz);
   - Componentes antd;
@@ -206,6 +208,8 @@ local acumulado se cerró con `EMFILE`; la repetición con servidor nuevo pasó.
 
 **Formularios y catálogo**
 - [x] **StorageForms:** `KindPicker` → `ChoiceCards` v2; una sola vista previa. El cambio de tipo conserva un nombre escrito y permite navegar con flechas.
+  Color e ícono quedan plegados detrás de la vista previa, que funciona como encabezado.
+  Al editar sin abrirlos, se conservan los elegidos (`forceRender`).
 - [x] **CatalogPicker:**
   - categorías como chips de color;
   - entradas con `VisualTile`;
@@ -284,7 +288,8 @@ local acumulado se cerró con `EMFILE`; la repetición con servidor nuevo pasó.
   - [x] `StepFlow`;
   - [x] `ChoiceCards` v2 con íconos;
   - [x] `QuantityStepper` con edición directa;
-  - [x] un `Callout` en lugar de tres descargos.
+  - [x] un `Callout` en lugar de tres descargos;
+  - [x] «Empezar sin precarga» en el pie, como `secondary` de `StepFlow`, junto a la acción principal.
 - [x] **AccountPage y JoinPage:** `StepFlow` con ancho estable, `PanelHeader`, `ResultState` y `TrustNote`.
 - [x] **SocialAccess:**
   - logos de proveedor en SVG inline y divisor "o";
@@ -345,6 +350,8 @@ local acumulado se cerró con `EMFILE`; la repetición con servidor nuevo pasó.
   - cumpleaños con `Cake` de lucide, fecha legible y tamaño heredado;
   - PrivacyPage usa `ListRow`: hover de framer, foco visible, enlace real y nombres completos. Se eliminó el CSS inyectado;
   - el QR usa `token.colorWhite`;
+  - los tamaños de letra fijos pasan a tokens (`fontSizeSM`, `fontSizeLG`, `fontSizeXL`, `fontSizeHeadingN`); el modo chicos usa `FONT_SIZES.xl`. CookModal usa `IconTile`;
+  - las caritas del puntaje infantil y el castillo del título quedan como excepción documentada en Fundamentos;
   - verificados navegación, teclado y permisos por perfil: 9 pruebas aprobadas y una omisión prevista. Capturas: `.playwright-mcp/privacy-verified`. También aprobaron `npm run check` (180 pruebas), compilaciones normal y demo y los 8 recorridos demo (`.playwright-mcp/privacy-demo`).
 
 ### Fase 5: Panel de operador
@@ -392,6 +399,29 @@ Capturas: `.playwright-mcp/operator-complete/` (datos sintéticos).
   después de descifrar. La explicación se contrastó con la API y `sync/policy.ts`,
   y se comprobó en la vista compilada. El servidor no puede leer el contenido cifrado.
 
+### Cierre: pendientes del plan original (8 de octubre de 2026)
+Tras el PR #38 quedaban cuatro detalles del plan original sin aplicar. Ya están resueltos:
+- **Color e ícono plegados en StorageForms.** La vista previa es el encabezado de la sección.
+  Muestra si se usa la apariencia del tipo o una elegida. El patrón (`Collapse` ghost con
+  `forceRender`) quedó documentado en `/design#formularios`. Los formularios ahora se llaman
+  `space` y `container`: sus ids ya no chocan con el formulario de productos. Antes, en la
+  página del contenedor, el campo «Nombre» del modal de edición se quedaba sin etiqueta.
+  La vista previa ya no tapa el nombre.
+- **«Empezar sin precarga» en el pie de HouseSetup.** `StepFlow` suma `secondary`, que va
+  junto a la acción principal. En pantallas angostas, las dos ocupan el ancho. La referencia
+  de entrada en `/design` usa la misma pieza.
+- **Tamaños de letra por tokens** en la app y en `/design`. `design-lint` agrega la regla
+  `fontSize` sin deuda registrada.
+- **Excepción de emojis infantiles** documentada en Fundamentos.
+
+`eslint` ignora `.playwright-mcp/`, donde se guardan las evidencias locales: un informe del
+CI descargado ahí hacía fallar `npm run check`.
+
+Verificación: `npm run check` (181 pruebas), compilaciones normal y demo, suite e2e completa
+(90 aprobadas, 2 omisiones previstas) y demo (8 aprobadas, con el recorrido visual).
+`storage-forms.spec.ts` comprueba que la sección empieza plegada y que se puede elegir un
+color. También comprueba que, al editar sin abrirla, el color elegido se conserva.
+
 ### Validación fuera del navegador
 El CI de Android del PR #38 (`37619903081`, commit `9bb410c`) aprobó sus cinco
 pruebas nativas sin fallas ni omisiones, incluida `offlineOnboardingAndReloadKeepTheHouse`.
@@ -399,6 +429,18 @@ También cubrió permisos e inicio/cierre de cámara, exportación UTF-8, cancel
 y fallo/reintento del respaldo. Los informes y el APK están en los artefactos de ese run.
 Cámara y AR en un Android físico siguen pendientes: el emulador no verifica
 anclajes reales ni las condiciones de iluminación y movimiento del teléfono.
+
+**Primera prueba física (Galaxy A55, Chrome, 8 de octubre de 2026), sobre `8c959f5`:**
+- Escanear QR solo lee la etiqueta muy de cerca. La cámara se pide sin lente,
+  resolución ni enfoque (`facingMode` solamente), y cada cuadro se achica a 640 px
+  antes de buscar el QR. Con el gran angular, la etiqueta queda en pocos píxeles.
+- «Mirar y encontrar» falla por la misma lectura.
+- AR no funcionó en ningún intento. Además, WebXR no conserva las posiciones entre
+  sesiones: no sirve para encontrar lo que se guardó días atrás.
+- La navegación de inventario se siente aparte del resto de la app.
+
+Estos problemas son de funcionamiento y de flujo, no de unificación visual. Se tratan
+en un plan nuevo de cámara e inventario.
 
 ## Cómo verificar cada fase
 1. Corre `npm run check` (typecheck + lint + tests, incluye `design-lint`).

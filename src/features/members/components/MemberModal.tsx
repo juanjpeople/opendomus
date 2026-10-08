@@ -92,7 +92,7 @@ export function MemberModal({ open, member, onClose }: { open: boolean; member?:
                     style={{
                       width: 34,
                       height: 34,
-                      fontSize: 18,
+                      fontSize: token.fontSizeLG,
                       cursor: "pointer",
                       borderRadius: token.borderRadius,
                       border: `1px solid ${emoji === option ? token.colorPrimary : token.colorBorderSecondary}`,

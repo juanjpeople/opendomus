@@ -114,7 +114,7 @@ export function IconGrid({ value, fallback, color, onChange }: IconGridProps) {
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 18,
+                fontSize: token.fontSizeLG,
                 cursor: "pointer",
                 border: "none",
                 borderRadius: token.borderRadius,

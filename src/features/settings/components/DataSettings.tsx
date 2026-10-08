@@ -65,7 +65,7 @@ export function DataSettings() {
       const preview = parseExport(raw);
       modal.confirm({
         title: t("settings.data.import.confirmTitle"),
-        icon: <Upload style={{ color: token.colorWarning, fontSize: 22, marginInlineEnd: 12 }} />,
+        icon: <Upload style={{ color: token.colorWarning, fontSize: token.fontSizeXL, marginInlineEnd: 12 }} />,
         content: (
           <>
             <Typography.Paragraph>
