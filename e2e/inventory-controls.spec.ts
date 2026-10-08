@@ -11,6 +11,8 @@ test("las filas conservan cantidades, deshacer e historial en móvil", async ({ 
   await consume.click();
   await expect(page.getByText("Usaste 1 unidad de Repuesto especial. Quedan 1.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Deshacer", exact: true }).click();
+  // Recargar antes de que se guarde el deshacer lo pierde.
+  await expect(page.getByText("Cambio deshecho", { exact: true })).toBeVisible();
   await page.reload();
   await consume.click();
   await expect(page.getByText("Usaste 1 unidad de Repuesto especial. Quedan 1.", { exact: true })).toBeVisible();

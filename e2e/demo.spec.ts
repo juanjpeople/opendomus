@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { switchToKid } from './fixtures';
 
 async function enter(page: import('@playwright/test').Page) {
   await page.goto('/');
@@ -61,8 +62,7 @@ test('demo: indicador accesible, acciones por permiso y cabecera a 320 px', asyn
   await page.screenshot({ path: testInfo.outputPath('demo-indicador.png'), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await detail.press('Escape');
-  await page.getByRole('button', { name: 'Cambiar de perfil', exact: true }).click();
-  await page.getByRole('menuitem', { name: /Niño/ }).first().click();
+  await switchToKid(page, /Niño/);
   await badge.click();
   await expect(detail).toBeVisible();
   await expect(detail.getByRole('button', { name: 'Restablecer demo', exact: true })).toHaveCount(0);

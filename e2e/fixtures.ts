@@ -28,6 +28,19 @@ async function addItem(page: Page, container: string, name: string, quantity: nu
   await expect(page.getByRole("button", { name: `Ver detalle de ${name}` })).toBeVisible();
 }
 
+/**
+ * Pasa a un perfil infantil desde el menú de la cabecera. En CI el clic a veces sale antes de que
+ * el desplegable termine de ubicarse y se pierde: se reintenta hasta ver el modo Explorador.
+ */
+export async function switchToKid(page: Page, profile: RegExp) {
+  const item = page.getByRole("menuitem", { name: profile }).first();
+  await expect(async () => {
+    if (!(await item.isVisible())) await page.getByRole("button", { name: "Cambiar de perfil", exact: true }).click();
+    await item.click({ timeout: 2_000 });
+    await expect(page.getByText("¡Modo Explorador!", { exact: true })).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 15_000 });
+}
+
 export const test = base.extend<{ home: Page }>({
   // `provide` es el `use` de Playwright (con otro nombre: no es un hook de React).
   home: async ({ page }, provide) => {
