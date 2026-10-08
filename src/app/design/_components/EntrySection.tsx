@@ -20,10 +20,11 @@ const STEPS = {
 
 export function EntrySection() {
   return <DemoBlock id="componentes-entrada" title="Entrada: PanelHeader, Callout, StepFlow, ResultState, TrustNote, SettingRow y ProviderButton"
-    description="El panel conserva el ancho al cambiar de paso. Cada paso tiene un título, una acción principal y un regreso seguro. Los borradores pertenecen al flujo: volver no los borra. Los estados de carga bloquean el doble envío. El foco acompaña el cambio de paso."
+    description="El panel conserva el ancho al cambiar de paso. Cada paso tiene un título, una acción principal y un regreso seguro. Volver queda a la izquierda. Otra salida del paso, como empezar sin precarga, va en secondary, al lado de la acción principal. En pantallas angostas, las dos ocupan el ancho. Los borradores pertenecen al flujo: volver no los borra. Los estados de carga bloquean el doble envío. El foco acompaña el cambio de paso."
     code={`<StepFlow steps={steps} current={current} screenKey={step}
   header={<PanelHeader icon={House} title={t("cloud.house.title")} />}
-  primary={{ label: t("common.save"), onClick: save, loading: busy }}>
+  primary={{ label: t("common.save"), onClick: save, loading: busy }}
+  secondary={{ label: t("houseSetup.empty"), onClick: skip }}>
   <Callout tone="warning">{t("cloud.transfer.replaceText", { name })}</Callout>
   {form}
 </StepFlow>`}>
@@ -95,14 +96,15 @@ export function EntryFlow() {
       <StepFlow steps={steps} current={current} screenKey={`${path}-${current}`} busy={busy}
         header={!done && <PanelHeader icon={path === "local" ? HardDrive : path === "create" ? House : UserPlus} title={step} description={path === "local" ? "Tu casa queda en este dispositivo." : "Tu casa se comparte cifrada."} />}
         back={!done && (current === 1 || (path === "create" && step === "Nombre")) ? { label: "Volver", onClick: () => { setCurrent(current - 1); setError(false); } } : undefined}
-        primary={!done ? { label: step === "Preparar casa" && path === "local" ? "Guardar esta selección" : "Continuar", onClick: next } : undefined}>
+        primary={!done ? { label: step === "Preparar casa" && path === "local" ? "Guardar esta selección" : "Continuar", onClick: next } : undefined}
+        secondary={step === "Preparar casa" ? { label: "Empezar sin precarga", onClick: next } : undefined}>
         {done ? <ResultState title="Tu casa está lista" description={path === "local" ? "La selección quedó guardada en este dispositivo." : "Ya podés entrar con tu perfil."}
           action={<Button type="primary" onClick={() => { setCurrent(0); setError(false); }}>Volver a probar</Button>} /> : <>
           {step === "Acceso" && <><Callout icon={KeyRound} title="Beta por invitación">Necesitás un código de acceso para crear una casa compartida. Empezar en este dispositivo es gratis.</Callout><Input aria-label="Código de ejemplo" value={accessCode} onChange={(event) => setAccessCode(event.target.value)} disabled={busy} placeholder="OD-XXXX-XXXX-XXXX-XXXX" /></>}
           {step === "Invitación" && <><Input aria-label="Invitación de ejemplo" value={invitation} onChange={(event) => setInvitation(event.target.value)} disabled={busy} placeholder="Pegá el enlace que te compartieron" /><TrustNote>El enlace incluye una clave que se usa en tu dispositivo.</TrustNote></>}
           {step === "Cuenta" && <><PanelHeader title={path === "join" ? "Te invitan a Casa del patio" : "Creá tu cuenta"} description={path === "join" ? "Invita Marina · Perfil adulto. Si ya tenés cuenta, entrá con ella." : "Nombre, correo y contraseña con confirmación."} /><Input aria-label="Nombre de ejemplo" value={name} onChange={(event) => setName(event.target.value)} placeholder="Tu nombre" /><TrustNote /></>}
           {step === "Respaldo" && <><Callout tone="warning" icon={KeyRound} title="Guardá el kit de recuperación">Lo necesitás si olvidás la contraseña. No podemos recuperarla por vos.</Callout><Checkbox checked={savedKit} onChange={(event) => setSavedKit(event.target.checked)}>Ya guardé mi kit</Checkbox></>}
-          {step === "Preparar casa" && <><Callout>Elegí ambientes y artículos de ejemplo. Revisá sus cantidades antes de guardar. También podés empezar sin precarga.</Callout><Checkbox.Group disabled={busy} value={rooms} onChange={setRooms} options={["Cocina", "Dormitorio", "Taller"]} /><Typography.Text type="secondary">La revisión final incluye contenedores, cantidades y calendario opcional. Se guarda toda la selección en un solo paso.</Typography.Text><Button disabled={busy} onClick={next}>Empezar sin precarga</Button></>}
+          {step === "Preparar casa" && <><Callout>Elegí ambientes y artículos de ejemplo. Revisá sus cantidades antes de guardar. También podés empezar sin precarga.</Callout><Checkbox.Group disabled={busy} value={rooms} onChange={setRooms} options={["Cocina", "Dormitorio", "Taller"]} /><Typography.Text type="secondary">La revisión final incluye contenedores, cantidades y calendario opcional. Se guarda toda la selección en un solo paso.</Typography.Text></>}
           {step === "Nombre" && <Input aria-label="Nombre de la casa de ejemplo" value={houseName} onChange={(event) => setHouseName(event.target.value)} disabled={busy} placeholder="Casa del patio" />}
           {step === "Perfil" && <Callout title="Elegí tu perfil">Se ofrecen los perfiles disponibles compatibles con tu rol. Si no hay ninguno, se crea uno para vos.</Callout>}
           {error && <Callout tone="danger" role="alert" title={failure ? "No se pudo continuar" : step === "Respaldo" ? "Confirmá que guardaste el kit" : "Ingresá un nombre."}>{failure ? "Tu selección sigue acá. Desactivá el error de ejemplo y volvé a intentar." : undefined}</Callout>}

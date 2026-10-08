@@ -22,6 +22,8 @@ const eslintConfig = defineConfig([
     ".wrangler/**",
     "playwright-report/**",
     "test-results/**",
+    // Evidencias locales de revisión (capturas, trazas, informes del CI descargados).
+    ".playwright-mcp/**",
   ]),
 ]);
 

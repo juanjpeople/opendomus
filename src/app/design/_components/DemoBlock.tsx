@@ -40,7 +40,7 @@ export function DemoBlock({ id, title, description, code, children }: DemoBlockP
                     margin: 0,
                     padding: 16,
                     overflowX: "auto",
-                    fontSize: 13,
+                    fontSize: token.fontSizeSM,
                     fontFamily: "var(--font-geist-mono), monospace",
                     background: token.colorFillQuaternary,
                     borderRadius: token.borderRadius,

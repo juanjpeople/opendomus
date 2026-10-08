@@ -117,6 +117,7 @@ function PinSection({ member, isOwner }: { member: Member; isOwner: boolean }) {
 
 function BiometricSection({ member, isOwner }: { member: Member; isOwner: boolean }) {
   const { t, format } = useI18n();
+  const { token } = theme.useToken();
   const { message } = App.useApp();
   const { addCredential, removeCredential } = useMemberActions();
   const canManage = usePermission("members.manage");
@@ -147,7 +148,7 @@ function BiometricSection({ member, isOwner }: { member: Member; isOwner: boolea
             <div>
               <Typography.Text>{credential.label}</Typography.Text>
               <br />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
                 {t("security.biometric.registered", { date: format.date(credential.createdAt, { dateStyle: "medium" }) })}
               </Typography.Text>
             </div>

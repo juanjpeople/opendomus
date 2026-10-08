@@ -118,6 +118,7 @@ export function SearchTrigger() {
 
 export function UserMenu({ labeled = false, onSelect }: { labeled?: boolean; onSelect?: () => void }) {
   const t = useT();
+  const { token } = theme.useToken();
   const router = useRouter();
   const user = useCurrentUser();
   const signIn = useSessionStore((s) => s.signIn);
@@ -167,7 +168,7 @@ export function UserMenu({ labeled = false, onSelect }: { labeled?: boolean; onS
           ) : screens.sm && (
             <Flex vertical align="flex-start" style={{ lineHeight: 1.2 }}>
               <Typography.Text strong>{user.name}</Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
                 {t(`roles.${user.role}`)}
               </Typography.Text>
             </Flex>

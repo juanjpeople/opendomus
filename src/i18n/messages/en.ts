@@ -537,6 +537,8 @@ export const en: Messages = {
     color: "Color",
     icon: "Icon",
     auto: "Use the type's default",
+    fromKind: "Default color and icon",
+    chosen: "Custom color and icon",
     colors: {
       blue: "Blue",
       geekblue: "Indigo",

@@ -22,11 +22,38 @@ test("los tipos se eligen con teclado sin perder el nombre y conservan una sola 
   // viewport are clipped. Capture the two actual scrolled views instead.
   await dialog.getByRole("radio", { name: "Heladera", exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("contenedor-tipos.png"), animations: "disabled" });
+
+  // Color and icon start folded behind the preview: the type's defaults are enough.
+  const appearance = dialog.getByRole("button", { name: /Color e ícono del tipo/ });
+  await expect(appearance).toHaveAttribute("aria-expanded", "false");
+  await expect(dialog.getByRole("radio", { name: "Violeta", exact: true })).toBeHidden();
+  await appearance.click();
+  await dialog.getByRole("radio", { name: "Violeta", exact: true }).click();
+  const chosen = dialog.getByRole("button", { name: /Color e ícono elegidos/ });
+  await expect(chosen).toHaveAttribute("aria-expanded", "true");
   await dialog.locator("[data-container-kind]").scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("contenedor-apariencia.png"), animations: "disabled" });
+  await chosen.click();
+  await expect(chosen).toHaveAttribute("aria-expanded", "false");
+  await chosen.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("contenedor-plegado.png"), animations: "disabled" });
   await dialog.getByRole("button", { name: "Aceptar", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await page.reload();
   const created = page.getByRole("link", { name: /^Cables para revisar/ });
   await expect(created).toContainText("Canasto");
+
+  // Editing without opening the folded section keeps the chosen color.
+  await created.click();
+  await page.getByRole("button", { name: "Más acciones", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Editar", exact: true }).click();
+  await expect(dialog.getByRole("button", { name: /Color e ícono elegidos/ })).toHaveAttribute("aria-expanded", "false");
+  await dialog.getByLabel("Nombre", { exact: true }).fill("Cables revisados");
+  await dialog.getByRole("button", { name: "Aceptar", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Cables revisados", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Más acciones", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Editar", exact: true }).click();
+  await dialog.getByRole("button", { name: /Color e ícono elegidos/ }).click();
+  await expect(dialog.getByRole("radio", { name: "Violeta", exact: true })).toBeChecked();
 });

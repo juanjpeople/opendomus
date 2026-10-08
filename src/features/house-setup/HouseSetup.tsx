@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Checkbox, Collapse, Flex, Select, Typography, theme } from "antd";
+import { Checkbox, Collapse, Flex, Select, Typography, theme } from "antd";
 import { useState } from "react";
 import { Boxes, House, PackageOpen, ShoppingBasket, ShoppingCart } from "lucide-react";
 import { Reveal } from "@/components/motion";
@@ -59,8 +59,8 @@ export function HouseSetup({ onComplete, onCancel, embedded = false }: { onCompl
     header={<PanelHeader icon={House} title={t("houseSetup.title")} description={t("houseSetup.description")} />}
     busy={busy}
     primary={{ label: t("houseSetup.save"), onClick: () => void finish(false), disabled: groups.some((id) => !rooms.includes(destinations[id])) }}
-    back={onCancel ? { label: t("houseSetup.back"), onClick: onCancel } : undefined}>
-    <Button onClick={() => void finish(true)} disabled={busy}>{t("houseSetup.empty")}</Button>
+    back={onCancel ? { label: t("houseSetup.back"), onClick: onCancel } : undefined}
+    secondary={{ label: t("houseSetup.empty"), onClick: () => void finish(true) }}>
     <Reveal delay={0.05}>
       <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
         <legend>{t("houseSetup.rooms")}</legend>

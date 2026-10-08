@@ -170,7 +170,7 @@ import { HOVER_LIFT, SPRING, TAP } from "@/lib/motion";
         <Col xs={24} md={6}>
           <DemoLabel>AnimatedNumber</DemoLabel>
           <Flex align="center" gap={12}>
-            <Typography.Text style={{ fontSize: 32, fontWeight: 600 }}>
+            <Typography.Text style={{ fontSize: token.fontSizeHeading2, fontWeight: 600 }}>
               <AnimatedNumber value={count} />
             </Typography.Text>
             <Button icon={<Shuffle />} aria-label="Número al azar" onClick={() => setCount(Math.round(Math.random() * 2000))} />

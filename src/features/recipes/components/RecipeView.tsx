@@ -226,7 +226,7 @@ export function IngredientRow({ check, last }: { check: IngredientCheck; last: b
   return (
     <StaggerItem>
       <Flex align="center" gap={12} style={{ paddingBlock: 10, borderBottom: last ? undefined : `1px solid ${token.colorBorderSecondary}` }}>
-        <span style={{ display: "inline-flex", color, fontSize: 18 }}>
+        <span style={{ display: "inline-flex", color, fontSize: token.fontSizeLG }}>
           <Icon />
         </span>
         <Flex vertical style={{ flex: 1, minWidth: 0 }}>

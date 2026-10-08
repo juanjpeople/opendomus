@@ -118,7 +118,7 @@ function UpdateNotice() {
               border: `1px solid ${token.colorBorderSecondary}`,
             }}
           >
-            <span style={{ display: "inline-flex", color: token.colorPrimary, fontSize: 18 }}>
+            <span style={{ display: "inline-flex", color: token.colorPrimary, fontSize: token.fontSizeLG }}>
               <RefreshCw />
             </span>
             <Typography.Text style={{ flex: 1 }}>{t("pwa.update.text")}</Typography.Text>

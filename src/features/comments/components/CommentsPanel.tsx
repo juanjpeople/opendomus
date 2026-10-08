@@ -19,17 +19,18 @@ const FACES = ["😖", "😕", "😐", "🙂", "😍"];
 
 function RatingInput({ value, onChange, kid }: { value: number; onChange: (value: number) => void; kid: boolean }) {
   const { t } = useI18n();
+  const { token } = theme.useToken();
   if (kid) {
     return (
       <Rate
         value={value}
         onChange={onChange}
-        character={({ index = 0 }) => <span style={{ fontSize: 28, filter: index < value ? "none" : "grayscale(1) opacity(0.45)" }}>{FACES[index]}</span>}
+        character={({ index = 0 }) => <span style={{ fontSize: token.fontSizeHeading2, filter: index < value ? "none" : "grayscale(1) opacity(0.45)" }}>{FACES[index]}</span>}
         aria-label={t("comments.rating")}
       />
     );
   }
-  return <Rate value={value} onChange={onChange} aria-label={t("comments.rating")} style={{ fontSize: 22 }} />;
+  return <Rate value={value} onChange={onChange} aria-label={t("comments.rating")} style={{ fontSize: token.fontSizeXL }} />;
 }
 
 /** Comentarios con puntaje opcional. Cada perfil puede opinar ("le puse menos sal", ★★★★). */
@@ -100,7 +101,7 @@ export function CommentsPanel({ ownerType, ownerId }: { ownerType: CommentOwner;
                 <Flex vertical gap={2} style={{ flex: 1, minWidth: 0 }}>
                   <Flex align="center" gap={8} wrap>
                     <Typography.Text strong>{comment.authorName}</Typography.Text>
-                    {comment.rating && <Rate disabled value={comment.rating} style={{ fontSize: 12 }} />}
+                    {comment.rating && <Rate disabled value={comment.rating} style={{ fontSize: token.fontSizeSM }} />}
                     <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }} title={format.date(comment.createdAt, { dateStyle: "full", timeStyle: "short" })}>
                       {format.relative(comment.createdAt, now)}
                     </Typography.Text>

@@ -97,7 +97,7 @@ function MatrixBlock() {
       render: (_, { permission }) => (
         <Flex vertical>
           <Typography.Text>{t(`permissions.${permission}`)}</Typography.Text>
-          <Typography.Text type="secondary" code style={{ fontSize: 12 }}>
+          <Typography.Text type="secondary" code style={{ fontSize: token.fontSizeSM }}>
             {permission}
           </Typography.Text>
         </Flex>

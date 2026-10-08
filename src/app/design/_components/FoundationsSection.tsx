@@ -25,8 +25,8 @@ const APP_ICONS = { House, Refrigerator, Wrench, ShoppingCart, Palette, UserRoun
 const PRINCIPLES = [
   ["Esta página es el estándar", "Nada se usa en una pantalla si antes no está acá. Primero se arma o se arregla la pieza en @/components/ui, después se muestra acá con sus variantes, y recién ahí se adopta. Una prueba (design-lint) verifica que todo lo exportado esté documentado."],
   ["Componentes", "antd primero. Si un patrón se repite 2+ veces, se extrae a @/components/ui. Antes de crear uno, revisá Componentes propios y Flujos."],
-  ["Colores y espacios", "Siempre desde theme.useToken(). Nunca hex escritos a mano: rompen el modo oscuro y el color de marca."],
-  ["Íconos", "Solo lucide-react. El tamaño lo hereda del texto (1em) vía LucideProvider."],
+  ["Colores, espacios y letra", "Siempre desde theme.useToken(). Nunca hex escritos a mano: rompen el modo oscuro y el color de marca. Los tamaños de letra también salen del tema (fontSizeSM, fontSizeLG, fontSizeXL): así siguen la preferencia de cada perfil."],
+  ["Íconos", "Solo lucide-react. El tamaño lo hereda del texto (1em) vía LucideProvider. Excepción: en el modo infantil, el puntaje de Comentarios usa caritas y el título lleva un castillo. Son emojis porque se entienden sin leer."],
   ["Permisos", "Preguntar por permisos (can, usePermission, <Can>), nunca por rol. La matriz vive en lib/auth/permissions.ts."],
   ["Datos", "La UI no escribe en db: usa los hooks del feature, que llaman al servicio (y el servicio verifica permisos)."],
   ["Páginas", "page.tsx es Server Component (metadata) y renderiza componentes cliente del feature."],
@@ -58,6 +58,7 @@ src/
 `;
 
 export function FoundationsSection() {
+  const { token } = theme.useToken();
   return (
     <>
       <DemoBlock
@@ -117,10 +118,10 @@ import { Wrench } from "lucide-react";
           {Object.entries(APP_ICONS).map(([name, Icon]) => (
             <Col key={name} xs={8} sm={6} md={4}>
               <Flex vertical align="center" gap={4}>
-                <span style={{ fontSize: 24, display: "inline-flex" }}>
+                <span style={{ fontSize: token.fontSizeHeading3, display: "inline-flex" }}>
                   <Icon />
                 </span>
-                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
                   {name}
                 </Typography.Text>
               </Flex>
@@ -235,10 +236,10 @@ function MiComponente() {
                 }}
               />
               <Flex vertical style={{ minWidth: 0 }}>
-                <Typography.Text style={{ fontSize: 12 }} ellipsis>
+                <Typography.Text style={{ fontSize: token.fontSizeSM }} ellipsis>
                   {name}
                 </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: 11 }} ellipsis>
+                <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }} ellipsis>
                   {token[name]}
                 </Typography.Text>
               </Flex>
