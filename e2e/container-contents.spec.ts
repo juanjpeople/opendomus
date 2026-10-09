@@ -1,19 +1,21 @@
-import { expect, test } from "./fixtures";
+import { addNote, expect, test } from "./fixtures";
 
 test("un QR abre fotos y contenido libre del taller, también sin conexión", async ({ home: page, context }, testInfo) => {
   if (testInfo.project.name === "celular") await page.setViewportSize({ width: 320, height: 740 });
   await page.goto("/inventario");
   await page.getByText("Estantería de herramientas", { exact: true }).first().click();
   await page.waitForURL(/inventario\/ver\?id=/);
-  await expect(page.getByRole("heading", { name: "Qué hay acá", exact: true })).toBeAttached();
+  // Vacío: un solo estado con las formas de agregar, en lugar de tres vacíos sueltos.
+  await expect(page.getByRole("heading", { name: "Todavía está vacío", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Qué hay acá", exact: true })).toHaveCount(0);
+  const code = (await page.getByText(/Código [A-Z0-9]{4}/).innerText()).match(/Código ([A-Z0-9]{4})/)![1];
+  await addNote(page, "Cables sueltos");
+  // Con algo adentro, lo que tiene va sección por sección: productos, anotaciones y fotos.
+  await expect(page.getByRole("heading", { name: "Todavía está vacío", exact: true })).toHaveCount(0);
   const headings = await page.getByRole("main").getByRole("heading").allTextContents();
   expect(headings.indexOf("Herramientas, insumos y productos")).toBeGreaterThanOrEqual(0);
-  expect(headings.indexOf("Compartimentos")).toBeGreaterThan(headings.indexOf("Herramientas, insumos y productos"));
-  expect(headings.indexOf("Qué hay acá")).toBeGreaterThan(headings.indexOf("Compartimentos"));
-  const code = (await page.getByText(/Código [A-Z0-9]{4}/).innerText()).match(/Código ([A-Z0-9]{4})/)![1];
-  await page.getByRole("textbox", { name: "Contenido guardado" }).fill("Cables sueltos");
-  await page.getByRole("button", { name: "Anotar", exact: true }).click();
-  await expect(page.getByText("Cables sueltos", { exact: true })).toBeVisible();
+  expect(headings.indexOf("Qué hay acá")).toBeGreaterThan(headings.indexOf("Herramientas, insumos y productos"));
+  expect(headings.indexOf("Fotos del contenedor")).toBeGreaterThan(headings.indexOf("Qué hay acá"));
   await page.getByRole("button", { name: "Editar anotación: Cables sueltos" }).click();
   await page.getByRole("textbox", { name: "Editar anotación", exact: true }).fill("Borrador cancelado");
   await page.getByRole("textbox", { name: "Editar anotación", exact: true }).press("Escape");
@@ -24,9 +26,7 @@ test("un QR abre fotos y contenido libre del taller, también sin conexión", as
   await page.getByRole("button", { name: "Guardar anotación", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Editar anotación", exact: true })).toBeHidden();
   await expect(page.getByRole("button", { name: "Editar anotación: Cables USB viejos" })).toBeFocused();
-  await page.getByRole("textbox", { name: "Contenido guardado" }).fill("Piezas por identificar");
-  await page.getByRole("button", { name: "Anotar", exact: true }).click();
-  await expect(page.getByText("Piezas por identificar", { exact: true })).toBeVisible();
+  await addNote(page, "Piezas por identificar");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => innerWidth));
 
   const png = await page.evaluate(() => {

@@ -44,15 +44,23 @@ for (const colorScheme of ["light", "dark"] as const) {
     await providers.getByRole("checkbox", { name: "Simular espera" }).uncheck();
     await providers.getByRole("button", { name: "Reiniciar ejemplo" }).click();
     const storage = page.locator("#flujo-almacenamiento");
-    await storage.getByText("2 · Contenedor", { exact: true }).click();
+    await storage.getByText("2 · Recinto", { exact: true }).click();
+    await expect(storage.getByRole("heading", { name: "Taller", exact: true })).toBeVisible();
+    await settleCapture(page, storage);
+    await storage.screenshot({ path: testInfo.outputPath(`${colorScheme}-design-recinto.png`), animations: "disabled", style: "header { visibility: hidden !important; }" });
+    await storage.getByText("3 · Contenedor", { exact: true }).click();
     await expect(storage.getByRole("heading", { name: "Alacena", exact: true })).toBeVisible();
     await settleCapture(page, storage);
     await storage.screenshot({ path: testInfo.outputPath(`${colorScheme}-design-contenedor.png`), animations: "disabled", style: "header { visibility: hidden !important; }" });
-    await storage.getByText("3 · Cámara", { exact: true }).click();
+    await storage.getByText("4 · Ficha", { exact: true }).click();
+    await expect(storage.getByRole("navigation", { name: "Dónde está", exact: true })).toBeVisible();
+    await settleCapture(page, storage);
+    await storage.screenshot({ path: testInfo.outputPath(`${colorScheme}-design-ficha.png`), animations: "disabled", style: "header { visibility: hidden !important; }" });
+    await storage.getByText("5 · Cámara", { exact: true }).click();
     await expect(storage.getByRole("heading", { name: "Cámara", exact: true })).toBeVisible();
-    for (const mode of ["Escanear QR", "Mirar y encontrar", "AR"]) {
+    for (const mode of ["Escanear QR", "Buscar", "AR espacial"]) {
       await storage.getByText(mode, { exact: true }).click();
-      await expect(storage.getByRole("radio", { name: mode, exact: true })).toBeChecked();
+      await expect(storage.getByRole("radio", { name: new RegExp(`^${mode}`) })).toBeChecked();
       await settleCapture(page, storage);
       await storage.screenshot({ path: testInfo.outputPath(`${colorScheme}-design-camara-${mode}.png`), animations: "disabled", style: "header { visibility: hidden !important; }" });
     }
@@ -64,7 +72,10 @@ for (const colorScheme of ["light", "dark"] as const) {
       });
     }
     await page.goto("/inventario");
-    await page.getByRole("link", { name: /^Caja de recuerdos y piezas sueltas/ }).click();
+    await page.getByRole("link", { name: /^Taller/ }).first().click();
+    await expect(page.getByRole("heading", { name: "Taller", exact: true })).toBeVisible();
+    await capture("recinto");
+    await page.getByRole("link", { name: /^Caja de recuerdos y piezas sueltas/ }).first().click();
     await expect(page.getByText("Tres cables USB viejos para revisar", { exact: true })).toBeVisible();
     await capture("contenedor");
   });

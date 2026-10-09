@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, Button, Flex, Form, Input, Modal, Segmented, Typography, theme } from "antd";
+import { Alert, Button, Flex, Form, Grid, Input, Modal, Segmented, Typography, theme } from "antd";
 import { Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -19,6 +19,7 @@ export function LabelModal({ labels, open, onClose }: LabelModalProps) {
   const t = useT();
   const { token } = theme.useToken();
   const { baseUrl, size, setBaseUrl, setSize } = useLabelSettings();
+  const screens = Grid.useBreakpoint();
   const [printing, setPrinting] = useState(false);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const effectiveBase = baseUrl || origin;
@@ -53,11 +54,14 @@ export function LabelModal({ labels, open, onClose }: LabelModalProps) {
         <Form layout="vertical">
           <Form.Item label={t("labels.size")}>
             <Segmented<LabelSize>
+              vertical={!screens.sm}
+              block={!screens.sm}
               value={size}
               onChange={setSize}
               options={(Object.keys(LABEL_SIZES) as LabelSize[]).map((value) => ({ value, label: t(`labels.sizes.${value}`) }))}
             />
           </Form.Item>
+          {size === "shelf" && <Typography.Paragraph type="secondary" style={{ marginTop: -token.marginXS }}>{t("labels.shelfHint")}</Typography.Paragraph>}
           <Form.Item label={t("labels.baseUrl")} extra={t("labels.baseUrlHelp")}>
             <Input value={baseUrl} placeholder={origin} onChange={(event) => setBaseUrl(event.target.value)} inputMode="url" />
           </Form.Item>
@@ -74,7 +78,7 @@ export function LabelModal({ labels, open, onClose }: LabelModalProps) {
           style={{ marginTop: 8, padding: 16, maxHeight: 280, overflowY: "auto", borderRadius: token.borderRadiusLG, background: token.colorFillTertiary }}
         >
           {labels.map((label) => (
-            <div key={label.id} style={{ boxShadow: token.boxShadowTertiary, borderRadius: 2, zoom: width > 60 ? 1.1 : 1.3 }}>
+            <div key={label.id} style={{ boxShadow: token.boxShadowTertiary, borderRadius: 2, zoom: width >= 90 ? 0.8 : width > 60 ? 1.1 : 1.3 }}>
               <ContainerLabel label={label} size={size} url={containerQrUrl(effectiveBase, label.code)} />
             </div>
           ))}

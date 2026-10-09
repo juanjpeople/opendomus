@@ -1,4 +1,4 @@
-import { Boxes, CalendarDays, ChefHat, HardHat, House, MessageSquare, Palette, ScanLine, Settings, ShieldCheck, ShoppingCart, Sparkles, Users, type LucideIcon } from "lucide-react";
+import { Boxes, CalendarDays, ChefHat, HardHat, House, MapPin, MessageSquare, Palette, ScanLine, Settings, ShieldCheck, ShoppingCart, Sparkles, Users, type LucideIcon } from "lucide-react";
 import type { MessageKey } from "@/i18n/translate";
 import type { Permission } from "@/lib/auth/permissions";
 
@@ -28,6 +28,7 @@ export interface AppRoute {
 export const APP_ROUTES: AppRoute[] = [
   { id: "home", href: "/", labelKey: "nav.routes.home", icon: House, section: "main" },
   { id: "inventory", href: "/inventario", labelKey: "nav.routes.inventory", icon: Boxes, permission: "inventory.view", section: "main" },
+  { id: "space", href: "/inventario/lugar", labelKey: "nav.routes.space", icon: MapPin, permission: "inventory.view", section: "main", parent: "inventory", hidden: true, needsId: true },
   { id: "container", href: "/inventario/ver", labelKey: "nav.routes.container", icon: Boxes, permission: "inventory.view", section: "main", parent: "inventory", hidden: true, needsId: true },
   { id: "scan", href: "/inventario/escanear", labelKey: "nav.routes.scan", icon: ScanLine, permission: "inventory.view", section: "main", parent: "inventory", hidden: true },
   { id: "camera", href: "/inventario/camara", labelKey: "camera.title", icon: ScanLine, permission: "inventory.view", section: "main", parent: "inventory", hidden: true },
@@ -54,8 +55,19 @@ export const APP_ROUTES: AppRoute[] = [
 // Páginas fijas que leen el id de la URL (`?id=`): sin rutas dinámicas, la app se publica como
 // sitio estático (Cloudflare Pages, la NAS, Android). Siempre armarlas con estas funciones.
 
-export const containerHref = (id: string) => `/inventario/ver?id=${encodeURIComponent(id)}`;
-export const cameraHref = (id?: string) => `/inventario/camara${id ? `?id=${encodeURIComponent(id)}` : ""}`;
+export const spaceHref = (id: string) => `/inventario/lugar?id=${encodeURIComponent(id)}`;
+/** `item`: abre la ficha de ese producto al llegar (búsqueda, Ctrl+K, avisos). */
+export const containerHref = (id: string, options: { item?: string } = {}) =>
+  `/inventario/ver?id=${encodeURIComponent(id)}${options.item ? `&item=${encodeURIComponent(options.item)}` : ""}`;
+/** La cámara puede arrancar con un contenedor elegido (`id`) o buscando solo en un recinto (`space`). */
+export const cameraHref = (scope: string | { id?: string; space?: string } = {}) => {
+  const { id, space } = typeof scope === "string" ? { id: scope, space: undefined } : scope;
+  const query = new URLSearchParams();
+  if (id) query.set("id", id);
+  if (space) query.set("space", space);
+  const search = query.toString();
+  return `/inventario/camara${search ? `?${search}` : ""}`;
+};
 export const recipeHref = (id: string) => `/recetas/ver?id=${encodeURIComponent(id)}`;
 export const projectHref = (id: string) => `/proyectos/ver?id=${encodeURIComponent(id)}`;
 /** Destino de un QR leído en la app. (Las etiquetas impresas usan `/c/<código>`: ver `not-found.tsx`.) */
@@ -69,7 +81,7 @@ export function legacyRedirect(pathname: string): string | null {
   const qr = pathname.match(/^\/c\/([^/]+)\/?$/);
   if (qr) return qrHref(decodeURIComponent(qr[1]));
   const container = pathname.match(/^\/inventario\/([^/]+)\/?$/);
-  if (container && !["ver", "escanear", "camara"].includes(container[1])) return containerHref(decodeURIComponent(container[1]));
+  if (container && !["ver", "lugar", "escanear", "camara"].includes(container[1])) return containerHref(decodeURIComponent(container[1]));
   if (pathname === "/alacena" || pathname === "/taller") return "/inventario";
   return null;
 }

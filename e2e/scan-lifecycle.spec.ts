@@ -1,5 +1,5 @@
 import QRCode from "qrcode";
-import { test, expect, addItem } from "./fixtures";
+import { test, expect, addItem, addNote, chooseView } from "./fixtures";
 
 // El headless-shell devuelve NotSupportedError para getUserMedia; usar Chromium completo.
 // CI no tiene cámara física. Chromium aporta un dispositivo virtual, pero mantiene
@@ -111,12 +111,14 @@ test("cámara: cambiar de modo descarta permisos pendientes y conserva la búsqu
   await page.getByRole("textbox", { name: "¿Qué buscás?" }).fill("arroz");
   await page.getByRole("button", { name: "Activar cámara" }).click();
   await expect(page.getByRole("button", { name: "Detener", exact: true })).toBeVisible();
-  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("AR", { exact: true }).click();
+  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("AR espacial", { exact: true }).click();
   await expect(page.getByRole("button", { name: "Entrar en AR" })).toBeDisabled();
+  // El diagnóstico dice por qué no hay AR, para poder reportarlo.
+  await expect(page.getByText("Diagnóstico: navigator.xr", { exact: true })).toBeVisible();
   await expect(page.locator("video")).toHaveCount(0);
   await page.evaluate(() => (window as unknown as { cameraTest: { grant(): void } }).cameraTest.grant());
   await expect.poll(() => page.evaluate(() => (window as unknown as { cameraTest: { stopped: number } }).cameraTest.stopped)).toBe(1);
-  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("Mirar y encontrar", { exact: true }).click();
+  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("Buscar", { exact: true }).click();
   await expect(page.getByRole("textbox", { name: "¿Qué buscás?" })).toHaveValue("arroz");
   await expect(page.getByRole("button", { name: "Activar cámara" })).toBeVisible();
   await expect(page.locator("video")).toHaveCount(1);
@@ -132,10 +134,9 @@ test("cámara: encontrar muestra productos y notas; QR abre la ficha", async ({ 
   if (testInfo.project.name === "celular") await page.setViewportSize({ width: 320, height: 780 });
   await addItem(page, "Alacena", "Arroz de prueba", 3, 1);
   const containerUrl = page.url();
-  await page.getByRole("textbox", { name: "Contenido guardado" }).fill("Frasco azul");
-  await page.getByRole("button", { name: "Anotar", exact: true }).click();
-  await expect(page.getByText("Frasco azul", { exact: true })).toBeVisible();
+  await addNote(page, "Frasco azul");
   await page.goto("/inventario");
+  await chooseView(page, "Plano");
   await page.getByRole("button", { name: "Etiqueta: Alacena", exact: true }).click();
   const code = await page.locator(".od-label").locator("div").last().textContent();
   expect(code?.trim()).toMatch(/^[A-Z0-9]{4}$/);
@@ -155,6 +156,8 @@ test("cámara: encontrar muestra productos y notas; QR abre la ficha", async ({ 
   await page.goto("/inventario/camara");
   await page.getByRole("button", { name: "Activar cámara" }).click();
   await expect(page.getByRole("heading", { name: "Alacena", exact: true })).toBeVisible();
+  // Una burbuja sobre la etiqueta a la vista: tocarla abre la caja.
+  await expect(page.getByRole("button", { name: "Abrir Alacena", exact: true })).toBeVisible();
   await expect(page.getByText("Arroz de prueba", { exact: true })).toBeVisible();
   await expect(page.getByText("Frasco azul", { exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/inventario\/camara$/);
@@ -162,7 +165,7 @@ test("cámara: encontrar muestra productos y notas; QR abre la ficha", async ({ 
   await expect(page.getByText("Frasco azul", { exact: true })).toHaveCount(0);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await page.screenshot({ path: testInfo.outputPath("encontrar.png"), fullPage: true, animations: "disabled" });
-  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("AR", { exact: true }).click();
+  await page.getByRole("radiogroup", { name: "Modo de cámara" }).getByText("AR espacial", { exact: true }).click();
   await expect(page.getByText("Vista previa de la tarjeta", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Entrar en AR" })).toBeDisabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -175,6 +178,47 @@ test("cámara: encontrar muestra productos y notas; QR abre la ficha", async ({ 
 });
 
 
+test("cámara: un producto de un compartimento abre su contenedor desde la lista y la etiqueta", async ({ home: page }) => {
+  await page.goto("/inventario");
+  await page.getByRole("link", { name: /^Alacena/ }).first().click();
+  const code = (await page.getByText(/Código [A-Z0-9]{4}/).innerText()).match(/Código ([A-Z0-9]{4})/)![1];
+  await page.getByRole("button", { name: "Agregar compartimento", exact: true }).first().click();
+  const form = page.getByRole("dialog", { name: "Agregar compartimento", exact: true });
+  await form.getByLabel("Nombre", { exact: true }).fill("Cajón de especias");
+  await form.getByRole("button", { name: "Aceptar", exact: true }).click();
+  await expect(form).toBeHidden();
+  await page.getByRole("link", { name: /^Cajón de especias/ }).click();
+  await addItem(page, "Cajón de especias", "Pimentón ahumado", 2, 1);
+  const childId = new URL(page.url()).searchParams.get("id")!;
+  await page.addInitScript((code) => {
+    Object.defineProperty(window, "BarcodeDetector", { configurable: true, value: class {
+      static async getSupportedFormats() { return ["qr_code"]; }
+      async detect() { return [{ rawValue: code, cornerPoints: [{ x: 20, y: 20 }, { x: 80, y: 20 }, { x: 80, y: 80 }, { x: 20, y: 80 }] }]; }
+    } });
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", { value: async () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 100;
+      canvas.getContext("2d")!.fillRect(0, 0, 100, 100);
+      return canvas.captureStream(10);
+    } });
+  }, code);
+  for (const source of ["list", "label"]) {
+    await page.goto("/inventario/camara");
+    await page.getByRole("textbox", { name: "¿Qué buscás?" }).fill("pimentón");
+    if (source === "label") {
+      await page.getByRole("button", { name: "Activar cámara", exact: true }).click();
+      await page.getByRole("button", { name: "Abrir Alacena", exact: true }).click();
+    } else {
+      await page.getByRole("link", { name: "Abrir Alacena", exact: true }).click();
+    }
+    await expect.poll(() => new URL(page.url()).searchParams.get("id")).toBe(childId);
+    await expect(page.getByRole("heading", { name: "Cajón de especias", exact: true })).toBeVisible();
+    await expect(page.getByRole("dialog")).toContainText("Pimentón ahumado");
+    await page.getByRole("dialog").getByRole("button", { name: "Cerrar", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Ver detalle de Pimentón ahumado", exact: true })).toBeVisible();
+  }
+});
+
 test("cámara: búsqueda manual y AR sin soporte en inglés", async ({ home: page }, testInfo) => {
   await page.setViewportSize({ width: 320, height: 780 });
   await page.emulateMedia({ colorScheme: "dark" });
@@ -185,7 +229,7 @@ test("cámara: búsqueda manual y AR sin soporte en inglés", async ({ home: pag
   await page.getByRole("combobox", { name: "Container to display" }).fill("Alacena");
   await page.getByText("Cocina › Alacena", { exact: true }).click();
   await expect(page.getByRole("heading", { name: "Alacena", exact: true })).toBeVisible();
-  await page.getByRole("radiogroup", { name: "Camera mode" }).getByText("AR", { exact: true }).click();
+  await page.getByRole("radiogroup", { name: "Camera mode" }).getByText("Spatial AR", { exact: true }).click();
   await expect(page.getByText("Card preview", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Enter AR" })).toBeDisabled();
   await expect(page.getByRole("link", { name: "Open details" })).toBeVisible();

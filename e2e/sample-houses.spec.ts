@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { addItem, selectTestSpaces } from './fixtures';
+import { addItem, selectTestSpaces, addNote } from './fixtures';
 
 test('casas integradas: demo y pruebas conservan cambios sin tocar la casa habitual', async ({ page }, testInfo) => {
   const errors: string[] = [];
@@ -17,9 +17,8 @@ test('casas integradas: demo y pruebas conservan cambios sin tocar la casa habit
   await page.getByRole('button', { name: 'Explorar casa demo', exact: true }).click();
   await page.getByRole('heading', { name: 'Administrador', exact: true }).click();
   await page.goto('/inventario');
-  await page.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).click();
-  await page.getByLabel('Contenido guardado', { exact: true }).fill('Solo en demo, nunca en mi casa');
-  await page.getByRole('button', { name: 'Anotar', exact: true }).click();
+  await page.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).first().click();
+  await addNote(page, 'Solo en demo, nunca en mi casa');
   await expect(page.getByText('Solo en demo, nunca en mi casa', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Casa demo · datos ficticios', exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath('demo-cambiar-casa.png'), animations: 'disabled' });
@@ -28,7 +27,7 @@ test('casas integradas: demo y pruebas conservan cambios sin tocar la casa habit
   await page.getByRole('heading', { name: 'Administrador', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Casa de pruebas · datos ficticios', exact: true })).toBeVisible();
   await page.goto('/inventario');
-  await page.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).click();
+  await page.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).first().click();
   await expect(page.getByText('Solo en demo, nunca en mi casa', { exact: true })).toHaveCount(0);
   await page.goto('/recetas');
   await expect(page.getByText('Pizza de la familia', { exact: true })).toBeVisible();
@@ -36,7 +35,7 @@ test('casas integradas: demo y pruebas conservan cambios sin tocar la casa habit
   await page.getByRole('link', { name: 'Explorar casa demo', exact: true }).click();
   await page.getByRole('button', { name: 'Explorar casa demo', exact: true }).click();
   await page.goto('/inventario');
-  await page.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).click();
+  await page.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).first().click();
   await expect(page.getByText('Solo en demo, nunca en mi casa', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Casa demo · datos ficticios', exact: true }).click();
   await page.getByRole('link', { name: 'Volver a mi casa', exact: true }).click();

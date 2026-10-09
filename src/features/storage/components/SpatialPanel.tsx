@@ -16,6 +16,9 @@ export function SpatialPanel({ cards, selectedId, onSelect, beforeStart }: {
   const { token } = theme.useToken();
   const palette = useOverlayPalette();
   const [supported, setSupported] = useState<boolean | null>(null);
+  // Por qué no hay AR, para poder reportarlo: sin WebXR, sin AR inmersivo, o el error del navegador.
+  const [reason, setReason] = useState<"no-xr" | "no-ar" | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState(false);
   const [starting, setStarting] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -34,7 +37,15 @@ export function SpatialPanel({ cards, selectedId, onSelect, beforeStart }: {
 
   useEffect(() => {
     let alive = true;
-    void (spatialSystem()?.isSessionSupported("immersive-ar") ?? Promise.resolve(false)).then((result) => { if (alive) setSupported(result); }).catch(() => { if (alive) setSupported(false); });
+    const system = spatialSystem();
+    // Sin WebXR, la respuesta es null: se distingue de "hay WebXR pero no AR inmersivo".
+    void (system ? system.isSessionSupported("immersive-ar") : Promise.resolve(null))
+      .then((result) => {
+        if (!alive) return;
+        setSupported(result === true);
+        setReason(result === null ? "no-xr" : result ? null : "no-ar");
+      })
+      .catch((cause: unknown) => { if (alive) { setSupported(false); setReason("no-ar"); setError(cause instanceof Error ? cause.name : String(cause)); } });
     return () => { alive = false; release(); };
   }, [release]);
   useEffect(() => { controller.current?.select(selectedId); }, [selectedId, active]);
@@ -43,7 +54,7 @@ export function SpatialPanel({ cards, selectedId, onSelect, beforeStart }: {
   async function start() {
     if (!overlay.current || !selectedId || pending.current || controller.current) return;
     beforeStart(); pending.current = true;
-    setStarting(true); setFailed(false); setCount(0); setStatus("searching");
+    setStarting(true); setFailed(false); setError(null); setCount(0); setStatus("searching");
     const current = ++generation.current;
     const valid = () => current === generation.current;
     try {
@@ -54,15 +65,20 @@ export function SpatialPanel({ cards, selectedId, onSelect, beforeStart }: {
       }, palette);
       if (!valid()) { await session.end(); return; }
       controller.current = session; setActive(true);
-    } catch { if (valid()) { setFailed(true); setActive(false); } }
+    } catch (cause) { if (valid()) { setFailed(true); setActive(false); setError(cause instanceof Error ? cause.name : String(cause)); } }
     finally { if (valid()) { pending.current = false; setStarting(false); } }
   }
 
   return <>
     <SectionHeader title={t("spatial.title")} description={t("spatial.description")} />
     <Typography.Paragraph type="secondary">{t("spatial.sessionOnly")}</Typography.Paragraph>
-    {supported === false && <Callout>{t("spatial.unsupported")}</Callout>}
+    {supported === false && <Callout>{t(reason === "no-xr" ? "spatial.noXr" : "spatial.unsupported")}</Callout>}
     {failed && <Callout tone="warning" role="alert">{t("spatial.failed")}</Callout>}
+    {(supported === false || failed) && (
+      <Typography.Paragraph type="secondary" style={{ fontSize: token.fontSizeSM }}>
+        {t("spatial.diagnostic", { detail: error ?? (reason === "no-xr" ? "navigator.xr" : "immersive-ar") })}
+      </Typography.Paragraph>
+    )}
     <Button type="primary" icon={<Crosshair />} loading={starting} disabled={!supported || !selectedId || active} onClick={start}>{t("spatial.start")}</Button>
     <div ref={overlay} style={{ display: active || starting ? "flex" : "none", position: "fixed", inset: 0, zIndex: 3000, flexDirection: "column", justifyContent: "space-between", padding: `max(${token.padding}px, env(safe-area-inset-top)) ${token.padding}px max(${token.paddingLG}px, env(safe-area-inset-bottom))`, pointerEvents: "none", background: "transparent" }}>
       <div style={{ background: palette.background, color: palette.text, borderRadius: token.borderRadiusLG, padding: token.padding, pointerEvents: "auto" }}>

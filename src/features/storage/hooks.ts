@@ -2,7 +2,7 @@
 
 import { App } from "antd";
 import { useLiveQuery } from "dexie-react-hooks";
-import { getStockStatus } from "@/features/inventory/domain";
+import { getStockStatus, type InventoryItem } from "@/features/inventory/domain";
 import { useT } from "@/i18n";
 import { useCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -144,6 +144,31 @@ export function useContainer(id: string | undefined) {
       ancestors: ancestors.map(({ id: ancestorId, name }) => ({ id: ancestorId, name })),
     };
   }, [id]);
+}
+
+export interface AttentionItem {
+  item: InventoryItem;
+  status: "low" | "empty";
+  container: Container;
+  /** "Cocina › Alacena". */
+  path: string;
+}
+
+/** Lo que está por acabarse o agotado, con dónde está. Primero lo agotado. `spaceId` limita a un recinto. */
+export function useAttentionItems(spaceId?: string) {
+  return useLiveQuery(async () => {
+    const [spaces, containers, items] = await Promise.all([db.spaces.toArray(), db.containers.toArray(), db.inventory.toArray()]);
+    const byId = new Map(containers.map((container) => [container.id, container]));
+    const spaceNames = new Map(spaces.map((space) => [space.id, space.name]));
+    return items
+      .flatMap((item): AttentionItem[] => {
+        const status = getStockStatus(item);
+        const container = byId.get(item.containerId);
+        if (status === "ok" || !container || (spaceId && container.spaceId !== spaceId)) return [];
+        return [{ item, status, container, path: [spaceNames.get(container.spaceId), pathLabel(container.id, byId)].filter(Boolean).join(" › ") }];
+      })
+      .sort((a, b) => (a.status === b.status ? a.item.name.localeCompare(b.item.name) : a.status === "empty" ? -1 : 1));
+  }, [spaceId]);
 }
 
 /** Resuelve el código de una etiqueta. `null` si no está en este dispositivo. */

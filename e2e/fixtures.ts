@@ -21,11 +21,29 @@ async function addItem(page: Page, container: string, name: string, quantity: nu
     await page.getByText(container, { exact: true }).first().click();
     await page.waitForURL(/inventario\/ver\?id=/);
   }
-  await page.getByPlaceholder("Ej. Leche, Taladro, Pilas AA").fill(name);
-  await page.getByLabel("Cantidad").fill(String(quantity));
-  await page.getByLabel("Mínimo").fill(String(min));
-  await page.getByRole("button", { name: "Agregar", exact: true }).click();
+  // El alta va en un diálogo: la página muestra primero lo que hay.
+  await page.getByRole("button", { name: "Agregar producto", exact: true }).first().click();
+  const dialog = page.getByRole("dialog", { name: /^Agregar producto a / });
+  await dialog.getByPlaceholder("Ej. Leche, Taladro, Pilas AA").fill(name);
+  await dialog.getByLabel("Cantidad").fill(String(quantity));
+  await dialog.getByLabel("Mínimo").fill(String(min));
+  await dialog.getByRole("button", { name: "Agregar", exact: true }).click();
+  await expect(dialog).toBeHidden();
   await expect(page.getByRole("button", { name: `Ver detalle de ${name}` })).toBeVisible();
+}
+
+/** Anota algo en el contenedor abierto. El campo se abre con "Nueva anotación" y queda abierto. */
+export async function addNote(page: Page, text: string) {
+  const input = page.getByRole("textbox", { name: "Contenido guardado", exact: true });
+  if (!(await input.isVisible())) await page.getByRole("button", { name: "Nueva anotación", exact: true }).first().click();
+  await input.fill(text);
+  await page.getByRole("button", { name: "Anotar", exact: true }).click();
+  await expect(page.getByText(text, { exact: true })).toBeVisible();
+}
+
+/** Cambia la vista de Inventario (se guarda por perfil). En celular el selector muestra solo íconos: se toca por su title. */
+export async function chooseView(page: Page, view: "Lugares" | "Plano" | "Lista" | "Tarjetas") {
+  await page.getByTitle(view, { exact: true }).click();
 }
 
 /**

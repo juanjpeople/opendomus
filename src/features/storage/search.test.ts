@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { indexStorage, searchStorage } from "./search";
+import { indexStorage, matchedItem, searchStorage } from "./search";
 import { cameraContents } from "./camera-content";
 import type { Container, ContainerContent, Space } from "./domain";
 import type { InventoryItem } from "@/features/inventory/domain";
@@ -31,4 +31,11 @@ test("la cámara de una estantería incluye los productos y notas de sus cajas",
   assert.equal(content.notes[0].text, "Piezas del lavarropas viejo");
   assert.equal(cameraContents("shelf", containers, items, notes, "lavarropas").items.length, 0);
   assert.equal(cameraContents("box", containers, items, notes, "acero").items.length, 1);
+});
+
+test("si coincide un producto, el resultado abre su ficha", () => {
+  const index = indexStorage(spaces, containers, items, notes);
+  const [entry] = searchStorage(index, "mechas acero");
+  assert.deepEqual(matchedItem(entry, "mechas acero"), { id: "bit", name: "Mechas de acero" });
+  assert.equal(matchedItem(searchStorage(index, "lavarropas")[0], "lavarropas"), undefined);
 });

@@ -6,7 +6,7 @@ Está pensado para que lo pueda seguir cualquier persona o agente, una fase por 
 **La referencia es `/design`.** Usa el código real, y ahí están la firma visual, los tokens de
 movimiento, las piezas compartidas y cuatro flujos de referencia:
 - **Recetas:** tal como se ve hoy, la referencia de calidad.
-- **Almacenamiento:** adoptado en el plano, el detalle y la cámara; la prueba de AR en un Android real sigue pendiente.
+- **Almacenamiento:** rehecho como una de las estrellas de la app: vistas a elección, página por recinto, ruta tocable, contenedor por secciones, ficha reordenada y cámara que lee varias etiquetas. Detalle en [INVENTARIO.md](INVENTARIO.md); la medición en un Android real sigue pendiente.
 - **Catálogo:** filtrar por rubro, consultar referencias y elegir; usa el selector real sin guardar existencias.
 - **Entrada:** casa local, crear cuenta y unirse; sus piezas ya se adoptan en las pantallas de entrada.
 
@@ -439,8 +439,30 @@ anclajes reales ni las condiciones de iluminación y movimiento del teléfono.
   sesiones: no sirve para encontrar lo que se guardó días atrás.
 - La navegación de inventario se siente aparte del resto de la app.
 
-Estos problemas son de funcionamiento y de flujo, no de unificación visual. Se tratan
-en un plan nuevo de cámara e inventario.
+Estos problemas son de funcionamiento y de flujo, no de unificación visual. Se trataron
+en el plan de cámara e inventario: ver [INVENTARIO.md](INVENTARIO.md). Falta repetir la
+prueba en el A55 y anotar ahí las distancias medidas.
+
+### Cierre del inventario y cámara (8 de octubre de 2026)
+
+El inventario incorpora Lugares, Plano, Lista y Tarjetas, páginas de recintos y enlaces
+directos a productos. Las preferencias se guardan por perfil. `/design` muestra los
+recorridos y las piezas compartidas `PathCrumbs`, `PlaceCard`, `PlaceChip` y `ViewSwitcher`.
+“Para reponer” usa los mismos accesos compactos en la app y en el flujo de referencia.
+
+La búsqueda de cámara abre el contenedor exacto del producto, incluso si lo detecta a
+través de la etiqueta del mueble padre. Una prueba en escritorio y celular verifica
+ambos accesos: resultado de búsqueda y burbuja sobre la etiqueta. El test de edición
+espera llegar al contenedor antes de abrir “Más acciones”, para no tocar el menú del
+recinto anterior durante la navegación.
+
+Verificación local: `npm run check` (194 pruebas, tipos y lint), compilaciones normal
+y demo, 28 pruebas de inventario, cámara, formularios y temas, y las ocho pruebas de
+demo aprobadas (recorrido visual en claro/oscuro y escritorio/celular). La primera
+suite general dio 93 aprobadas, dos omisiones previstas y la carrera de navegación
+del test de edición; ese test pasó en ambas pantallas después del ajuste. La evidencia
+está en `.playwright-mcp/inventory-final/`. La validación física de cámara/AR en el A55
+sigue pendiente; las capturas y las cámaras simuladas no miden distancias de lectura.
 
 ## Cómo verificar cada fase
 1. Corre `npm run check` (typecheck + lint + tests, incluye `design-lint`).

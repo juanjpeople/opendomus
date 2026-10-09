@@ -130,9 +130,15 @@ public class NativeFlowTest {
             evaluate(scenario, "[...document.querySelectorAll('h5')].find(e => e.textContent === 'Administrador').click()");
             await(scenario, "JSON.parse(localStorage.getItem('opendomus-session') || '{}').state?.currentProfileId");
             scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario"));
-            await(scenario, "[...document.querySelectorAll('a')].some(e => /Estantería de herramientas|Tool shelf/.test(e.textContent))");
-            tap(scenario, "[...document.querySelectorAll('a')].find(e => /Estantería de herramientas|Tool shelf/.test(e.textContent))");
-            await(scenario, "location.pathname === '/inventario/ver' && document.querySelector('input[aria-label=\"Stored contents\"],input[aria-label=\"Contenido guardado\"]')");
+            // Se entra por la tarjeta del recinto y después por su mueble, como lo haría una persona.
+            await(scenario, "[...document.querySelectorAll('a[href^=\"/inventario/lugar\"]')].some(e => /Taller de herramientas|Tool workshop/.test(e.textContent))");
+            tap(scenario, "[...document.querySelectorAll('a[href^=\"/inventario/lugar\"]')].find(e => /Taller de herramientas|Tool workshop/.test(e.textContent))");
+            await(scenario, "location.pathname === '/inventario/lugar' && [...document.querySelectorAll('a[href^=\"/inventario/ver\"]')].some(e => /Estantería de herramientas|Tool shelf/.test(e.textContent))");
+            tap(scenario, "[...document.querySelectorAll('a[href^=\"/inventario/ver\"]')].find(e => /Estantería de herramientas|Tool shelf/.test(e.textContent))");
+            // El campo para anotar se abre con un botón: "Nueva anotación" lo abre y "Anotar" guarda.
+            await(scenario, "location.pathname === '/inventario/ver' && [...document.querySelectorAll('button')].some(b => /^(Nueva anotación|New note)$/.test(b.textContent.trim()))");
+            tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Nueva anotación|New note)$/.test(b.textContent.trim()))");
+            await(scenario, "document.querySelector('input[aria-label=\"Stored contents\"],input[aria-label=\"Contenido guardado\"]')");
             evaluate(scenario, "(() => {const e=document.querySelector('input[aria-label=\"Stored contents\"],input[aria-label=\"Contenido guardado\"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'Cables Android'); e.dispatchEvent(new Event('input',{bubbles:true}));})()");
             evaluate(scenario, "[...document.querySelectorAll('button')].find(b => /^(Anotar|Add note)$/.test(b.textContent.trim())).click()");
             await(scenario, "document.body.innerText.includes('Cables Android')");

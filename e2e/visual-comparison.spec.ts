@@ -31,7 +31,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await capture(route.replaceAll("/", "-"));
     }
     await page.goto("/inventario");
-    await page.getByRole("link", { name: /^Caja de recuerdos y piezas sueltas/ }).click();
+    await page.getByRole("link", { name: /^Caja de recuerdos y piezas sueltas/ }).first().click();
     await expect(page.getByText("Tres cables USB viejos para revisar", { exact: true })).toBeVisible();
     await capture("contenedor");
     await page.goto("/design");

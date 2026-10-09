@@ -12,17 +12,31 @@ import { ContainerScene } from "./ContainerScene";
 import { VisualTile } from "@/components/ui";
 import { normalizeSearch } from "@/lib/search";
 
-/** Tarjeta de un contenedor (o compartimento): ícono y color propios, totales y barra de stock. */
-export function ContainerTile({ container, onLabel }: { container: ContainerOverview; onLabel: () => void }) {
+/** Resumen de una línea: el tipo (si el nombre no lo dice) y qué tiene adentro. */
+export function useContainerSummary() {
   const t = useT();
+  return (container: ContainerOverview) => {
+    const kind = t(`storage.containerKinds.${container.kind}`);
+    const contents = container.itemCount > 0
+      ? t("storage.itemCount", { count: container.itemCount })
+      : container.contentCount > 0 ? t("storage.noteCount", { count: container.contentCount }) : null;
+    return [normalizeSearch(container.name).includes(normalizeSearch(kind)) ? null : kind, contents,
+      container.children.length > 0 ? t("storage.childCount", { count: container.children.length }) : null].filter(Boolean).join(" · ");
+  };
+}
+
+/**
+ * Tarjeta de un contenedor (o compartimento): ícono y color propios, totales y barra de stock.
+ * `meta` reemplaza el resumen (la vista de tarjetas muestra dónde está).
+ */
+export function ContainerTile({ container, onLabel, meta }: { container: ContainerOverview; onLabel?: () => void; meta?: string }) {
+  const t = useT();
+  const summary = useContainerSummary();
   const { color } = containerAppearance(container);
-  const kind = t(`storage.containerKinds.${container.kind}`);
-  const meta = [normalizeSearch(container.name).includes(normalizeSearch(kind)) ? null : kind,
-    container.itemCount > 0 ? t("storage.itemCount", { count: container.itemCount }) : null].filter(Boolean).join(" · ");
   return <VisualTile href={containerHref(container.id)} color={color}
-    media={<ContainerScene container={container} />} title={container.name} meta={meta || undefined}
+    media={<ContainerScene container={container} />} title={container.name} meta={meta ?? (summary(container) || undefined)}
     footer={container.itemCount > 0 ? <StockBar ok={container.itemCount - container.needsAttention} low={container.low} empty={container.empty} /> : undefined}
-    action={{ icon: <QrCode />, label: `${t("storage.label")}: ${container.name}`, onClick: onLabel }} />;
+    action={onLabel ? { icon: <QrCode />, label: `${t("storage.label")}: ${container.name}`, onClick: onLabel } : undefined} />;
 }
 
 /** Barra de estado del contenido: verde en stock, ámbar bajo, rojo agotado (gris si está vacío). */
