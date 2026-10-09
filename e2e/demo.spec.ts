@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { switchToKid } from './fixtures';
+import { addNote, switchToKid } from './fixtures';
 
 async function enter(page: import('@playwright/test').Page) {
   await page.goto('/');
@@ -18,18 +18,17 @@ test('demo: acceso sin cuenta, datos completos, aislamiento, persistencia y rein
   await page.getByRole('button',{name:'Ver detalle de Taladro percutor 13 mm',exact:true}).click();
   await expect(page.getByText('Comercio de ejemplo — precio ficticio').first()).toBeVisible();
   await page.goto('/inventario');
-  await page.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).click();
+  await page.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).first().click();
   await expect(page.getByText('Tres cables USB viejos para revisar', {exact:true})).toBeVisible();
   await expect(page.locator('img').first()).toBeVisible();
-  await page.getByLabel('Contenido guardado', {exact:true}).fill('Anotación exclusiva del visitante A');
-  await page.getByRole('button',{name:'Anotar',exact:true}).click();
+  await addNote(page, 'Anotación exclusiva del visitante A');
   await page.reload();
   await expect(page.getByText('Anotación exclusiva del visitante A',{exact:true})).toBeVisible();
   const other=await browser.newContext({baseURL:'http://localhost:4188',locale:'es-AR'});
   try {
     const second=await other.newPage(); await enter(second);
     await second.goto('/inventario');
-    await second.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).click();
+    await second.getByRole('link', { name: /^Caja de recuerdos y piezas sueltas/ }).first().click();
     await expect(second.getByText('Anotación exclusiva del visitante A',{exact:true})).toHaveCount(0);
   } finally {await other.close();}
   await page.getByRole('button', { name: 'Casa demo · datos ficticios', exact: true }).click();

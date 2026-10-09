@@ -2,33 +2,9 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { isLocale } from "@/i18n/config";
 
-import { AUTO_LOCK_OPTIONS, DEFAULT_PREFERENCES, type Preferences } from "@/lib/preferences";
+import { DEFAULT_PREFERENCES, isValidPreference, sanitizePreferences as sanitize, type Preferences } from "@/lib/preferences";
 export * from "@/lib/preferences";
-
-/** Opciones válidas por clave: lo que se lee de localStorage se valida contra esto (puede estar editado a mano). */
-const VALID: { [K in keyof Preferences]: (value: unknown) => boolean } = {
-  themeMode: (v) => v === "light" || v === "dark" || v === "system",
-  brandColor: (v) => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v),
-  borderRadius: (v) => typeof v === "number" && v >= 0 && v <= 20,
-  fontSize: (v) => v === "sm" || v === "md" || v === "lg" || v === "xl",
-  density: (v) => v === "comfortable" || v === "compact",
-  motion: (v) => v === "system" || v === "reduced" || v === "full",
-  locale: (v) => v === "system" || isLocale(v),
-  sidebar: (v) => v === "expanded" || v === "collapsed" || v === "hidden",
-  autoLockMinutes: (v) => (AUTO_LOCK_OPTIONS as readonly unknown[]).includes(v),
-};
-
-function sanitize(input: unknown): Partial<Preferences> {
-  if (!input || typeof input !== "object") return {};
-  const out: Partial<Record<keyof Preferences, unknown>> = {};
-  for (const key of Object.keys(VALID) as (keyof Preferences)[]) {
-    const value = (input as Record<string, unknown>)[key];
-    if (VALID[key](value)) out[key] = value;
-  }
-  return out as Partial<Preferences>;
-}
 
 /** `null` = sin sesión (selector de perfil, landing): se escribe en los valores del dispositivo. */
 type Scope = string | null;
@@ -52,7 +28,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       device: DEFAULT_PREFERENCES,
       profiles: {},
       setPreference: (scope, key, value) => {
-        if (!VALID[key](value)) return;
+        if (!isValidPreference(key, value)) return;
         set((state) =>
           scope === null
             ? { device: { ...state.device, [key]: value } }

@@ -7,13 +7,13 @@ import { useAllInventoryItems } from "@/features/inventory/hooks";
 import { useProjects } from "@/features/projects/hooks";
 import { useRecipeNames } from "@/features/recipes/hooks";
 import { listName, useListSummaries } from "@/features/shopping/hooks";
-import { containerAppearance } from "@/features/storage/domain";
-import { useContainers } from "@/features/storage/hooks";
+import { containerAppearance, spaceAppearance } from "@/features/storage/domain";
+import { useContainers, useSpaces } from "@/features/storage/hooks";
 import { useSetPreference } from "@/hooks/usePreferences";
 import { LOCALE_META, LOCALES, useI18n } from "@/i18n";
 import { can } from "@/lib/auth/permissions";
 import { useCurrentUser, useSessionStore } from "@/lib/auth/session";
-import { containerHref, findRoute, projectHref, recipeHref } from "@/lib/navigation/routes";
+import { containerHref, findRoute, projectHref, recipeHref, spaceHref } from "@/lib/navigation/routes";
 import { useNavigationStore } from "@/store/useNavigationStore";
 import { useVisibleRoutes } from "./Navigation";
 
@@ -40,6 +40,7 @@ export function useCommands(): Command[] {
   const signOut = useSessionStore((s) => s.signOut);
   const recent = useNavigationStore((s) => (user ? s.recent[user.id] : undefined));
   const containers = useContainers();
+  const spaces = useSpaces();
   const items = useAllInventoryItems();
   const recipes = useRecipeNames();
   const lists = useListSummaries();
@@ -49,6 +50,7 @@ export function useCommands(): Command[] {
     const visible = new Set(routes.map((route) => route.id));
 
     const containerById = new Map((containers ?? []).map((container) => [container.id, container]));
+    const spaceById = new Map((spaces ?? []).map((space) => [space.id, space]));
 
     const recipeById = new Map((recipes ?? []).map((recipe) => [recipe.id, recipe]));
     const projectById = new Map((projects ?? []).map((summary) => [summary.project.id, summary.project]));
@@ -63,6 +65,8 @@ export function useCommands(): Command[] {
         const go = () => router.push(visit.href);
         const container = route.id === "container" ? containerById.get(id) : undefined;
         if (container) return [{ id: `recent:${visit.href}`, group: "recent", label: container.name, icon: containerAppearance(container).Icon, run: go }];
+        const space = route.id === "space" ? spaceById.get(id) : undefined;
+        if (space) return [{ id: `recent:${visit.href}`, group: "recent", label: space.name, icon: spaceAppearance(space).Icon, run: go }];
         const recipe = route.id === "recipe" ? recipeById.get(id) : undefined;
         if (recipe) return [{ id: `recent:${visit.href}`, group: "recent", label: recipe.name, icon: ChefHat, run: go }];
         const project = route.id === "project" ? projectById.get(id) : undefined;
@@ -71,6 +75,17 @@ export function useCommands(): Command[] {
       }
       return [{ id: `recent:${visit.href}`, group: "recent", label: t(route.labelKey), icon: route.icon, run: () => router.push(route.href) }];
     }).slice(0, 4);
+
+    const spaceCommands: Command[] = visible.has("inventory")
+      ? (spaces ?? []).map((space) => ({
+          id: `space:${space.id}`,
+          group: "containers",
+          label: space.name,
+          icon: spaceAppearance(space).Icon,
+          keywords: t(`storage.spaceKinds.${space.kind}`),
+          run: () => router.push(spaceHref(space.id)),
+        }))
+      : [];
 
     const containerCommands: Command[] = visible.has("inventory")
       ? (containers ?? []).map((container) => ({
@@ -94,7 +109,7 @@ export function useCommands(): Command[] {
               group: "items",
               label: `${item.name} · ${container.spaceName} › ${container.path}`,
               icon: Package,
-              run: () => router.push(containerHref(item.containerId)),
+              run: () => router.push(containerHref(item.containerId, { item: item.id })),
             },
           ];
         })
@@ -168,6 +183,6 @@ export function useCommands(): Command[] {
       { id: "session:signout", group: "actions", label: t("palette.actions.signOut"), icon: LogOut, run: signOut },
     ];
 
-    return [...recentCommands, ...pageCommands, ...containerCommands, ...itemCommands, ...recipeCommands, ...listCommands, ...actionCommands];
-  }, [routes, recent, containers, items, recipes, lists, projects, user, t, locale, router, setPreference, signOut]);
+    return [...recentCommands, ...pageCommands, ...spaceCommands, ...containerCommands, ...itemCommands, ...recipeCommands, ...listCommands, ...actionCommands];
+  }, [routes, recent, spaces, containers, items, recipes, lists, projects, user, t, locale, router, setPreference, signOut]);
 }

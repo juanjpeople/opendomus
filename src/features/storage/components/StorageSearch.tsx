@@ -11,7 +11,7 @@ import { containerHref } from "@/lib/navigation/routes";
 import { highlightSearch, normalizeSearch } from "@/lib/search";
 import { EmptyState, IconTile, ListRow } from "@/components/ui";
 import { containerAppearance } from "../domain";
-import { indexStorage, searchStorage } from "../search";
+import { indexStorage, matchedItem, searchStorage } from "../search";
 
 function Highlight({ text, query }: { text: string; query: string }) {
   return highlightSearch(text, query).map((part, index) => part.matched ? <Typography.Text mark key={index}>{part.text}</Typography.Text> : part.text);
@@ -40,11 +40,12 @@ export function StorageSearch() {
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
           <AnimatePresence initial={false}>{results.slice(0, limit).map((entry, index) => {
             const matched = entry.contents.filter((text) => terms.some((term) => normalizeSearch(text).includes(term)));
+            const item = matchedItem(entry, deferred);
             const { color, Icon } = containerAppearance(entry.container);
             return <li key={entry.container.id}><ListRow index={index} divider={index < Math.min(results.length, limit) - 1}
-              href={containerHref(entry.container.id)} openLabel={entry.path}
+              href={containerHref(entry.container.id, { item: item?.id })} openLabel={item ? t("storage.search.openItem", { name: item.name, place: entry.path }) : entry.path}
               leading={<IconTile icon={Icon} color={color} size={token.controlHeight} />}
-              title={<Highlight text={matched[0] ?? entry.container.name} query={deferred} />}
+              title={<Highlight text={item?.name ?? matched[0] ?? entry.container.name} query={deferred} />}
               meta={<><span style={{ overflowWrap: "anywhere" }}><Highlight text={entry.path} query={deferred} /></span><span style={{ fontFamily: "var(--font-geist-mono)", color: token.colorTextTertiary }}>{t("storage.code")} <Highlight text={entry.container.code} query={deferred} /></span></>} />
             </li>;
           })}</AnimatePresence>

@@ -17,6 +17,7 @@ import { useInventoryTotals } from "@/features/inventory/hooks";
 import { useShoppingCounts } from "@/features/shopping/hooks";
 import { spaceAppearance } from "@/features/storage/domain";
 import { useStorageOverview, type SpaceOverview } from "@/features/storage/hooks";
+import { spaceHref } from "@/lib/navigation/routes";
 import { useNow } from "@/hooks/useNow";
 import { useI18n, useT, type MessageKey } from "@/i18n";
 import dayjs from "dayjs";
@@ -154,7 +155,7 @@ function SpaceCard({ space }: { space: SpaceOverview }) {
   const attention = space.containers.reduce((sum, container) => sum + container.needsAttention, 0);
 
   return (
-    <DashboardCard href={`/inventario#recinto-${space.id}`} icon={spaceAppearance(space).Icon} color={spaceAppearance(space).color} title={space.name}>
+    <DashboardCard href={spaceHref(space.id)} icon={spaceAppearance(space).Icon} color={spaceAppearance(space).color} title={space.name}>
       <Flex align="baseline" gap={6}>
         <Typography.Text style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
           <AnimatedNumber value={itemCount} />

@@ -2,17 +2,22 @@
 
 import { Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
-import type { ReactNode, RefObject, VideoHTMLAttributes } from "react";
-import { SPRING } from "@/lib/motion";
+import type { CSSProperties, ReactNode, RefObject, VideoHTMLAttributes } from "react";
+import { SPRING, TAP } from "@/lib/motion";
 
 export interface CameraDetection {
+  /** Identidad estable (el código de la etiqueta): la burbuja sigue a su etiqueta sin parpadear. */
+  id: string;
   /** Centro de lo detectado, de 0 a 1 sobre el visor. */
   x: number;
   y: number;
   title: ReactNode;
   detail?: ReactNode;
-  /** match: es de la casa (y coincide con la búsqueda) · unknown: no se reconoce o no coincide. */
-  tone?: "match" | "unknown";
+  /** match: de la casa y coincide · unknown: no se reconoce · dim: de la casa, pero no tiene lo buscado. */
+  tone?: "match" | "unknown" | "dim";
+  /** Tocar la burbuja (abrir el contenedor). Le da nombre accesible con `label`. */
+  onSelect?: () => void;
+  label?: string;
 }
 
 interface CameraViewportProps {
@@ -25,7 +30,10 @@ interface CameraViewportProps {
   aspectRatio?: string;
   /** Marco de QR con la línea que barre (modo escanear). */
   frame?: boolean;
-  detection?: CameraDetection | null;
+  /** Una burbuja por etiqueta a la vista. */
+  detections?: CameraDetection[];
+  /** Controles sobre el video, abajo (lente, zoom). */
+  controls?: ReactNode;
   /** Capas extra encima (tarjetas AR, ayudas). */
   children?: ReactNode;
 }
@@ -34,12 +42,12 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 
 /**
  * El visor de cámara de toda la app: fondo oscuro en ambos temas, marco y línea de escaneo
- * en el color de marca, y una burbuja que sigue a lo detectado con resorte.
+ * en el color de marca, y burbujas que siguen a cada etiqueta con resorte.
  * Todo se anima con transform, así "reducir movimiento" lo frena.
  */
-export function CameraViewport({ videoRef, videoProps, active = false, placeholder, aspectRatio = "4 / 3", frame = false, detection, children }: CameraViewportProps) {
+export function CameraViewport({ videoRef, videoProps, active = false, placeholder, aspectRatio = "4 / 3", frame = false, detections = [], controls, children }: CameraViewportProps) {
   const { token } = theme.useToken();
-  const toneColor = detection?.tone === "unknown" ? token.colorWarning : token.colorSuccess;
+  const tones = { match: token.colorSuccess, unknown: token.colorWarning, dim: token.colorTextQuaternary };
 
   return (
     <div
@@ -76,38 +84,59 @@ export function CameraViewport({ videoRef, videoProps, active = false, placehold
       )}
 
       <AnimatePresence>
-        {detection && (
-          <motion.div
-            key="detection"
-            layout
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={SPRING.soft}
-            role="status"
-            style={{ position: "absolute", left: `${clamp(detection.x, 0.1, 0.9) * 100}%`, top: `${clamp(detection.y, 0.15, 0.85) * 100}%`, width: 0, height: 0 }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                transform: "translate(-50%, -50%)",
-                width: "max-content",
-                maxWidth: 240,
-                padding: "10px 14px",
-                borderRadius: token.borderRadiusLG,
-                border: `2px solid ${toneColor}`,
-                background: token.colorBgSpotlight,
-                backdropFilter: "blur(8px)",
-              }}
-            >
-              <Typography.Text strong style={{ display: "block", color: "inherit" }}>
-                {detection.title}
-              </Typography.Text>
+        {detections.map((detection) => {
+          const color = tones[detection.tone ?? "match"];
+          const dim = detection.tone === "dim";
+          const bubble: CSSProperties = {
+            position: "absolute",
+            transform: "translate(-50%, -50%)",
+            width: "max-content",
+            maxWidth: "min(240px, 70vw)",
+            padding: `${token.paddingXS + 2}px ${token.paddingSM + 2}px`,
+            borderRadius: token.borderRadiusLG,
+            border: `2px solid ${color}`,
+            background: token.colorBgSpotlight,
+            backdropFilter: "blur(8px)",
+            color: "inherit",
+            font: "inherit",
+            textAlign: "start",
+            opacity: dim ? 0.7 : 1,
+            cursor: detection.onSelect ? "pointer" : undefined,
+          };
+          const content = (
+            <>
+              <Typography.Text strong style={{ display: "block", color: "inherit" }}>{detection.title}</Typography.Text>
               {detection.detail && <div style={{ fontSize: token.fontSizeSM, opacity: 0.85 }}>{detection.detail}</div>}
-            </div>
-          </motion.div>
-        )}
+            </>
+          );
+          return (
+            <motion.div
+              key={detection.id}
+              layout
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: dim ? 0.92 : 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={SPRING.soft}
+              role="status"
+              // La posición va en el estilo: `layout` la acompaña con transform cuando la etiqueta se mueve.
+              style={{ position: "absolute", left: `${clamp(detection.x, 0.1, 0.9) * 100}%`, top: `${clamp(detection.y, 0.12, 0.82) * 100}%`, width: 0, height: 0, zIndex: dim ? 1 : 2 }}
+            >
+              {detection.onSelect ? (
+                <motion.button type="button" onClick={detection.onSelect} aria-label={detection.label} whileTap={{ scale: TAP.control }} className="od-focusable" style={{ ...bubble, "--od-ring": color } as CSSProperties}>
+                  {content}
+                </motion.button>
+              ) : (
+                <div style={bubble}>{content}</div>
+              )}
+            </motion.div>
+          );
+        })}
       </AnimatePresence>
+      {controls && (
+        <div style={{ position: "absolute", insetInline: 0, bottom: 0, display: "flex", justifyContent: "center", padding: token.paddingSM, pointerEvents: "none" }}>
+          <div style={{ pointerEvents: "auto" }}>{controls}</div>
+        </div>
+      )}
       {children}
     </div>
   );

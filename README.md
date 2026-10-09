@@ -152,6 +152,8 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Contenedores: fotos y contenido libre
 
+Navegación, vistas, cámara, etiquetas y cómo probar en un celular: [Inventario](docs/INVENTARIO.md).
+
 En Inventario, abrí un contenedor (o escaneá su etiqueta QR). **Qué hay acá** permite
 anotar cables, recuerdos o piezas sin identificar y adjuntar hasta 12 fotos, sin crear
 stock ni sugerencias de compra. Cada anotación se edita o elimina por separado; hay un

@@ -88,7 +88,7 @@ function legacyTarget(pathname) {
   const qr = pathname.match(/^\/c\/([^/]+)\/?$/);
   if (qr) return "/c?code=" + qr[1];
   const container = pathname.match(/^\/inventario\/([^/]+)\/?$/);
-  if (container && container[1] !== "ver" && container[1] !== "escanear") return "/inventario/ver?id=" + container[1];
+  if (container && !["ver", "lugar", "escanear", "camara"].includes(container[1])) return "/inventario/ver?id=" + container[1];
   return null;
 }
 

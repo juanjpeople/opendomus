@@ -45,6 +45,7 @@ test("los tipos se eligen con teclado sin perder el nombre y conservan una sola 
 
   // Editing without opening the folded section keeps the chosen color.
   await created.click();
+  await expect(page.getByRole("heading", { name: "Cables para revisar", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Más acciones", exact: true }).click();
   await page.getByRole("menuitem", { name: "Editar", exact: true }).click();
   await expect(dialog.getByRole("button", { name: /Color e ícono elegidos/ })).toHaveAttribute("aria-expanded", "false");

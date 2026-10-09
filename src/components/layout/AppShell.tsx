@@ -236,7 +236,8 @@ function DefaultLayout({ children }: { children: ReactNode }) {
             borderBottom: `1px solid ${token.colorBorderSecondary}`,
           }}
         >
-          <Flex align="center" gap={4} style={{ minWidth: 0 }}>
+          {/* Toma solo el espacio que sobra: unas migas largas se recortan en lugar de bajar las acciones a otro renglón. */}
+          <Flex align="center" gap={4} style={isMobile ? { minWidth: 0 } : { flex: "1 1 0", minWidth: token.controlHeight * (mode === "hidden" ? 3 : 2) + 16 }}>
             {mode === "hidden" && (
               <Tooltip title={isMobile ? undefined : `${t("common.openMenu")} (Ctrl+B)`}>
                 <Button type="text" aria-label={t("common.openMenu")} icon={<Menu />} style={isMobile ? { width: 44, height: 44 } : undefined} onClick={toggleSidebar} />

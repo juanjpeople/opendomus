@@ -4,9 +4,10 @@ import { formatUnit } from "@/features/inventory/format";
 
 import { Button, Card, Flex, Popconfirm, Skeleton, Typography, theme } from "antd";
 import { AnimatePresence } from "framer-motion";
+import { useEffect } from "react";
 import { PackageOpen, Tag as PriceTag, Trash2 } from "lucide-react";
 import { Can } from "@/components/auth/Can";
-import { EmptyState, IconTile, ListRow, QuantityStepper, StockTag } from "@/components/ui";
+import { IconTile, ListRow, QuantityStepper, StockTag } from "@/components/ui";
 import { usePriceSummaries } from "@/features/prices/hooks";
 import { useI18n } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
@@ -20,9 +21,11 @@ interface InventoryListProps {
   containerId: string;
   /** Abre el detalle del producto (datos, lugar y precios). */
   onOpen: (itemId: string) => void;
+  /** Producto al que se llegó (`?item=`): se resalta y se lleva a la vista. */
+  highlightId?: string | null;
 }
 
-export function InventoryList({ containerId, onOpen }: InventoryListProps) {
+export function InventoryList({ containerId, onOpen, highlightId }: InventoryListProps) {
   const { token } = theme.useToken();
   const { t, format } = useI18n();
   const items = useInventoryItems(containerId);
@@ -30,12 +33,20 @@ export function InventoryList({ containerId, onOpen }: InventoryListProps) {
   const { adjust, remove } = useInventoryActions();
   const canAdjust = usePermission("inventory.adjust");
   const unitLabel = (unit: string, count: number) => (formatUnit(t, count, unit));
+  const loaded = items !== undefined;
+  useEffect(() => {
+    if (loaded && highlightId) document.getElementById(`item-${highlightId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [loaded, highlightId]);
 
   return (
     <Card styles={{ body: { padding: 0 } }}>
       {items === undefined && <Skeleton active style={{ padding: 24 }} />}
 
-      {items?.length === 0 && <EmptyState icon={PackageOpen} title={t("inventory.list.emptyTitle")} description={t("inventory.list.emptyText")} />}
+      {items?.length === 0 && (
+        <Typography.Paragraph type="secondary" style={{ margin: 0, padding: `${token.padding}px ${token.paddingLG}px` }}>
+          {t("inventory.list.emptyShort")}
+        </Typography.Paragraph>
+      )}
 
       <AnimatePresence>
         {items?.map((item, index) => {
@@ -43,7 +54,7 @@ export function InventoryList({ containerId, onOpen }: InventoryListProps) {
           const category = findCatalogProduct(item.name)?.category;
           const appearance = category ? CATEGORY_APPEARANCE[category] : undefined;
           return (
-            <ListRow key={item.id} index={index} divider={index < items.length - 1}
+            <ListRow key={item.id} id={`item-${item.id}`} highlighted={item.id === highlightId} index={index} divider={index < items.length - 1}
               title={item.name} leading={<IconTile icon={appearance?.Icon ?? PackageOpen} color={appearance?.color} size={token.controlHeight} />}
               onOpen={() => onOpen(item.id)} openLabel={t("inventory.list.openAria", { name: item.name })}
               meta={<>

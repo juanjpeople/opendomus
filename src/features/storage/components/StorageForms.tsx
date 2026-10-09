@@ -77,7 +77,7 @@ function AppearanceFields({ defaults, containerKind }: { defaults: { color: Appe
   );
 }
 
-export function SpaceModal({ open, space, onClose }: { open: boolean; space?: Space; onClose: () => void }) {
+export function SpaceModal({ open, space, onClose, onCreated }: { open: boolean; space?: Space; onClose: () => void; onCreated?: (id: string) => void }) {
   const t = useT();
   const { token } = theme.useToken();
   const [form] = Form.useForm<NewSpace>();
@@ -98,7 +98,9 @@ export function SpaceModal({ open, space, onClose }: { open: boolean; space?: Sp
     setSaving(true);
     const ok = space ? await updateSpace(space.id, values) : await createSpace(values);
     setSaving(false);
-    if (ok) onClose();
+    if (!ok) return;
+    onClose();
+    if (!space && typeof ok === "string") onCreated?.(ok);
   }
 
   return (

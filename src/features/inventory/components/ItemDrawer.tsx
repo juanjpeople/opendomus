@@ -1,24 +1,28 @@
 "use client";
 
-import { formatQuantity } from "@/features/inventory/format";
+import { formatQuantity, formatUnit } from "@/features/inventory/format";
 
-import { App, Button, Col, Divider, Drawer, Flex, Form, Grid, Input, InputNumber, Row, Select, Space, Switch, Typography, theme } from "antd";
-import { ListPlus, PackageMinus, Save } from "lucide-react";
-import { useState } from "react";
+import { App, Button, Col, Collapse, Divider, Drawer, Flex, Form, Grid, Input, InputNumber, Row, Select, Space, Switch, Typography, theme } from "antd";
+import { Boxes, ListPlus, PackageMinus, Save } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { Can } from "@/components/auth/Can";
-import { StockTag } from "@/components/ui";
+import { PathCrumbs, QuantityStepper, StockTag } from "@/components/ui";
 import { PricePanel } from "@/features/prices/components/PricePanel";
 import { suggestedQuantity } from "@/features/shopping/domain";
 import { useShoppingActions } from "@/features/shopping/hooks";
-import { useContainers } from "@/features/storage/hooks";
+import { useContainer, useContainers } from "@/features/storage/hooks";
 import { useNow } from "@/hooks/useNow";
 import { useI18n, useT } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
+import { containerHref, spaceHref } from "@/lib/navigation/routes";
 import { getStockStatus, INVENTORY_LIMITS, UNITS, type InventoryItem, type InventoryItemPatch } from "../domain";
 import { useConsumption, useInventoryActions, useInventoryItem } from "../hooks";
 import { useConsumeWithUndo } from "./ConsumeButton";
 
-/** Detalle de un producto: datos, lugar (moverlo de contenedor) y precios. */
+/**
+ * Ficha de un producto: primero cuánto hay y las acciones de todos los días; después dónde está,
+ * cuánto se usa, sus datos (plegados) y los precios.
+ */
 export function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose: () => void }) {
   const t = useT();
   const item = useInventoryItem(itemId);
@@ -41,19 +45,20 @@ export function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose
     >
       {item && (
         <>
-          <Typography.Title level={5} style={{ marginTop: 0 }}>
-            {t("inventory.item.details")}
-          </Typography.Title>
-          <ItemForm item={item} />
+          <QuantityPanel item={item} />
           <Divider />
-          <Typography.Title level={5} style={{ marginTop: 0 }}>
-            {t("inventory.consume.title")}
-          </Typography.Title>
+          <LocationPanel item={item} />
+          <Divider />
+          <PanelTitle>{t("inventory.consume.title")}</PanelTitle>
           <ConsumptionPanel item={item} />
           <Divider />
-          <Typography.Title level={5} style={{ marginTop: 0 }}>
-            {t("prices.title")}
-          </Typography.Title>
+          <Collapse
+            ghost
+            items={[{ key: "details", label: <Typography.Text strong>{t("inventory.item.details")}</Typography.Text>, forceRender: true, children: <ItemForm item={item} /> }]}
+            style={{ marginInline: -16 }}
+          />
+          <Divider />
+          <PanelTitle>{t("prices.title")}</PanelTitle>
           <PricePanel itemId={item.id} itemName={item.name} />
         </>
       )}
@@ -61,20 +66,108 @@ export function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose
   );
 }
 
-function ItemForm({ item }: { item: InventoryItem }) {
+function PanelTitle({ children }: { children: ReactNode }) {
+  return <Typography.Title level={5} style={{ margin: "0 0 12px" }}>{children}</Typography.Title>;
+}
+
+/** Cuánto hay, con +/- grande, "Usé uno" y anotarlo en la lista de compras. */
+function QuantityPanel({ item }: { item: InventoryItem }) {
   const t = useT();
+  const { token } = theme.useToken();
+  const { adjust } = useInventoryActions();
+  const consume = useConsumeWithUndo();
+  const { add } = useShoppingActions();
+  const { message } = App.useApp();
+  const canAdjust = usePermission("inventory.adjust");
+
+  return (
+    <Flex vertical gap={token.margin} style={{ padding: token.padding, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
+      <Flex align="center" justify="space-between" gap={token.marginSM} wrap>
+        <Typography.Text type="secondary">{t("inventory.item.quantity")}</Typography.Text>
+        <div style={{ fontSize: token.fontSizeLG }}>
+          <QuantityStepper
+            aria-label={t("inventory.item.quantity")}
+            value={item.quantity}
+            unit={formatUnit(t, item.quantity, item.unit)}
+            onStep={canAdjust ? (delta) => adjust(item.id, delta) : undefined}
+          />
+        </div>
+      </Flex>
+      <Flex gap={token.marginXS} wrap>
+        {!item.reusable && (
+          <Can perform="inventory.consume">
+            <Button icon={<PackageMinus />} disabled={item.quantity <= 0} onClick={() => consume(item)}>
+              {t("inventory.consume.one")}
+            </Button>
+          </Can>
+        )}
+        <Can perform="shopping.manage">
+          <Button
+            icon={<ListPlus />}
+            onClick={async () => {
+              if (await add({ name: item.name, quantity: suggestedQuantity(item), unit: item.unit, inventoryItemId: item.id })) {
+                message.success(t("shopping.toast.added", { name: item.name }));
+              }
+            }}
+          >
+            {t("shopping.addToList")}
+          </Button>
+        </Can>
+      </Flex>
+    </Flex>
+  );
+}
+
+/** Dónde está (cada tramo abre su página) y moverlo a otro lugar sin abrir el formulario. */
+function LocationPanel({ item }: { item: InventoryItem }) {
+  const t = useT();
+  const { token } = theme.useToken();
+  const container = useContainer(item.containerId);
   const containers = useContainers();
   const { update } = useInventoryActions();
   const canEdit = usePermission("inventory.create");
-  const [saving, setSaving] = useState(false);
 
-  // Contenedores agrupados por recinto para el selector "Lugar".
+  // Contenedores agrupados por recinto para "Mover a".
   const groups = new Map<string, { value: string; label: string }[]>();
-  for (const container of containers ?? []) {
-    const group = groups.get(container.spaceName) ?? [];
-    group.push({ value: container.id, label: container.path });
-    groups.set(container.spaceName, group);
+  for (const candidate of containers ?? []) {
+    const group = groups.get(candidate.spaceName) ?? [];
+    group.push({ value: candidate.id, label: candidate.path });
+    groups.set(candidate.spaceName, group);
   }
+
+  return (
+    <Flex vertical gap={token.marginXS}>
+      <PanelTitle>{t("inventory.item.where")}</PanelTitle>
+      {container && (
+        <PathCrumbs
+          label={t("inventory.item.where")}
+          items={[
+            { label: container.spaceName, href: spaceHref(container.spaceId), icon: Boxes },
+            ...container.ancestors.map((ancestor) => ({ label: ancestor.name, href: containerHref(ancestor.id) })),
+            { label: container.name, href: containerHref(container.id) },
+          ]}
+        />
+      )}
+      {canEdit && (
+        <Select
+          aria-label={t("inventory.item.moveTo")}
+          placeholder={t("inventory.item.moveTo")}
+          value={null}
+          showSearch={{ optionFilterProp: "label" }}
+          options={[...groups].map(([spaceName, options]) => ({ label: spaceName, options: options.filter((option) => option.value !== item.containerId) }))}
+          onChange={(containerId: string | null) => { if (containerId) void update(item.id, { containerId }); }}
+          style={{ width: "100%" }}
+        />
+      )}
+    </Flex>
+  );
+}
+
+function ItemForm({ item }: { item: InventoryItem }) {
+  const t = useT();
+  const { update } = useInventoryActions();
+  const canEdit = usePermission("inventory.create");
+  const [saving, setSaving] = useState(false);
 
   async function onFinish(values: InventoryItemPatch) {
     setSaving(true);
@@ -85,7 +178,8 @@ function ItemForm({ item }: { item: InventoryItem }) {
   return (
     <Form
       layout="vertical"
-      initialValues={{ name: item.name, minThreshold: item.minThreshold, unit: item.unit, containerId: item.containerId, autoSuggest: item.autoSuggest !== false, reusable: item.reusable === true }}
+      name={`item-${item.id}`}
+      initialValues={{ name: item.name, minThreshold: item.minThreshold, unit: item.unit, autoSuggest: item.autoSuggest !== false, reusable: item.reusable === true }}
       onFinish={onFinish}
       disabled={!canEdit}
       requiredMark={false}
@@ -109,12 +203,6 @@ function ItemForm({ item }: { item: InventoryItem }) {
           </Form.Item>
         </Col>
       </Row>
-      <Form.Item name="containerId" label={t("inventory.item.location")}>
-        <Select
-          showSearch={{ optionFilterProp: "label" }}
-          options={[...groups].map(([spaceName, options]) => ({ label: spaceName, options }))}
-        />
-      </Form.Item>
       <Form.Item name="autoSuggest" valuePropName="checked" label={t("inventory.item.autoSuggest")} tooltip={t("inventory.item.autoSuggestHint")}>
         <Switch />
       </Form.Item>
@@ -130,15 +218,13 @@ function ItemForm({ item }: { item: InventoryItem }) {
   );
 }
 
-/** Consumo: cuánto se usa (sale del historial), registrar un consumo y anotarlo en la lista. */
+/** Consumo: cuánto se usa (sale del historial) y registrar más de uno a la vez. */
 function ConsumptionPanel({ item }: { item: InventoryItem }) {
   const { t, format } = useI18n();
   const { token } = theme.useToken();
   const now = useNow();
   const stats = useConsumption(item.id);
   const consume = useConsumeWithUndo();
-  const { add } = useShoppingActions();
-  const { message } = App.useApp();
   const [amount, setAmount] = useState(1);
 
   return (
@@ -157,8 +243,8 @@ function ConsumptionPanel({ item }: { item: InventoryItem }) {
         </Typography.Text>
       </div>
 
-      <Flex gap={8} wrap>
-        {!item.reusable && <Can perform="inventory.consume">
+      {!item.reusable && (
+        <Can perform="inventory.consume">
           <Space.Compact>
             <InputNumber
               aria-label={t("inventory.consume.amount")}
@@ -173,21 +259,8 @@ function ConsumptionPanel({ item }: { item: InventoryItem }) {
               {t("inventory.consume.register")}
             </Button>
           </Space.Compact>
-        </Can>}
-        <Can perform="shopping.manage">
-          <Button
-            icon={<ListPlus />}
-            onClick={async () => {
-              const quantity = suggestedQuantity(item);
-              if (await add({ name: item.name, quantity, unit: item.unit, inventoryItemId: item.id })) {
-                message.success(t("shopping.toast.added", { name: item.name }));
-              }
-            }}
-          >
-            {t("shopping.addToList")}
-          </Button>
         </Can>
-      </Flex>
+      )}
     </Flex>
   );
 }

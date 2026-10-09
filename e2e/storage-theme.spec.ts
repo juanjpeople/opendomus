@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { chooseView, expect, test } from "./fixtures";
 
 for (const theme of ["light", "dark"] as const) {
   test(`almacenamiento respeta el tema ${theme}, letra grande y movimiento reducido`, async ({ home: page }, testInfo) => {
@@ -13,18 +13,21 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto("/inventario");
     const tile = page.getByRole("link", { name: /^Alacena/ });
     const scene = tile.locator("[data-container-kind]");
-    await expect(scene).toBeVisible();
-    const radius = await scene.evaluate(element => parseFloat(getComputedStyle(element).borderRadius));
-    if (theme === "light") expect(radius).toBe(0);
-    // Ant Design limita borderRadiusLG a 16 cuando el radio base es 20.
-    else expect(radius).toBe(16);
-    expect(await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize))).toBeGreaterThan(16);
     const capture = async (name: string) => {
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
       await expect.poll(() => page.evaluate(() => document.getAnimations().filter(animation => animation.playState === "running" && animation.effect instanceof KeyframeEffect && animation.effect.getKeyframes().some(frame => frame.transform && frame.transform !== "none")).length)).toBe(0);
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
       await page.screenshot({ path: testInfo.outputPath(`${theme}-${name}.png`), fullPage: true, animations: "disabled" });
     };
+    await expect(page.getByRole("link", { name: /^Alacena/ })).toBeVisible();
+    expect(await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize))).toBeGreaterThan(16);
+    await capture("lugares");
+    await chooseView(page, "Plano");
+    await expect(scene).toBeVisible();
+    const radius = await scene.evaluate(element => parseFloat(getComputedStyle(element).borderRadius));
+    if (theme === "light") expect(radius).toBe(0);
+    // Ant Design limita borderRadiusLG a 16 cuando el radio base es 20.
+    else expect(radius).toBe(16);
     await capture("plano");
     await tile.click();
     await expect(page.getByRole("heading", { name: "Alacena", exact: true })).toBeVisible();

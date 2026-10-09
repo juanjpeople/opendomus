@@ -57,7 +57,8 @@ export function VisualTile({ media, title, meta, footer, href, onClick, color, s
           </motion.div>
         </div>
       )}
-      <Typography.Text strong ellipsis={{ tooltip: title }} style={{ display: "block", paddingInlineEnd: action && !media ? 44 : 0 }}>
+      {/* Hasta dos líneas: "Estantería de herramientas" se lee entera en una ficha angosta. */}
+      <Typography.Text strong style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", paddingInlineEnd: action && !media ? 44 : 0 }}>
         {title}
       </Typography.Text>
       {meta && (

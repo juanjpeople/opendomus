@@ -72,6 +72,25 @@ body {
   height: 100%;
 }
 
+/* Migas de la cabecera: en una sola línea; lo que no entra se recorta (la página muestra su ruta completa). */
+.od-header-crumbs .ant-breadcrumb ol {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* Texto solo para lectores de pantalla (por ejemplo, el nombre de una opción que en celular es solo un ícono). */
+.od-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Foco visible para lo que se toca y no es un control de antd (fichas, filas, tarjetas propias).
    El color lo pone el componente en --od-ring (por defecto, el color de marca). */
 .od-focusable {

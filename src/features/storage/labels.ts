@@ -3,13 +3,17 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type LabelSize = "small" | "brother" | "sheet";
+export type LabelSize = "small" | "brother" | "sheet" | "shelf";
 
-/** Medidas en mm. Rollos: una etiqueta por página. Hoja A4: grilla de 3 columnas (tipo 63,5 × 38,1 mm). */
+/**
+ * Medidas en mm. Rollos: una etiqueta por página. Hoja A4: grilla de 3 columnas (tipo 63,5 × 38,1 mm).
+ * Estante: 100 × 50 mm, dos por fila; su QR de unos 46 mm se lee desde la otra punta del taller.
+ */
 export const LABEL_SIZES: Record<LabelSize, { width: number; height: number; page: string; perRow: number }> = {
   small: { width: 50, height: 25, page: "50mm 25mm", perRow: 1 },
   brother: { width: 62, height: 29, page: "62mm 29mm", perRow: 1 },
   sheet: { width: 63.5, height: 38.1, page: "A4", perRow: 3 },
+  shelf: { width: 100, height: 50, page: "A4", perRow: 2 },
 };
 
 /** URL que abre el QR de un contenedor. */

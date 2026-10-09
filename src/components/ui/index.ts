@@ -26,3 +26,7 @@ export { SettingRow } from "./SettingRow";
 export { ProviderButton } from "./ProviderButton";
 export { ContextBadge } from "./ContextBadge";
 export { SectionTitle } from "./SectionTitle";
+export { PathCrumbs, type PathCrumb } from "./PathCrumbs";
+export { ViewSwitcher, type ViewOption } from "./ViewSwitcher";
+export { PlaceCard, type PlaceShortcut } from "./PlaceCard";
+export { PlaceChip } from "./PlaceChip";

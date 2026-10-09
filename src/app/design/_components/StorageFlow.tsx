@@ -1,21 +1,22 @@
 "use client";
 
-import { App, Button, Card, Col, Dropdown, Flex, Grid, Input, Popconfirm, Row, Segmented, Space, Tooltip, Typography, theme } from "antd";
-import { AnimatePresence, motion } from "framer-motion";
-import { Box, Boxes, Camera, EllipsisVertical, ExternalLink, Layers, NotebookPen, PackageOpen, Pencil, Plus, Printer, QrCode, ScanLine, Search, SearchX, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { Reveal, Stagger, StaggerItem } from "@/components/motion";
-import { CameraViewport, EmptyState, IconTile, ListRow, PageHeader, QuantityStepper, RoomFloor, SectionHeader, StatTile, StockTag, VisualTile, type FloorPattern } from "@/components/ui";
+import { App, Button, Card, Col, Collapse, Divider, Dropdown, Flex, Grid, Input, Row, Segmented, Select, Tag, Typography, theme } from "antd";
+import { AnimatePresence } from "framer-motion";
+import { Boxes, Camera, ClipboardList, EllipsisVertical, ExternalLink, Layers, ListPlus, NotebookPen, PackageMinus, Pencil, Plus, QrCode, ScanLine, Search, ShoppingCart, Trash2, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Reveal } from "@/components/motion";
+import { CameraViewport, IconTile, ListRow, PageHeader, PathCrumbs, PlaceChip, QuantityStepper, RoomFloor, SectionHeader, StockTag, ViewSwitcher, type CameraDetection } from "@/components/ui";
 import type { CatalogCategory } from "@/features/inventory/catalog";
 import { CATEGORY_APPEARANCE } from "@/features/inventory/catalog-appearance";
 import { getStockStatus, isUnit } from "@/features/inventory/domain";
 import { ContainerScene } from "@/features/storage/components/ContainerScene";
-import { AddTile, StockBar } from "@/features/storage/components/ContainerTiles";
+import { ContainerTile } from "@/features/storage/components/ContainerTiles";
+import { CardsView, ListView, PlacesView, PlanView, useViewOptions, ViewStage } from "@/features/storage/components/StorageViews";
 import { containerAppearance, spaceAppearance, type ContainerKind, type SpaceKind } from "@/features/storage/domain";
+import type { ContainerOverview, SpaceOverview } from "@/features/storage/hooks";
+import { flattenOverview, spaceTotals } from "@/features/storage/views";
 import { useT } from "@/i18n";
-import { tint } from "@/lib/appearance";
-import { SPRING } from "@/lib/motion";
-import { containerHref } from "@/lib/navigation/routes";
+import type { InventoryView, SpaceView } from "@/lib/preferences";
 import { DemoBlock, NoNavigate } from "./DemoBlock";
 import { FlowFrame } from "./FlowFrame";
 
@@ -54,11 +55,7 @@ const HOUSE: DemoSpace[] = [
     kind: "kitchen",
     containers: [
       {
-        id: "heladera",
-        name: "Heladera",
-        kind: "fridge",
-        code: "H3LD",
-        notes: [],
+        id: "heladera", name: "Heladera", kind: "fridge", code: "H3LD", notes: [],
         items: [
           { id: "leche", name: "Leche", quantity: 2, minThreshold: 2, unit: "litros", category: "food" },
           { id: "manteca", name: "Manteca", quantity: 0, minThreshold: 1, unit: "unidades", category: "food" },
@@ -66,11 +63,7 @@ const HOUSE: DemoSpace[] = [
         ],
       },
       {
-        id: "alacena",
-        name: "Alacena",
-        kind: "pantry",
-        code: "K7QM",
-        notes: ["Bolsas de tela para el súper", "Moldes de budín"],
+        id: "alacena", name: "Alacena", kind: "pantry", code: "K7QM", notes: ["Bolsas de tela para el súper", "Moldes de budín"],
         items: [
           { id: "yerba", name: "Yerba", quantity: 1, minThreshold: 2, unit: "kg", category: "food" },
           { id: "arroz", name: "Arroz largo fino", quantity: 4, minThreshold: 2, unit: "paquetes", category: "food" },
@@ -78,14 +71,7 @@ const HOUSE: DemoSpace[] = [
           { id: "detergente", name: "Detergente", quantity: 2, minThreshold: 1, unit: "unidades", category: "cleaning" },
         ],
         children: [
-          {
-            id: "estante",
-            name: "Estante de arriba",
-            kind: "compartment",
-            code: "E5TA",
-            notes: [],
-            items: [{ id: "harina", name: "Harina 0000", quantity: 2, minThreshold: 1, unit: "kg", category: "food" }],
-          },
+          { id: "estante", name: "Estante de arriba", kind: "compartment", code: "E5TA", notes: [], items: [{ id: "harina", name: "Harina 0000", quantity: 2, minThreshold: 1, unit: "kg", category: "food" }] },
           { id: "canasto", name: "Canasto de papas", kind: "basket", code: "C4NP", notes: ["Papas y cebollas"], items: [] },
         ],
       },
@@ -98,203 +84,103 @@ const HOUSE: DemoSpace[] = [
     kind: "workshop",
     containers: [
       {
-        id: "herramientas",
-        name: "Caja de herramientas",
-        kind: "toolbox",
-        code: "TR4X",
-        notes: [],
+        id: "herramientas", name: "Caja de herramientas", kind: "toolbox", code: "TR4X", notes: [],
         items: [
           { id: "destornillador", name: "Destornillador Phillips", quantity: 2, minThreshold: 1, unit: "unidades", category: "tools" },
           { id: "cinta", name: "Cinta aisladora", quantity: 0, minThreshold: 1, unit: "unidades", category: "electrical" },
         ],
       },
       {
-        id: "estanteria",
-        name: "Estantería",
-        kind: "shelf",
-        code: "S7NT",
-        notes: ["Cables viejos", "Piezas de la impresora"],
+        id: "estanteria", name: "Estantería de herramientas", kind: "shelf", code: "S7NT", notes: ["Piezas de la impresora"],
         items: [{ id: "tornillos", name: "Tornillos 6 mm", quantity: 40, minThreshold: 10, unit: "unidades", category: "hardware" }],
+        children: [
+          { id: "cables", name: "Caja de cables", kind: "box", code: "C4BL", notes: ["Cables USB viejos", "Cargador de notebook"], items: [] },
+          { id: "pintura", name: "Caja de pintura", kind: "box", code: "P1NT", notes: ["Rodillos", "Pinceles"], items: [] },
+        ],
       },
+      { id: "vacia", name: "Caja para ordenar", kind: "box", code: "V4CA", notes: [], items: [] },
     ],
   },
 ];
 
-const FLOOR: Record<SpaceKind, FloorPattern> = {
-  kitchen: "tiles",
-  bathroom: "tiles",
-  bedroom: "boards",
-  living: "boards",
-  garden: "diagonal",
-  workshop: "dots",
-  shed: "dots",
-  garage: "dots",
-  other: "dots",
-};
-
-const ALL = HOUSE.flatMap((space) => space.containers.flatMap((container) => [container, ...(container.children ?? [])].map((entry) => ({ space, container: entry }))));
-const find = (id: string) => ALL.find((entry) => entry.container.id === id) ?? ALL[1];
-
-/** Totales del contenedor y de sus compartimentos. */
-function stats(container: DemoContainer) {
-  const items = [container, ...(container.children ?? [])].flatMap((entry) => entry.items);
-  const low = items.filter((item) => getStockStatus(item) === "low").length;
-  const empty = items.filter((item) => getStockStatus(item) === "empty").length;
-  return { total: items.length, low, empty, ok: items.length - low - empty };
+/** La casa de ejemplo con la misma forma que \`useStorageOverview\`: las vistas reales la dibujan igual. */
+function toOverview(container: DemoContainer, spaceId: string, depth: number, parentId?: string): ContainerOverview {
+  const children = (container.children ?? []).map((child) => toOverview(child, spaceId, depth + 1, container.id));
+  const statuses = container.items.map(getStockStatus);
+  const own = {
+    itemCount: container.items.length,
+    needsAttention: statuses.filter((status) => status !== "ok").length,
+    low: statuses.filter((status) => status === "low").length,
+    empty: statuses.filter((status) => status === "empty").length,
+    contentCount: container.notes.length,
+    photoCount: 0,
+  };
+  const total = children.reduce((sum, child) => ({
+    itemCount: sum.itemCount + child.itemCount, needsAttention: sum.needsAttention + child.needsAttention, low: sum.low + child.low,
+    empty: sum.empty + child.empty, contentCount: sum.contentCount + child.contentCount, photoCount: 0,
+  }), own);
+  return {
+    id: container.id, spaceId, parentId, name: container.name, kind: container.kind, code: container.code, createdAt: 0, updatedAt: 0,
+    ...total, children, depth, preview: [...container.items.map((item) => item.name), ...container.notes].slice(0, 3),
+  };
 }
+
+const SPACES: SpaceOverview[] = HOUSE.map((space) => ({
+  id: space.id, name: space.name, kind: space.kind, createdAt: 0, updatedAt: 0,
+  containers: space.containers.map((container) => toOverview(container, space.id, 1)),
+}));
+
+const ALL = HOUSE.flatMap((space) => {
+  const walk = (container: DemoContainer, ancestors: DemoContainer[]): { space: DemoSpace; container: DemoContainer; ancestors: DemoContainer[] }[] =>
+    [{ space, container, ancestors }, ...(container.children ?? []).flatMap((child) => walk(child, [...ancestors, container]))];
+  return space.containers.flatMap((container) => walk(container, []));
+});
+const find = (id: string) => ALL.find((entry) => entry.container.id === id) ?? ALL[1];
+const findItem = (id: string) => ALL.flatMap((entry) => entry.container.items.map((item) => ({ ...entry, item }))).find((entry) => entry.item.id === id);
+const pathOf = (entry: (typeof ALL)[number]) => [entry.space.name, ...entry.ancestors.map((ancestor) => ancestor.name)].join(" › ");
 
 /** Minúsculas y sin tildes, con el mismo largo que el original (para resaltar en el lugar justo). */
 const normalize = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
-function Highlight({ text, query }: { text: string; query: string }) {
-  const at = normalize(text).indexOf(normalize(query));
-  if (!query || at < 0) return <>{text}</>;
+const params = (href: string) => new URLSearchParams(href.split("?")[1] ?? "");
+
+interface Navigate {
+  onSpace: (id: string) => void;
+  onContainer: (id: string, item?: string) => void;
+  onItem: (id: string) => void;
+  onCamera: () => void;
+  onHome: () => void;
+}
+
+/** En la demo los enlaces de las vistas reales cambian de paso en lugar de navegar. */
+function DemoLinks({ go, children }: { go: Navigate; children: ReactNode }) {
   return (
-    <>
-      {text.slice(0, at)}
-      <Typography.Text mark>{text.slice(at, at + query.length)}</Typography.Text>
-      {text.slice(at + query.length)}
-    </>
+    <NoNavigate onLink={(href) => {
+      const query = params(href);
+      if (href.startsWith("/inventario/lugar")) go.onSpace(query.get("id") ?? "");
+      else if (href.startsWith("/inventario/ver")) go.onContainer(query.get("id") ?? "", query.get("item") ?? undefined);
+      else go.onHome();
+    }}>
+      {children}
+    </NoNavigate>
   );
 }
 
-const idFromHref = (href: string) => new URLSearchParams(href.split("?")[1] ?? "").get("id") ?? "";
+// ── 1 · Inventario ───────────────────────────────────────────────────────────────────────────
 
-// ── Pantallas ────────────────────────────────────────────────────────────────────────────────
-
-function ContainerTileDemo({ container }: { container: DemoContainer }) {
-  const t = useT();
-  const { message } = App.useApp();
-  const { color } = containerAppearance(container);
-  const total = stats(container);
-  // El tipo solo suma si el nombre no lo dice ya ("Heladera" no necesita "Heladera · …").
-  const kind = t(`storage.containerKinds.${container.kind}`);
-  const meta = [normalize(container.name).includes(normalize(kind)) ? null : kind, total.total > 0 ? t("storage.itemCount", { count: total.total }) : null]
-    .filter(Boolean)
-    .join(" · ");
-
-  return (
-    <VisualTile
-      href={containerHref(container.id)}
-      color={color}
-      media={<ContainerScene container={container} />}
-      title={container.name}
-      meta={meta || undefined}
-      footer={total.total > 0 ? <StockBar ok={total.ok} low={total.low} empty={total.empty} /> : undefined}
-      action={{ icon: <QrCode />, label: `${t("storage.label")}: ${container.name}`, onClick: () => message.info(`Acá se imprime la etiqueta de ${container.name}`) }}
-    />
-  );
-}
-
-function RoomPanel({ space, onOpen }: { space: DemoSpace; onOpen: (id: string) => void }) {
+function InventoryScreen({ go }: { go: Navigate }) {
   const t = useT();
   const { token } = theme.useToken();
-  const { color, Icon } = spaceAppearance(space);
-  const palette = tint(token, color);
-  const itemCount = space.containers.reduce((sum, container) => sum + stats(container).total, 0);
-
-  return (
-    <section
-      style={{
-        padding: 16,
-        borderRadius: token.borderRadiusLG * 2,
-        border: `1px solid ${palette.border}`,
-        background: `linear-gradient(160deg, ${palette.bg} 0%, ${token.colorBgContainer} 55%)`,
-        boxShadow: token.boxShadowTertiary,
-      }}
-    >
-      <Flex align="center" justify="space-between" gap={token.marginSM} wrap style={{ marginBottom: token.margin }}>
-        <Flex align="center" gap={token.marginSM} style={{ minWidth: 0, flex: `1 1 ${token.controlHeight * 6}px` }}>
-          <IconTile icon={Icon} color={color} size={44} solid />
-          <div style={{ minWidth: 0 }}>
-            <Typography.Title level={4} style={{ margin: 0, letterSpacing: "-0.02em", overflowWrap: "anywhere" }}>
-              {space.name}
-            </Typography.Title>
-            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-              {t("storage.containerCount", { count: space.containers.length })} · {t("storage.itemCount", { count: itemCount })}
-            </Typography.Text>
-          </div>
-        </Flex>
-        <Flex gap={4} style={{ flexShrink: 0 }}>
-          <Tooltip title={t("storage.printLabels")}>
-            <Button type="text" icon={<Printer />} aria-label={t("storage.printLabels")} style={{ width: 44, height: 44 }} />
-          </Tooltip>
-          <Dropdown
-            trigger={["click"]}
-            menu={{
-              items: [
-                { key: "add", icon: <Plus />, label: t("storage.addContainer") },
-                { key: "edit", icon: <Pencil />, label: t("storage.edit") },
-                { type: "divider" },
-                { key: "delete", danger: true, icon: <Trash2 />, label: t("storage.delete") },
-              ],
-            }}
-          >
-            <Button type="text" icon={<EllipsisVertical />} aria-label={t("storage.edit")} style={{ width: 44, height: 44 }} />
-          </Dropdown>
-        </Flex>
-      </Flex>
-      <NoNavigate onLink={(href) => onOpen(idFromHref(href))}>
-        <RoomFloor pattern={FLOOR[space.kind]} color={color}>
-          {space.containers.map((container) => (
-            <ContainerTileDemo key={container.id} container={container} />
-          ))}
-          <AddTile color={palette.solid} label={t("storage.addContainer")} onClick={() => undefined} />
-        </RoomFloor>
-      </NoNavigate>
-    </section>
-  );
-}
-
-function SearchResults({ query, onOpen }: { query: string; onOpen: (id: string) => void }) {
-  const { token } = theme.useToken();
-  const words = normalize(query.trim());
-  const results = ALL.flatMap(({ space, container }) => {
-    const path = `${space.name} › ${container.name}`;
-    const hits = [container.name, ...container.items.map((item) => item.name), ...container.notes].filter((text) => normalize(text).includes(words));
-    return hits.map((text) => ({ key: `${container.id}:${text}`, text, path, container }));
-  });
-
-  if (results.length === 0) {
-    return (
-      <Card>
-        <EmptyState icon={SearchX} title={`No encontramos “${query}”`} description="Probá con otra palabra o con el código de la etiqueta." />
-      </Card>
-    );
-  }
-
-  return (
-    <Card styles={{ body: { padding: 0 } }}>
-      <AnimatePresence initial={false}>
-        {results.map((result, index) => {
-          const { color, Icon } = containerAppearance(result.container);
-          return (
-            <ListRow
-              key={result.key}
-              index={index}
-              divider={index < results.length - 1}
-              leading={<IconTile icon={Icon} color={color} size={36} />}
-              title={<Highlight text={result.text} query={query.trim()} />}
-              meta={
-                <>
-                  <span>{result.path}</span>
-                  <span style={{ fontFamily: "var(--font-geist-mono)", letterSpacing: "0.08em", color: token.colorTextTertiary }}>{result.container.code}</span>
-                </>
-              }
-              onOpen={() => onOpen(result.container.id)}
-              openLabel={`Abrir ${result.container.name}`}
-            />
-          );
-        })}
-      </AnimatePresence>
-    </Card>
-  );
-}
-
-function PlanScreen({ onOpen, onCamera }: { onOpen: (id: string) => void; onCamera: () => void }) {
-  const t = useT();
-  const { token } = theme.useToken();
+  const options = useViewOptions();
+  const [view, setView] = useState<InventoryView>("places");
   const [query, setQuery] = useState("");
+  const attention = ALL.flatMap((entry) => entry.container.items.filter((item) => getStockStatus(item) !== "ok").map((item) => ({ ...entry, item })));
+  const words = normalize(query.trim());
+  const results = words ? ALL.flatMap((entry) => {
+    const hit = entry.container.items.find((item) => normalize(item.name).includes(words));
+    const note = entry.container.notes.find((text) => normalize(text).includes(words));
+    return hit || note || normalize(entry.container.name).includes(words) ? [{ entry, hit, note }] : [];
+  }) : [];
 
   return (
     <>
@@ -302,63 +188,122 @@ function PlanScreen({ onOpen, onCamera }: { onOpen: (id: string) => void; onCame
         eyebrow={t("storage.eyebrow")}
         title={t("storage.title")}
         description={t("storage.description")}
-        extra={
-          <>
-            <Button icon={<Camera />} onClick={onCamera}>
-              Cámara
-            </Button>
-            <Button type="primary" icon={<Plus />}>
-              {t("storage.addSpace")}
-            </Button>
-          </>
-        }
+        extra={<><Button icon={<Camera />} onClick={go.onCamera}>{t("camera.openMode")}</Button><Button type="primary" icon={<Plus />}>{t("storage.addSpace")}</Button></>}
       />
       <Reveal delay={0.05}>
-        <Input
-          size="large"
-          allowClear
-          prefix={<Search />}
-          placeholder={t("storage.search.placeholder")}
-          aria-label={t("storage.search.placeholder")}
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          style={{ maxWidth: 440, marginBottom: 24 }}
+        <Card style={{ marginBottom: token.marginLG }}>
+          <Input size="large" allowClear prefix={<Search />} placeholder={t("storage.search.placeholder")} aria-label={t("storage.search.placeholder")} value={query} onChange={(event) => setQuery(event.target.value)} />
+          {!query.trim() && <Typography.Paragraph type="secondary" style={{ margin: "8px 0 0" }}>Probá con “yerba” o “cables”: un producto abre su ficha; una anotación, su caja.</Typography.Paragraph>}
+          {!!query.trim() && (
+            <div style={{ marginTop: token.marginSM }}>
+              <AnimatePresence initial={false}>
+                {results.map(({ entry, hit, note }, index) => {
+                  const { color, Icon } = containerAppearance(entry.container);
+                  return (
+                    <ListRow key={entry.container.id} index={index} divider={index < results.length - 1}
+                      leading={<IconTile icon={Icon} color={color} size={token.controlHeight} />}
+                      title={hit?.name ?? note ?? entry.container.name}
+                      meta={<span>{pathOf(entry)} › {entry.container.name}</span>}
+                      onOpen={() => (hit ? go.onContainer(entry.container.id, hit.id) : go.onContainer(entry.container.id))}
+                      openLabel={hit ? `Abrir ${hit.name}` : `Abrir ${entry.container.name}`} />
+                  );
+                })}
+              </AnimatePresence>
+              {results.length === 0 && <Typography.Paragraph type="secondary" style={{ margin: 0 }}>{t("storage.search.empty")}</Typography.Paragraph>}
+            </div>
+          )}
+        </Card>
+      </Reveal>
+      <Reveal delay={0.08}>
+        <Card style={{ marginBottom: token.marginLG }}>
+          <SectionHeader icon={ShoppingCart} color="gold" title={t("storage.highlights.restock")} description={t("storage.highlights.restockCount", { count: attention.length })} />
+          <DemoLinks go={go}>
+            <Flex wrap gap={token.marginXS}>
+              {attention.slice(0, 8).map((entry) => (
+                <PlaceChip key={entry.item.id} href={`/inventario/ver?id=${entry.container.id}&item=${entry.item.id}`}
+                  label={entry.item.name} detail={entry.container.name}
+                  ariaLabel={t("storage.highlights.openItem", { name: entry.item.name, place: `${pathOf(entry)} › ${entry.container.name}` })}
+                  title={`${t(`inventory.stock.${getStockStatus(entry.item)}`)} · ${pathOf(entry)} › ${entry.container.name}`}
+                  dot={getStockStatus(entry.item) === "empty" ? token.colorError : token.colorWarning} />
+              ))}
+            </Flex>
+          </DemoLinks>
+        </Card>
+      </Reveal>
+      <Reveal delay={0.1}>
+        <SectionHeader
+          title={t("storage.yourPlaces")}
+          description={`${t("storage.spaceCount", { count: SPACES.length })} · ${t("storage.containerCount", { count: flattenOverview(SPACES).length })}`}
+          extra={<ViewSwitcher label={t("storage.views.label")} value={view} options={options.inventory} onChange={setView} />}
         />
       </Reveal>
-      {query.trim() ? (
-        <SearchResults query={query} onOpen={onOpen} />
-      ) : (
-        <Stagger delay={0.1} stagger={0.08} style={{ columnWidth: token.controlHeightLG * 10, columnGap: token.marginLG }}>
-          {HOUSE.map((space) => (
-            <StaggerItem key={space.id} style={{ breakInside: "avoid", marginBottom: 20 }}>
-              <RoomPanel space={space} onOpen={onOpen} />
-            </StaggerItem>
-          ))}
-        </Stagger>
-      )}
+      <div style={{ marginTop: token.marginSM }}>
+        <DemoLinks go={go}>
+          <ViewStage view={view}>
+            {view === "places" && <PlacesView spaces={SPACES} />}
+            {view === "plan" && <PlanView spaces={SPACES} actions={{ onLabels: () => undefined, onAddContainer: () => undefined, onEditSpace: () => undefined, onDeleteSpace: () => undefined }} />}
+            {view === "list" && <ListView spaces={SPACES} />}
+            {view === "cards" && <CardsView spaces={SPACES} actions={{ onLabels: () => undefined }} />}
+          </ViewStage>
+        </DemoLinks>
+      </div>
     </>
   );
 }
 
-function ContainerScreen({ id, onOpen, onCamera }: { id: string; onOpen: (id: string) => void; onCamera: () => void }) {
+// ── 2 · Recinto ──────────────────────────────────────────────────────────────────────────────
+
+function SpaceScreen({ id, go }: { id: string; go: Navigate }) {
+  const t = useT();
+  const { token } = theme.useToken();
+  const options = useViewOptions();
+  const [view, setView] = useState<SpaceView>("plan");
+  const space = SPACES.find((candidate) => candidate.id === id) ?? SPACES[1];
+  const { color, Icon } = spaceAppearance(space);
+  const totals = spaceTotals(space);
+
+  return (
+    <DemoLinks go={go}>
+      <PageHeader
+        crumbs={<PathCrumbs items={[{ label: t("storage.title"), href: "/inventario", icon: Boxes }, { label: space.name }]} />}
+        leading={<IconTile icon={Icon} color={color} size={token.controlHeightLG + token.padding} solid />}
+        title={space.name}
+        description={`${t("storage.containerCount", { count: totals.containers })} · ${t("storage.itemCount", { count: totals.items })}`}
+        extra={<><Button icon={<Camera />} onClick={go.onCamera}>{t("camera.openMode")}</Button><Button type="primary" icon={<Plus />}>{t("storage.addContainer")}</Button><Button icon={<EllipsisVertical />} aria-label={t("common.moreActions")} /></>}
+      />
+      <Reveal delay={0.1}>
+        <SectionHeader title={t("storage.inThisSpace")} description={t("storage.containerCount", { count: totals.containers })}
+          extra={<ViewSwitcher label={t("storage.views.label")} value={view} options={options.space} onChange={setView} />} />
+      </Reveal>
+      <div style={{ marginTop: token.marginSM }}>
+        <ViewStage view={view}>
+          {view === "plan" && <PlanView spaces={[space]} actions={{ onLabels: () => undefined, onAddContainer: () => undefined }} single />}
+          {view === "list" && <ListView spaces={[space]} single />}
+          {view === "cards" && <CardsView spaces={[space]} actions={{ onLabels: () => undefined }} single />}
+        </ViewStage>
+      </div>
+    </DemoLinks>
+  );
+}
+
+// ── 3 · Contenedor ───────────────────────────────────────────────────────────────────────────
+
+function ContainerScreen({ id, highlight, go }: { id: string; highlight?: string; go: Navigate }) {
   const t = useT();
   const { token } = theme.useToken();
   const { message } = App.useApp();
-  const { space, container } = find(id);
-  const { color, Icon } = containerAppearance(container);
+  const entry = find(id);
+  const { space, container, ancestors } = entry;
+  const node = flattenOverview(SPACES).find((candidate) => candidate.container.id === id)?.container;
+  const { color } = containerAppearance(container);
   const [items, setItems] = useState(container.items);
   const [notes, setNotes] = useState(container.notes.map((text, index) => ({ id: `${container.id}-${index}`, text })));
+  const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
-  const [editingNote, setEditingNote] = useState<{ id: string; text: string } | null>(null);
-  const saveNote = () => {
-    if (!editingNote?.text.trim()) return;
-    setNotes((current) => current.map((note) => note.id === editingNote.id ? { ...note, text: editingNote.text.trim() } : note));
-    setEditingNote(null);
-  };
   const unit = (value: string, count: number) => (isUnit(value) ? t(`inventory.units.${value}`, { count }) : value);
-  const toRestock = items.filter((item) => getStockStatus(item) !== "ok").length;
-  const children = container.children ?? [];
-
+  const children = node?.children ?? [];
+  const empty = items.length + notes.length + children.length === 0;
+  const touch = { minWidth: token.controlHeightLG + token.paddingXXS, minHeight: token.controlHeightLG + token.paddingXXS };
   const adjust = (itemId: string, delta: number) => setItems((current) => current.map((item) => (item.id === itemId ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item)));
   const addNote = () => {
     const text = draft.trim();
@@ -366,324 +311,238 @@ function ContainerScreen({ id, onOpen, onCamera }: { id: string; onOpen: (id: st
     setNotes((current) => [...current, { id: `${Date.now()}`, text }]);
     setDraft("");
   };
+  const parts = [
+    children.length ? t("storage.childCount", { count: children.length }) : null,
+    items.length ? t("storage.itemCount", { count: items.length }) : null,
+    notes.length ? t("storage.noteCount", { count: notes.length }) : null,
+  ].filter(Boolean);
 
   return (
-    <>
+    <DemoLinks go={go}>
       <PageHeader
-        leading={<IconTile icon={Icon} color={color} size={56} solid />}
-        eyebrow={space.name}
+        crumbs={<PathCrumbs items={[{ label: t("storage.title"), href: "/inventario", icon: Boxes }, { label: space.name, href: `/inventario/lugar?id=${space.id}`, icon: spaceAppearance(space).Icon }, ...ancestors.map((ancestor) => ({ label: ancestor.name, href: `/inventario/ver?id=${ancestor.id}` })), { label: container.name }]} />}
+        leading={<ContainerScene key={container.id} container={container} compact open />}
         title={container.name}
-        description={
-          <>
-            {t(`storage.containerKinds.${container.kind}`)} · {t("storage.code")}{" "}
-            <span style={{ fontFamily: "var(--font-geist-mono)", letterSpacing: "0.08em" }}>{container.code}</span>
-          </>
-        }
+        description={<>{t(`storage.containerKinds.${container.kind}`)} · {t("storage.code")} <span style={{ fontFamily: "var(--font-geist-mono)", letterSpacing: "0.08em" }}>{container.code}</span></>}
         extra={
           <>
-            <Button icon={<Camera />} onClick={onCamera}>
-              Cámara
-            </Button>
-            <Button type="primary" icon={<Plus />}>
-              {t("inventory.form.title")}
-            </Button>
-            <Dropdown
-              trigger={["click"]}
-              menu={{
-                items: [
-                  { key: "label", icon: <QrCode />, label: t("storage.label") },
-                  { key: "edit", icon: <Pencil />, label: t("storage.editContainer") },
-                  { type: "divider" },
-                  { key: "delete", danger: true, icon: <Trash2 />, label: t("storage.delete") },
-                ],
-              }}
-            >
-              <Button icon={<EllipsisVertical />} aria-label="Más acciones" />
+            <Button icon={<Camera />} onClick={go.onCamera}>{t("camera.openMode")}</Button>
+            <Button icon={<QrCode />}>{t("storage.label")}</Button>
+            <Dropdown trigger={["click"]} menu={{ items: [{ key: "edit", icon: <Pencil />, label: t("storage.edit") }, { key: "child", icon: <Layers />, label: t("storage.addSubcontainer") }, { type: "divider" }, { key: "delete", danger: true, icon: <Trash2 />, label: t("storage.delete") }] }}>
+              <Button icon={<EllipsisVertical />} aria-label={t("common.moreActions")} />
             </Dropdown>
           </>
         }
       />
+      {!empty && <Typography.Text type="secondary" style={{ display: "block", marginTop: -token.marginLG, marginBottom: token.marginLG }}>{parts.join(" · ")}</Typography.Text>}
 
-      <Stagger delay={0.05}>
-        <Row gutter={[12, 12]} style={{ marginBottom: 32 }}>
-          <Col xs={8}>
-            <StaggerItem style={{ height: "100%" }}>
-              <StatTile label="Productos" value={items.length} tone="primary" />
-            </StaggerItem>
-          </Col>
-          <Col xs={8}>
-            <StaggerItem style={{ height: "100%" }}>
-              <StatTile label="Para reponer" value={toRestock} tone={toRestock > 0 ? "warning" : "success"} />
-            </StaggerItem>
-          </Col>
-          <Col xs={8}>
-            <StaggerItem style={{ height: "100%" }}>
-              <StatTile label="Anotaciones" value={notes.length} />
-            </StaggerItem>
-          </Col>
-        </Row>
-      </Stagger>
-
-      <Reveal delay={0.1} style={{ marginBottom: 32 }}>
-        <SectionHeader icon={Boxes} title={t("storage.contents.inventory")} description={t("storage.itemCount", { count: items.length })} />
-        <Card styles={{ body: { padding: 0 } }}>
-          {items.length === 0 && <EmptyState icon={PackageOpen} title={t("inventory.list.emptyTitle")} description="Cargá lo que tenga cantidad: así te avisa cuando quede poco." />}
-          <AnimatePresence initial={false}>
-            {items.map((item, index) => {
-              const appearance = CATEGORY_APPEARANCE[item.category];
-              return (
-                <ListRow
-                  key={item.id}
-                  index={index}
-                  divider={index < items.length - 1}
-                  leading={<IconTile icon={appearance.Icon} color={appearance.color} size={36} />}
-                  title={item.name}
-                  meta={
-                    <>
-                      <StockTag status={getStockStatus(item)} />
-                      <span>{t("inventory.list.min", { min: item.minThreshold, unit: unit(item.unit, item.minThreshold) })}</span>
-                    </>
-                  }
-                  onOpen={() => message.info(`Acá se abre el detalle de ${item.name}`)}
-                  openLabel={t("inventory.list.openAria", { name: item.name })}
-                  trailing={
-                    <>
-                      <QuantityStepper value={item.quantity} unit={unit(item.unit, item.quantity)} onStep={(delta) => adjust(item.id, delta)} />
-                      <Popconfirm
-                        title={t("inventory.list.deleteConfirm", { name: item.name })}
-                        okText={t("inventory.list.deleteOk")}
-                        okButtonProps={{ danger: true }}
-                        cancelText={t("common.cancel")}
-                        onConfirm={() => setItems((current) => current.filter((entry) => entry.id !== item.id))}
-                      >
-                        <Button type="text" danger aria-label={t("inventory.list.deleteAria", { name: item.name })} icon={<Trash2 />} />
-                      </Popconfirm>
-                    </>
-                  }
-                />
-              );
-            })}
-          </AnimatePresence>
+      {empty && (
+        <Card style={{ marginBottom: token.marginXL }}>
+          <Flex vertical align="center" gap={token.marginSM} style={{ padding: token.paddingLG, textAlign: "center" }}>
+            <Typography.Title level={4} style={{ margin: 0 }}>{t("storage.emptyContainer.title")}</Typography.Title>
+            <Typography.Paragraph type="secondary" style={{ margin: 0, maxWidth: 420 }}>{t("storage.emptyContainer.text")}</Typography.Paragraph>
+            <Flex gap={token.marginXS} wrap justify="center">
+              <Button type="primary" icon={<Plus />}>{t("inventory.form.title")}</Button>
+              <Button icon={<NotebookPen />} onClick={() => setAdding(true)}>{t("storage.contents.new")}</Button>
+              <Button icon={<Layers />}>{t("storage.addSubcontainer")}</Button>
+            </Flex>
+          </Flex>
         </Card>
-      </Reveal>
+      )}
 
       {children.length > 0 && (
-        <Reveal delay={0.15} style={{ marginBottom: 32 }}>
-          <SectionHeader
-            icon={Layers}
-            title={t("storage.subcontainers")}
-            description={t("storage.childCount", { count: children.length })}
-            extra={<Button icon={<Plus />}>{t("storage.addSubcontainer")}</Button>}
-          />
-          <NoNavigate onLink={(href) => onOpen(idFromHref(href))}>
-            <RoomFloor color={color} minTileWidth={150}>
-              {children.map((child) => (
-                <ContainerTileDemo key={child.id} container={child} />
-              ))}
-            </RoomFloor>
-          </NoNavigate>
+        <Reveal delay={0.1} style={{ marginBottom: token.marginXL }}>
+          <SectionHeader icon={Layers} color={color} title={t("storage.subcontainers")} description={t("storage.childCount", { count: children.length })} extra={<Button icon={<Plus />}>{t("storage.addSubcontainer")}</Button>} />
+          <RoomFloor color={color} minTileWidth={150}>
+            {children.map((child) => <ContainerTile key={child.id} container={child} onLabel={() => message.info(`Acá se imprime la etiqueta de ${child.name}`)} />)}
+          </RoomFloor>
         </Reveal>
       )}
 
-      <Reveal delay={0.2}>
-        <SectionHeader icon={NotebookPen} title={t("storage.contents.title")} description="Lo que guardás sin contarlo: cables, recuerdos, piezas sueltas." />
-        <Card styles={{ body: { padding: 0 } }}>
-          <AnimatePresence initial={false}>
-            {notes.map((note, index) => (
-              editingNote?.id === note.id ? <Flex key={note.id} gap={token.marginXS} wrap style={{ padding: token.padding }}>
-                <Input autoFocus aria-label={t("storage.contents.editTitle")} value={editingNote.text} maxLength={160} style={{ flex: "1 1 200px" }} onChange={(event) => setEditingNote({ ...editingNote, text: event.target.value })} onPressEnter={saveNote} onKeyDown={(event) => { if (event.key === "Escape") setEditingNote(null); }} />
-                <Button type="primary" disabled={!editingNote.text.trim()} onClick={saveNote}>{t("storage.contents.save")}</Button>
-                <Button onClick={() => setEditingNote(null)}>{t("common.cancel")}</Button>
-              </Flex> :
-              <ListRow
-                key={note.id}
-                index={index}
-                title={note.text}
-                wrapTitle
-                trailing={
-                  <>
-                    <Button type="text" aria-label={t("storage.contents.edit", { name: note.text })} icon={<Pencil />} onClick={() => setEditingNote({ ...note })} />
-                    <Button
-                      type="text"
-                      danger
-                      aria-label={t("storage.contents.delete", { name: note.text })}
-                      icon={<Trash2 />}
-                      onClick={() => setNotes((current) => current.filter((entry) => entry.id !== note.id))}
-                    />
-                  </>
-                }
-              />
-            ))}
-          </AnimatePresence>
-          <Flex gap={8} style={{ padding: "12px 24px" }}>
-            <Input
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onPressEnter={addNote}
-              placeholder={t("storage.contents.placeholder")}
-              aria-label={t("storage.contents.input")}
-            />
-            <Button icon={<Plus />} disabled={!draft.trim()} onClick={addNote}>
-              {t("storage.contents.add")}
-            </Button>
-          </Flex>
-        </Card>
-        <Typography.Paragraph type="secondary" style={{ margin: "8px 0 0", fontSize: token.fontSizeSM }}>
-          Fotos del contenedor: van en su propia sección, debajo (sin cambios respecto de hoy).
-        </Typography.Paragraph>
+      {!empty && (
+        <Reveal delay={0.15} style={{ marginBottom: token.marginXL }}>
+          <SectionHeader icon={Boxes} title={t("storage.contents.inventory")} description={items.length ? t("storage.itemCount", { count: items.length }) : t("inventory.list.emptyHint")} extra={<Button type="primary" icon={<Plus />}>{t("inventory.form.title")}</Button>} />
+          <Card styles={{ body: { padding: 0 } }}>
+            {items.length === 0 && <Typography.Paragraph type="secondary" style={{ margin: 0, padding: `${token.padding}px ${token.paddingLG}px` }}>{t("inventory.list.emptyShort")}</Typography.Paragraph>}
+            <AnimatePresence initial={false}>
+              {items.map((item, index) => {
+                const appearance = CATEGORY_APPEARANCE[item.category];
+                return (
+                  <ListRow key={item.id} index={index} divider={index < items.length - 1} highlighted={item.id === highlight}
+                    leading={<IconTile icon={appearance.Icon} color={appearance.color} size={token.controlHeight} />}
+                    title={item.name}
+                    meta={<><StockTag status={getStockStatus(item)} /><span>{t("inventory.list.min", { min: item.minThreshold, unit: unit(item.unit, item.minThreshold) })}</span></>}
+                    onOpen={() => go.onItem(item.id)} openLabel={t("inventory.list.openAria", { name: item.name })}
+                    trailing={<>
+                      <Button icon={<PackageMinus />} aria-label={t("inventory.consume.aria", { name: item.name })} disabled={item.quantity <= 0} onClick={() => adjust(item.id, -1)} style={touch} />
+                      <QuantityStepper value={item.quantity} unit={unit(item.unit, item.quantity)} onStep={(delta) => adjust(item.id, delta)} />
+                    </>} />
+                );
+              })}
+            </AnimatePresence>
+          </Card>
+        </Reveal>
+      )}
+
+      {(!empty || adding) && (
+        <Reveal delay={0.2} style={{ marginBottom: token.marginXL }}>
+          <SectionHeader icon={NotebookPen} title={t("storage.contents.title")} description={notes.length ? t("storage.noteCount", { count: notes.length }) : t("storage.contents.short")}
+            extra={!adding && <Button icon={<Plus />} onClick={() => setAdding(true)}>{t("storage.contents.new")}</Button>} />
+          <Card styles={{ body: { padding: 0 } }}>
+            {adding && (
+              <Flex gap={token.marginXS} wrap style={{ padding: `${token.padding}px ${token.paddingLG}px`, borderBottom: `1px solid ${token.colorBorderSecondary}`, background: token.colorFillQuaternary }}>
+                <Input autoFocus value={draft} onChange={(event) => setDraft(event.target.value)} onPressEnter={addNote} onKeyDown={(event) => { if (event.key === "Escape") setAdding(false); }} placeholder={t("storage.contents.placeholder")} aria-label={t("storage.contents.input")} style={{ flex: "1 1 220px" }} />
+                <Button type="primary" icon={<Plus />} disabled={!draft.trim()} onClick={addNote}>{t("storage.contents.add")}</Button>
+                <Button icon={<ClipboardList />}>{t("storage.contents.bulk")}</Button>
+                <Button type="text" onClick={() => setAdding(false)}>{t("common.close")}</Button>
+              </Flex>
+            )}
+            <AnimatePresence initial={false}>
+              {notes.map((note, index) => (
+                <ListRow key={note.id} index={index} divider={index < notes.length - 1} title={note.text} wrapTitle
+                  trailing={<>
+                    <Button type="text" icon={<Pencil />} aria-label={t("storage.contents.edit", { name: note.text })} style={touch} />
+                    <Button type="text" icon={<Trash2 />} aria-label={t("storage.contents.delete", { name: note.text })} style={{ ...touch, color: token.colorTextSecondary }} onClick={() => setNotes((current) => current.filter((entry) => entry.id !== note.id))} />
+                  </>} />
+              ))}
+            </AnimatePresence>
+          </Card>
+        </Reveal>
+      )}
+
+      <Reveal delay={0.25}>
+        <SectionHeader icon={Camera} title={t("storage.contents.photos")} description={t("storage.contents.photosHint")} />
+        <Card><Typography.Text type="secondary">Acá va la galería real (PhotoGallery), con el botón para sumar fotos.</Typography.Text></Card>
       </Reveal>
-    </>
+    </DemoLinks>
   );
 }
 
+// ── 4 · Ficha del producto ───────────────────────────────────────────────────────────────────
+
+function ItemScreen({ id, go }: { id: string; go: Navigate }) {
+  const t = useT();
+  const { token } = theme.useToken();
+  const found = findItem(id) ?? findItem("yerba")!;
+  const [quantity, setQuantity] = useState(found.item.quantity);
+  const item = { ...found.item, quantity };
+  const unit = (count: number) => (isUnit(item.unit) ? t(`inventory.units.${item.unit}`, { count }) : item.unit);
+
+  return (
+    <DemoLinks go={go}>
+      <Card style={{ maxWidth: 480, marginInline: "auto" }} title={<Flex align="center" gap={token.marginXS}><span>{item.name}</span><StockTag status={getStockStatus(item)} /></Flex>} extra={<Button type="text" icon={<X />} aria-label={t("common.close")} onClick={() => go.onContainer(found.container.id)} />}>
+        <Flex vertical gap={token.margin} style={{ padding: token.padding, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
+          <Flex align="center" justify="space-between" gap={token.marginSM} wrap>
+            <Typography.Text type="secondary">{t("inventory.item.quantity")}</Typography.Text>
+            <div style={{ fontSize: token.fontSizeLG }}><QuantityStepper value={quantity} unit={unit(quantity)} onStep={(delta) => setQuantity((current) => Math.max(0, current + delta))} /></div>
+          </Flex>
+          <Flex gap={token.marginXS} wrap>
+            <Button icon={<PackageMinus />} disabled={quantity <= 0} onClick={() => setQuantity((current) => Math.max(0, current - 1))}>{t("inventory.consume.one")}</Button>
+            <Button icon={<ListPlus />}>{t("shopping.addToList")}</Button>
+          </Flex>
+        </Flex>
+        <Divider />
+        <Typography.Title level={5} style={{ margin: "0 0 12px" }}>{t("inventory.item.where")}</Typography.Title>
+        <PathCrumbs label={t("inventory.item.where")} items={[{ label: found.space.name, href: `/inventario/lugar?id=${found.space.id}`, icon: Boxes }, ...found.ancestors.map((ancestor) => ({ label: ancestor.name, href: `/inventario/ver?id=${ancestor.id}` })), { label: found.container.name, href: `/inventario/ver?id=${found.container.id}` }]} />
+        <Select aria-label={t("inventory.item.moveTo")} placeholder={t("inventory.item.moveTo")} value={null} style={{ width: "100%", marginTop: token.marginXS }}
+          options={HOUSE.map((space) => ({ label: space.name, options: ALL.filter((entry) => entry.space.id === space.id && entry.container.id !== found.container.id).map((entry) => ({ value: entry.container.id, label: [...entry.ancestors.map((ancestor) => ancestor.name), entry.container.name].join(" › ") })) }))} />
+        <Divider />
+        <Typography.Title level={5} style={{ margin: "0 0 12px" }}>{t("inventory.consume.title")}</Typography.Title>
+        <div style={{ padding: token.paddingSM, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
+          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>{t("inventory.consume.last30")}</Typography.Text>
+          <div style={{ fontSize: token.fontSizeHeading4, fontWeight: 600, letterSpacing: "-0.02em" }}>3 {unit(3)}</div>
+        </div>
+        <Divider />
+        <Collapse ghost style={{ marginInline: -token.padding }} items={[{ key: "details", label: <Typography.Text strong>{t("inventory.item.details")}</Typography.Text>, children: <Typography.Text type="secondary">Nombre, mínimo, unidad y sugerencias: plegados, porque se tocan poco.</Typography.Text> }]} />
+        <Divider />
+        <Typography.Title level={5} style={{ margin: "0 0 12px" }}>{t("prices.title")}</Typography.Title>
+        <Typography.Text type="secondary">Historial de precios del producto (PricePanel).</Typography.Text>
+      </Card>
+    </DemoLinks>
+  );
+}
+
+// ── 5 · Cámara ───────────────────────────────────────────────────────────────────────────────
+
 type CameraMode = "qr" | "find" | "ar";
 
-function CameraScreen({ onOpen }: { onOpen: (id: string) => void }) {
+/** Etiquetas "a la vista" de la demo, como si la cámara mirara la estantería del taller. */
+const IN_VIEW = [
+  { id: "cables", x: 0.26, y: 0.3 },
+  { id: "pintura", x: 0.72, y: 0.34 },
+  { id: "herramientas", x: 0.48, y: 0.7 },
+];
+
+function CameraScreen({ go }: { go: Navigate }) {
   const t = useT();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const [mode, setMode] = useState<CameraMode>("find");
-  const [query, setQuery] = useState("");
-  const [code, setCode] = useState("");
-  const { space, container } = find("alacena");
-  const { color, Icon } = containerAppearance(container);
-  const matches = (text: string) => !query.trim() || normalize(text).includes(normalize(query.trim()));
-  const items = container.items.filter((item) => matches(item.name));
-  const notes = container.notes.filter(matches);
-  const hasMatch = items.length + notes.length > 0;
-  const preview = [...items.slice(0, 2).map((item) => item.name), ...notes.slice(0, 1)].join(" · ");
-  const unit = (value: string, count: number) => (isUnit(value) ? t(`inventory.units.${value}`, { count }) : value);
-  const codeMatch = ALL.find((entry) => entry.container.code === code.toUpperCase());
+  const [query, setQuery] = useState("cables");
+  const [zoom, setZoom] = useState(1);
+  const words = normalize(query.trim());
+  const matchesOf = (container: DemoContainer) => [...container.items.map((item) => item.name), ...container.notes].filter((text) => !words || normalize(text).includes(words));
+  const bubbles: CameraDetection[] = mode !== "find" ? [] : IN_VIEW.map(({ id, x, y }) => {
+    const { container } = find(id);
+    const hits = matchesOf(container);
+    return {
+      id, x, y, title: container.name,
+      tone: words && hits.length === 0 ? "dim" : "match",
+      detail: words ? (hits.length ? t("camera.matches", { count: hits.length }) : t("camera.noMatchShort")) : hits.slice(0, 2).join(" · ") || t("camera.empty"),
+      label: t("camera.openContainer", { name: container.name }),
+      onSelect: () => go.onContainer(id),
+    };
+  });
+  const found = words ? ALL.filter((entry) => matchesOf(entry.container).length > 0) : [];
 
   return (
     <>
-      <PageHeader eyebrow={t("storage.eyebrow")} title="Cámara" description="Apuntá a una etiqueta y te muestra qué hay guardado adentro." />
+      <PageHeader eyebrow={t("storage.eyebrow")} title={t("camera.title")} description={t(mode === "find" ? "camera.findDescription" : "camera.description")} />
       <Reveal delay={0.05}>
-        <Segmented<CameraMode>
-          value={mode}
-          onChange={setMode}
-          vertical={!screens.sm}
-          block={!screens.sm}
-          style={{ marginBottom: 16 }}
-          options={[
-            { value: "qr", label: "Escanear QR", icon: <ScanLine /> },
-            { value: "find", label: "Mirar y encontrar", icon: <Search /> },
-            { value: "ar", label: "AR", icon: <Box /> },
-          ]}
-        />
+        <Segmented<CameraMode> value={mode} onChange={setMode} vertical={!screens.sm} block={!screens.sm} style={{ marginBottom: token.margin }} options={[
+          { value: "qr", label: t("scan.title"), icon: <ScanLine /> },
+          { value: "find", label: t("camera.findMode"), icon: <Search /> },
+          { value: "ar", label: <span style={{ display: "inline-flex", alignItems: "center", gap: token.marginXS }}><span>{t("camera.arMode")}</span><Tag bordered={false} style={{ marginInlineEnd: 0 }}>{t("camera.experimental")}</Tag></span>, icon: <Layers /> },
+        ]} />
       </Reveal>
-      <Row gutter={[24, 24]}>
+      <Row gutter={[token.marginLG, token.marginLG]}>
         <Col xs={24} lg={14}>
           <Reveal delay={0.1}>
-            <CameraViewport
-              frame={mode === "qr"}
-              placeholder={<div style={{ width: "62%", transform: "scale(1.6)" }}><ContainerScene container={container} bare /></div>}
-              detection={mode === "find" ? { x: 0.5, y: 0.3, title: container.name, detail: hasMatch ? preview : `Sin “${query}” acá`, tone: hasMatch ? "match" : "unknown" } : null}
-            >
-              {mode === "ar" && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={SPRING.soft}
-                  style={{
-                    position: "absolute",
-                    top: "10%",
-                    left: "6%",
-                    width: "min(46%, 220px)",
-                    padding: 12,
-                    borderRadius: token.borderRadiusLG,
-                    border: `1px solid ${token.colorPrimaryBorder}`,
-                    background: `color-mix(in srgb, ${token.colorBgElevated} 94%, transparent)`,
-                    backdropFilter: "blur(8px)",
-                    boxShadow: token.boxShadowSecondary,
-                    color: token.colorText,
-                    transform: "perspective(600px) rotateY(10deg)",
-                  }}
-                >
-                  <Typography.Text strong style={{ display: "block" }}>
-                    {space.name} › {container.name}
-                  </Typography.Text>
-                  {container.items.slice(0, 3).map((item) => (
-                    <Typography.Text key={item.id} style={{ display: "block", fontSize: token.fontSizeSM }}>
-                      {item.name}: {item.quantity} {unit(item.unit, item.quantity)}
-                    </Typography.Text>
-                  ))}
-                  <Typography.Text type="secondary" style={{ display: "block", marginTop: 4, fontFamily: "var(--font-geist-mono)", fontSize: token.fontSizeSM }}>
-                    {container.code}
-                  </Typography.Text>
-                </motion.div>
-              )}
-            </CameraViewport>
-            <Flex gap={12} wrap align="center" style={{ marginTop: 16 }}>
-              <Button type="primary" size="large" icon={<Camera />}>
-                {mode === "ar" ? "Entrar en AR" : "Activar cámara"}
-              </Button>
-              <Typography.Text type="secondary">Todo pasa en este teléfono: las imágenes no salen de acá.</Typography.Text>
+            <Flex vertical gap={token.margin}>
+              {mode === "find" && <Input size="large" allowClear prefix={<Search />} placeholder={t("camera.search")} aria-label={t("camera.search")} value={query} onChange={(event) => setQuery(event.target.value)} />}
+              <CameraViewport
+                frame={mode === "qr"}
+                placeholder={<div style={{ width: "62%", transform: "scale(1.6)" }}><ContainerScene container={{ kind: "shelf", color: "purple" }} bare /></div>}
+                detections={bubbles}
+                controls={mode === "find" ? <Segmented<number> aria-label={t("camera.zoom")} value={zoom} onChange={setZoom} options={[1, 2, 3].map((value) => ({ value, label: `${value}×` }))} /> : undefined}
+              />
+              <Typography.Text type="secondary">{t(mode === "find" ? "camera.findHint" : "camera.local")}</Typography.Text>
             </Flex>
           </Reveal>
         </Col>
-
         <Col xs={24} lg={10}>
           <Reveal delay={0.15}>
-            {mode === "qr" ? (
-              <Card>
-                <SectionHeader icon={ScanLine} title="¿No lee la etiqueta?" description="Escribí el código de cuatro letras." />
-                <Space.Compact style={{ width: "100%" }}>
-                  <Input
-                    value={code}
-                    onChange={(event) => setCode(event.target.value)}
-                    maxLength={4}
-                    placeholder="K7QM"
-                    aria-label={t("storage.code")}
-                    style={{ fontFamily: "var(--font-geist-mono)", letterSpacing: "0.2em", textTransform: "uppercase" }}
-                  />
-                  <Button type="primary" disabled={!codeMatch} onClick={() => codeMatch && onOpen(codeMatch.container.id)}>
-                    Ir
-                  </Button>
-                </Space.Compact>
-                <Typography.Paragraph type="secondary" style={{ margin: "12px 0 0", fontSize: token.fontSizeSM }}>
-                  Probá con K7QM o TR4X.
-                </Typography.Paragraph>
+            {mode === "find" && words ? (
+              <Card styles={{ body: { padding: 0 } }}>
+                <div style={{ padding: `${token.padding}px ${token.paddingLG}px 0` }}>
+                  <SectionHeader icon={Search} title={t("camera.whereFound", { query: query.trim() })} description={t("camera.foundCount", { count: found.length })} />
+                </div>
+                <AnimatePresence initial={false}>
+                  {found.map((entry, index) => {
+                    const { color, Icon } = containerAppearance(entry.container);
+                    const inView = IN_VIEW.some((label) => label.id === entry.container.id);
+                    return <ListRow key={entry.container.id} index={index} divider={index < found.length - 1}
+                      leading={<IconTile icon={Icon} color={color} size={token.controlHeight} />}
+                      title={entry.container.name} meta={<span>{pathOf(entry)}</span>}
+                      onOpen={() => go.onContainer(entry.container.id)} openLabel={t("camera.openContainer", { name: entry.container.name })}
+                      trailing={inView ? <Tag color="success" bordered={false}>{t("camera.inView")}</Tag> : undefined} />;
+                  })}
+                </AnimatePresence>
               </Card>
             ) : (
-              <Card styles={{ body: { padding: 0 } }}>
-                <div style={{ padding: "16px 24px 4px" }}>
-                  <SectionHeader
-                    icon={Icon}
-                    color={color}
-                    title={container.name}
-                    description={`${space.name} · ${container.code}`}
-                    extra={
-                      <Button icon={<ExternalLink />} onClick={() => onOpen(container.id)}>
-                        Abrir
-                      </Button>
-                    }
-                  />
-                  <Input allowClear prefix={<Search />} placeholder="¿Qué buscás?" aria-label="¿Qué buscás?" value={query} onChange={(event) => setQuery(event.target.value)} style={{ marginBottom: 12 }} />
-                </div>
-                {!hasMatch && (
-                  <Typography.Paragraph type="secondary" style={{ margin: 0, padding: "12px 24px 20px" }}>
-                    No hay “{query}” en {container.name}. Probá apuntando a otra etiqueta.
-                  </Typography.Paragraph>
-                )}
-                <AnimatePresence initial={false}>
-                  {items.map((item, index) => (
-                    <ListRow
-                      key={item.id}
-                      index={index}
-                      title={<Highlight text={item.name} query={query.trim()} />}
-                      meta={<StockTag status={getStockStatus(item)} />}
-                      trailing={
-                        <Typography.Text strong style={{ whiteSpace: "nowrap" }}>
-                          {item.quantity} {unit(item.unit, item.quantity)}
-                        </Typography.Text>
-                      }
-                    />
-                  ))}
-                  {notes.map((note, index) => (
-                    <ListRow key={note} index={items.length + index} divider={index < notes.length - 1} title={<Highlight text={note} query={query.trim()} />} meta="Anotación" />
-                  ))}
-                </AnimatePresence>
+              <Card>
+                <SectionHeader icon={mode === "qr" ? ScanLine : Layers} title={mode === "qr" ? t("scan.manual") : t("spatial.title")} description={mode === "qr" ? t("camera.manualHint") : t("spatial.unsupported")} />
+                {mode === "find" && <Button icon={<ExternalLink />} onClick={() => go.onContainer("estanteria")}>{t("camera.open")}</Button>}
               </Card>
             )}
           </Reveal>
@@ -695,57 +554,63 @@ function CameraScreen({ onOpen }: { onOpen: (id: string) => void }) {
 
 // ── Flujo ────────────────────────────────────────────────────────────────────────────────────
 
-type Step = "plan" | "container" | "camera";
+type Step = "inventory" | "space" | "container" | "item" | "camera";
 
 export function StorageFlow() {
-  const [step, setStep] = useState<Step>("plan");
+  const [step, setStep] = useState<Step>("inventory");
+  const [spaceId, setSpaceId] = useState("taller");
   const [containerId, setContainerId] = useState("alacena");
-  const open = (id: string) => {
-    setContainerId(id);
-    setStep("container");
+  const [itemId, setItemId] = useState("yerba");
+  const [highlight, setHighlight] = useState<string | undefined>();
+  const go: Navigate = {
+    onHome: () => setStep("inventory"),
+    onSpace: (id) => { setSpaceId(id); setStep("space"); },
+    onContainer: (id, item) => { setContainerId(id); setHighlight(item); setStep(item ? "item" : "container"); if (item) setItemId(item); },
+    onItem: (id) => { setItemId(id); setHighlight(id); setStep("item"); },
+    onCamera: () => setStep("camera"),
   };
 
   return (
     <DemoBlock
       id="flujo-almacenamiento"
       title="Flujo: almacenamiento"
-      description="Cómo tienen que verse Inventario, la página de un contenedor y la cámara. Tocá una ficha, buscá “yerba”, sumá una anotación, cambiá de modo en la cámara. Decisiones: una sola cámara con modos; fichas con tres líneas como mucho; un encabezado por sección (SectionHeader); como mucho dos acciones visibles y el resto en ⋯; botones táctiles de 44px; el orden del contenedor es productos → compartimentos → anotaciones. Los textos de la cámara son la propuesta de la revisión de voz; en la app van por t()."
+      description="Inventario es una de las estrellas de la app: se recorre sin perderse y la cámara encuentra cosas de verdad. Decisiones: el inicio se ve como cada perfil elige (Lugares, Plano, Lista o Tarjetas, recordado por perfil); cada recinto tiene su página; en un recinto, un contenedor o una ficha, la ruta tocable (PathCrumbs) reemplaza al eyebrow; el contenedor muestra primero lo que tiene, sección por sección (compartimentos, productos, anotaciones, fotos), y agregar es siempre un botón de su sección; un contenedor vacío tiene un solo EmptyState; llegar con ?item= abre la ficha y resalta la fila; la cámara tiene Escanear QR, Buscar (varias etiquetas a la vez, con burbujas tocables) y AR espacial como experimental. Probá: elegí otra vista, entrá al Taller, buscá “cables” o tocá una burbuja."
       code={`
-// Página de un contenedor: el esqueleto que tienen que seguir ContainerPage y ContainerContents.
-<PageHeader leading={<IconTile icon={Icon} color={color} size={56} solid />} eyebrow={space.name} title={container.name}
-  description={<>{kind} · {t("storage.code")} {code}</>}
-  extra={<><Button icon={<Camera />}>Cámara</Button><Button type="primary" icon={<Plus />}>Agregar producto</Button><Dropdown …><Button icon={<EllipsisVertical />} aria-label="Más acciones" /></Dropdown></>} />
+// Inicio: la vista se guarda por perfil.
+const { inventoryView } = usePreferences();
+<SectionHeader title={t("storage.yourPlaces")} extra={<ViewSwitcher label={t("storage.views.label")} value={inventoryView} options={options.inventory} onChange={(view) => setPreference("inventoryView", view)} />} />
+{inventoryView === "places" && <PlacesView spaces={spaces} />}   // también PlanView, ListView, CardsView
 
-<Stagger><Row gutter={[12, 12]}>{/* StatTile × 3 */}</Row></Stagger>
+// Página anidada: ruta tocable + escena que se abre.
+<PageHeader crumbs={<PathCrumbs items={[{ label: "Inventario", href: "/inventario", icon: Boxes }, { label: space.name, href: spaceHref(space.id) }, { label: container.name }]} />}
+  leading={<ContainerScene container={container} compact open />} title={container.name} />
 
-<Reveal delay={0.1}>
-  <SectionHeader icon={Boxes} title={t("storage.contents.inventory")} description={…} />
-  <Card styles={{ body: { padding: 0 } }}><AnimatePresence>{items.map((item, i) => <ListRow … />)}</AnimatePresence></Card>
-</Reveal>
-<Reveal delay={0.15}>
-  <SectionHeader icon={Layers} title={t("storage.subcontainers")} />
-  <RoomFloor color={color}>{children.map((child) => <VisualTile … />)}</RoomFloor>
-</Reveal>
-<Reveal delay={0.2}>{/* Anotaciones: ListRow + Input en línea, sin Modal para editar una línea */}</Reveal>
+// Cada sección con su botón de agregar.
+<SectionHeader icon={Boxes} title={t("storage.contents.inventory")} extra={<Button type="primary" icon={<Plus />}>{t("inventory.form.title")}</Button>} />
+<InventoryList containerId={id} onOpen={open} highlightId={params.get("item")} />
 
-// Plano: un panel por ambiente (IconTile solid + título + RoomFloor con VisualTile).
-// Cámara: un solo visor (CameraViewport) con Segmented de modos.
+// Cámara: una burbuja por etiqueta a la vista.
+<CameraViewport videoRef={videoRef} active={active} detections={bubbles} controls={<CameraControls … />} />
 `}
     >
       <FlowFrame<Step>
         steps={[
-          { value: "plan", label: "1 · Plano de la casa" },
-          { value: "container", label: "2 · Contenedor" },
-          { value: "camera", label: "3 · Cámara" },
+          { value: "inventory", label: "1 · Inventario" },
+          { value: "space", label: "2 · Recinto" },
+          { value: "container", label: "3 · Contenedor" },
+          { value: "item", label: "4 · Ficha" },
+          { value: "camera", label: "5 · Cámara" },
         ]}
         step={step}
         onStep={setStep}
         status="adopted"
-        screenKey={step === "container" ? `container:${containerId}` : step}
+        screenKey={step === "container" ? `container:${containerId}` : step === "space" ? `space:${spaceId}` : step === "item" ? `item:${itemId}` : step}
       >
-        {step === "plan" && <PlanScreen onOpen={open} onCamera={() => setStep("camera")} />}
-        {step === "container" && <ContainerScreen key={containerId} id={containerId} onOpen={open} onCamera={() => setStep("camera")} />}
-        {step === "camera" && <CameraScreen onOpen={open} />}
+        {step === "inventory" && <InventoryScreen go={go} />}
+        {step === "space" && <SpaceScreen id={spaceId} go={go} />}
+        {step === "container" && <ContainerScreen key={containerId} id={containerId} highlight={highlight} go={go} />}
+        {step === "item" && <ItemScreen key={itemId} id={itemId} go={go} />}
+        {step === "camera" && <CameraScreen go={go} />}
       </FlowFrame>
     </DemoBlock>
   );

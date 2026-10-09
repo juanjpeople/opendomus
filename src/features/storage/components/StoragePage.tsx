@@ -1,46 +1,98 @@
 "use client";
 
-import { App, Button, Card, Dropdown, Flex, Skeleton, Tooltip, Typography, theme } from "antd";
-import { Camera, EllipsisVertical, MapPin, Pencil, Plus, Printer, Trash2 } from "lucide-react";
+import { App, Button, Card, Skeleton, theme } from "antd";
+import { Camera, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
-import { Reveal, Stagger, StaggerItem } from "@/components/motion";
-import { EmptyState, IconTile, PageHeader, RoomFloor, type FloorPattern } from "@/components/ui";
+import { Reveal } from "@/components/motion";
+import { EmptyState, PageHeader, SectionHeader, ViewSwitcher } from "@/components/ui";
+import { usePreferences, useSetPreference } from "@/hooks/usePreferences";
 import { useT } from "@/i18n";
-import { tint } from "@/lib/appearance";
 import { usePermission } from "@/lib/auth/hooks";
-import { spaceAppearance, type Container, type Space, type SpaceKind } from "../domain";
-import { useStorageActions, useStorageOverview, type ContainerOverview, type SpaceOverview } from "../hooks";
+import { cameraHref, spaceHref } from "@/lib/navigation/routes";
+import type { Container, Space } from "../domain";
+import { useStorageActions, useStorageOverview } from "../hooks";
+import { flattenOverview } from "../views";
 import type { LabelData } from "./ContainerLabel";
 import { LabelModal } from "./LabelModal";
-import { AddTile, ContainerTile } from "./ContainerTiles";
+import { StorageHighlights } from "./StorageHighlights";
 import { ContainerModal, SpaceModal } from "./StorageForms";
 import { StorageSearch } from "./StorageSearch";
-import { cameraHref } from "@/lib/navigation/routes";
+import { CardsView, ListView, PlacesView, PlanView, useViewOptions, ViewStage, type StorageViewActions } from "./StorageViews";
 
-const FLOOR: Record<SpaceKind, FloorPattern> = {
-  kitchen: "tiles", bathroom: "tiles", bedroom: "boards", living: "boards", garden: "diagonal",
-  workshop: "dots", shed: "dots", garage: "dots", other: "dots",
-};
-
-type Dialog =
+export type StorageDialog =
   | { kind: "space"; space?: Space }
   | { kind: "container"; container?: Container; spaceId?: string }
   | { kind: "labels"; labels: LabelData[] }
   | null;
 
 /**
- * Plano de la casa: cada recinto es un ambiente de su color y sus contenedores se ubican
- * adentro, como muebles. Los recintos se acomodan en columnas (mosaico) según su altura.
+ * Acciones de las vistas según los permisos: abrir los diálogos y confirmar el borrado.
+ * Las comparten el inicio de Inventario y la página de cada recinto.
+ */
+export function useStorageViewActions(setDialog: (dialog: StorageDialog) => void, afterDeleteSpace?: () => void): StorageViewActions {
+  const t = useT();
+  const { modal } = App.useApp();
+  const { deleteSpace } = useStorageActions();
+  const canManage = usePermission("storage.manage");
+  return {
+    onLabels: (labels) => setDialog({ kind: "labels", labels }),
+    ...(canManage ? {
+      onAddContainer: (spaceId: string) => setDialog({ kind: "container", spaceId }),
+      onEditSpace: (space: Space) => setDialog({ kind: "space", space }),
+      onDeleteSpace: (space: Space) => modal.confirm({
+        title: t("storage.deleteSpaceConfirm", { name: space.name }),
+        okText: t("storage.delete"),
+        okButtonProps: { danger: true },
+        cancelText: t("common.cancel"),
+        onOk: async () => { if (await deleteSpace(space.id)) afterDeleteSpace?.(); },
+      }),
+    } : {}),
+  };
+}
+
+/** Los diálogos de las vistas. Al crear un recinto, `onSpaceCreated` recibe su id. */
+export function StorageDialogs({ dialog, onClose, onSpaceCreated }: { dialog: StorageDialog; onClose: () => void; onSpaceCreated?: (id: string) => void }) {
+  return (
+    <>
+      <SpaceModal open={dialog?.kind === "space"} space={dialog?.kind === "space" ? dialog.space : undefined} onClose={onClose} onCreated={onSpaceCreated} />
+      <ContainerModal
+        open={dialog?.kind === "container"}
+        container={dialog?.kind === "container" ? dialog.container : undefined}
+        spaceId={dialog?.kind === "container" ? dialog.spaceId : undefined}
+        onClose={onClose}
+      />
+      <LabelModal open={dialog?.kind === "labels"} labels={dialog?.kind === "labels" ? dialog.labels : []} onClose={onClose} />
+    </>
+  );
+}
+
+/**
+ * Inicio de Inventario: buscar, lo que hay que reponer, lo último visitado y la casa en la vista
+ * que cada perfil eligió (lugares, plano, lista o tarjetas).
  */
 export function StoragePage() {
   const t = useT();
   const { token } = theme.useToken();
+  const router = useRouter();
   const spaces = useStorageOverview();
-  const [dialog, setDialog] = useState<Dialog>(null);
+  const { inventoryView } = usePreferences();
+  const setPreference = useSetPreference();
+  const options = useViewOptions();
+  const [dialog, setDialog] = useState<StorageDialog>(null);
+  const actions = useStorageViewActions(setDialog);
   const close = () => setDialog(null);
+
+  // Antes cada recinto era una sección de esta página (`#recinto-<id>`): los enlaces viejos abren su página.
+  useEffect(() => {
+    const legacy = window.location.hash.match(/^#recinto-(.+)$/);
+    if (legacy) router.replace(spaceHref(decodeURIComponent(legacy[1])));
+  }, [router]);
+
+  const containerCount = spaces ? flattenOverview(spaces).length : 0;
 
   return (
     <RequirePermission perform="inventory.view">
@@ -60,7 +112,6 @@ export function StoragePage() {
         }
       />
 
-      {!!spaces?.length && <Reveal><StorageSearch /></Reveal>}
       {!spaces && <Skeleton active />}
       {spaces?.length === 0 && (
         <Card>
@@ -79,116 +130,29 @@ export function StoragePage() {
         </Card>
       )}
 
-      <Stagger delay={0.1} stagger={0.08} style={{ columnWidth: token.controlHeightLG * 10, columnGap: token.marginLG }}>
-        {spaces?.map((space) => (
-          <StaggerItem key={space.id} style={{ breakInside: "avoid", marginBottom: token.marginLG }}>
-            <SpaceRoom space={space} onDialog={setDialog} />
-          </StaggerItem>
-        ))}
-      </Stagger>
-
-      <SpaceModal open={dialog?.kind === "space"} space={dialog?.kind === "space" ? dialog.space : undefined} onClose={close} />
-      <ContainerModal
-        open={dialog?.kind === "container"}
-        container={dialog?.kind === "container" ? dialog.container : undefined}
-        spaceId={dialog?.kind === "container" ? dialog.spaceId : undefined}
-        onClose={close}
-      />
-      <LabelModal open={dialog?.kind === "labels"} labels={dialog?.kind === "labels" ? dialog.labels : []} onClose={close} />
-    </RequirePermission>
-  );
-}
-
-function SpaceRoom({ space, onDialog }: { space: SpaceOverview; onDialog: (dialog: Dialog) => void }) {
-  const t = useT();
-  const { token } = theme.useToken();
-  const { deleteSpace } = useStorageActions();
-  const { modal } = App.useApp();
-  const canManage = usePermission("storage.manage");
-  const { color, Icon } = spaceAppearance(space);
-  const palette = tint(token, color);
-  const itemCount = space.containers.reduce((sum, container) => sum + container.itemCount, 0);
-  const toLabel = (container: ContainerOverview): LabelData => ({ id: container.id, name: container.name, code: container.code, spaceName: space.name });
-
-  return (
-    <section
-      id={`recinto-${space.id}`}
-      style={{
-        scrollMarginTop: 88,
-        padding: token.padding,
-        borderRadius: token.borderRadiusLG * 2,
-        border: `1px solid ${palette.border}`,
-        background: `linear-gradient(160deg, ${palette.bg} 0%, ${token.colorBgContainer} 55%)`,
-        boxShadow: token.boxShadowTertiary,
-      }}
-    >
-      {/* Encabezado del ambiente. */}
-      <Flex align="center" justify="space-between" gap={token.marginSM} wrap style={{ marginBottom: token.margin }}>
-        <Flex align="center" gap={token.marginSM} style={{ minWidth: 0, flex: `1 1 ${token.controlHeight * 6}px` }}>
-          <IconTile icon={Icon} color={color} size={token.controlHeightLG + token.paddingXXS} solid />
-          <div style={{ minWidth: 0 }}>
-            <Typography.Title level={4} style={{ margin: 0, letterSpacing: "-0.02em", overflowWrap: "anywhere" }}>
-              {space.name}
-            </Typography.Title>
-            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-              {t("storage.containerCount", { count: space.containers.length })} · {t("storage.itemCount", { count: itemCount })}
-            </Typography.Text>
+      {!!spaces?.length && (
+        <>
+          <Reveal delay={0.05}><StorageSearch /></Reveal>
+          <StorageHighlights spaces={spaces} />
+          <Reveal delay={0.1}>
+            <SectionHeader
+              title={t("storage.yourPlaces")}
+              description={`${t("storage.spaceCount", { count: spaces.length })} · ${t("storage.containerCount", { count: containerCount })}`}
+              extra={<ViewSwitcher label={t("storage.views.label")} value={inventoryView} options={options.inventory} onChange={(view) => setPreference("inventoryView", view)} />}
+            />
+          </Reveal>
+          <div style={{ marginTop: token.marginSM }}>
+            <ViewStage view={inventoryView}>
+              {inventoryView === "places" && <PlacesView spaces={spaces} />}
+              {inventoryView === "plan" && <PlanView spaces={spaces} actions={actions} />}
+              {inventoryView === "list" && <ListView spaces={spaces} />}
+              {inventoryView === "cards" && <CardsView spaces={spaces} actions={actions} />}
+            </ViewStage>
           </div>
-        </Flex>
-        <Flex gap={token.marginXXS} style={{ flexShrink: 0 }}>
-          {space.containers.length > 0 && (
-            <Tooltip title={t("storage.printLabels")}>
-              <Button
-                type="text"
-                icon={<Printer />}
-                aria-label={t("storage.printLabels")}
-                onClick={() => onDialog({ kind: "labels", labels: space.containers.map(toLabel) })}
-              />
-            </Tooltip>
-          )}
-          {canManage && (
-            <Dropdown
-              trigger={["click"]}
-              menu={{
-                items: [
-                  { key: "add", icon: <Plus />, label: t("storage.addContainer"), onClick: () => onDialog({ kind: "container", spaceId: space.id }) },
-                  { key: "edit", icon: <Pencil />, label: t("storage.edit"), onClick: () => onDialog({ kind: "space", space }) },
-                  { type: "divider" },
-                  {
-                    key: "delete",
-                    danger: true,
-                    icon: <Trash2 />,
-                    label: t("storage.delete"),
-                    onClick: () =>
-                      modal.confirm({
-                        title: t("storage.deleteSpaceConfirm", { name: space.name }),
-                        okText: t("storage.delete"),
-                        okButtonProps: { danger: true },
-                        cancelText: t("common.cancel"),
-                        onOk: () => deleteSpace(space.id),
-                      }),
-                  },
-                ],
-              }}
-            >
-              <Button type="text" icon={<EllipsisVertical />} aria-label={t("storage.edit")} />
-            </Dropdown>
-          )}
-        </Flex>
-      </Flex>
+        </>
+      )}
 
-      {/* El "piso" del ambiente: acá se ubican los contenedores. */}
-      <RoomFloor pattern={FLOOR[space.kind]} color={color}>
-        {space.containers.map((container) => (
-          <ContainerTile key={container.id} container={container} onLabel={() => onDialog({ kind: "labels", labels: [toLabel(container)] })} />
-        ))}
-        {canManage && <AddTile color={palette.solid} label={t("storage.addContainer")} onClick={() => onDialog({ kind: "container", spaceId: space.id })} />}
-        {!canManage && space.containers.length === 0 && (
-          <Typography.Text type="secondary" style={{ padding: token.paddingSM }}>
-            {t("storage.noContainers")}
-          </Typography.Text>
-        )}
-      </RoomFloor>
-    </section>
+      <StorageDialogs dialog={dialog} onClose={close} onSpaceCreated={(id) => router.push(spaceHref(id))} />
+    </RequirePermission>
   );
 }
