@@ -5,6 +5,7 @@
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@better-auth/passkey": "^1.7.7",
     "better-auth": "^1.7.7",
     "hono": "^4.13.13",
     "jose": "6.2.12",
@@ -15,7 +16,7 @@
     "wrangler": "^4.149.0"
   },
   "scripts": {
-    "db:auth-migration": "node scripts/auth-migration.ts",
+    "db:auth-migration": "node --import ../scripts/test-hooks.mjs scripts/auth-migration.ts",
     "test": "node --test \"test/**/*.test.ts\""
   }
 }

@@ -78,6 +78,18 @@ de registro no verificado no demuestra propiedad de esa dirección y no debe con
 privilegios de operador. Un futuro OTP o login social tampoco puede reconstruir por
 sí solo las claves de cifrado; la recuperación actual usa el kit.
 
+Las cuentas domésticas pueden encender la verificación en dos pasos (Ajustes → Cuenta;
+a quien administra una casa en la nube se le sugiere en Familia). La contraseña sigue
+siendo el primer paso porque de ella sale la clave que abre los datos. El segundo es
+un código TOTP, un código de respaldo (diez, de un solo uso) o una passkey. La passkey
+no reemplaza la contraseña: solo completa un ingreso que ya pasó por ella, y sumarla
+pide la contraseña. Google y GitHub también pasan por el segundo paso, y recuperar la
+cuenta con el kit no lo apaga. El secreto TOTP y los códigos de respaldo se guardan
+cifrados con `BETTER_AUTH_SECRET`; de cada passkey solo se guarda la clave pública.
+Encender, apagar o regenerar códigos pide la contraseña. Quien pierde el teléfono,
+los códigos de respaldo y las passkeys queda afuera de la cuenta en la nube (sus datos
+siguen en sus dispositivos): todavía no hay un camino de soporte para eso.
+
 Queremos mejorar estas protecciones con contribuciones y revisión pública. No
 prometemos ausencia de vulnerabilidades: documentamos límites, verificamos cambios
 y corregimos los problemas que se detectan.

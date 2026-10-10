@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useT } from "@/i18n";
 import { PASSWORD_MIN_LENGTH, passwordStrength } from "../domain";
 import { useCloudActions } from "../hooks";
+import type { SecondStep } from "../service";
 
 interface Values {
   email: string;
@@ -19,7 +20,7 @@ interface Values {
  * abre tus claves sin la contraseña (ni Refugiar puede). Al terminar se cierran todas tus sesiones
  * y te damos un kit nuevo (el usado deja de servir).
  */
-export function RecoverForm({ onRecovered }: { onRecovered: (recoveryCode: string) => void }) {
+export function RecoverForm({ onRecovered }: { onRecovered: (recoveryCode: string, secondStep?: SecondStep, email?: string) => void }) {
   const t = useT();
   const { token } = theme.useToken();
   const [form] = Form.useForm<Values>();
@@ -33,7 +34,9 @@ export function RecoverForm({ onRecovered }: { onRecovered: (recoveryCode: strin
     setBusy(true);
     const result = await recover({ email: values.email, recoveryCode: values.recoveryCode, password: values.password });
     setBusy(false);
-    if (result) onRecovered(result.recoveryCode);
+    // Los dos pasos siguen encendidos después de recuperar: el kit nuevo se muestra primero (el
+    // anterior ya no sirve) y el código se pide después.
+    if (result) onRecovered(result.recoveryCode, "secondStep" in result ? result.secondStep : undefined, values.email.trim());
   }
 
   return (

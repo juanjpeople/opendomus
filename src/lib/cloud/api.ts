@@ -45,6 +45,19 @@ const CLOUD_ERRORS: Record<string, MessageKey> = {
   "license-required": "errors.cloud.licenseInvalid",
   "license-invalid": "errors.cloud.licenseInvalid",
   "plan-paused": "errors.cloud.planPaused",
+  // Verificación en dos pasos y llaves de acceso (códigos de Better Auth).
+  INVALID_PASSWORD: "errors.cloud.wrongPassword",
+  INVALID_CODE: "errors.cloud.badCode",
+  INVALID_BACKUP_CODE: "errors.cloud.badCode",
+  TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE: "errors.cloud.secondStepExpired",
+  INVALID_TWO_FACTOR_COOKIE: "errors.cloud.secondStepExpired",
+  TWO_FACTOR_REQUIRED: "errors.cloud.secondStepExpired",
+  ACCOUNT_TEMPORARILY_LOCKED: "errors.cloud.secondStepLocked",
+  "passkey-cancelled": "errors.cloud.passkeyCancelled",
+  PASSKEY_NOT_FOUND: "errors.cloud.passkeyFailed",
+  AUTHENTICATION_FAILED: "errors.cloud.passkeyFailed",
+  CHALLENGE_NOT_FOUND: "errors.cloud.passkeyFailed",
+  FAILED_TO_VERIFY_REGISTRATION: "errors.cloud.passkeyFailed",
 };
 
 /** Bytes (fotos cifradas): subir con PUT o bajar con GET. Los errores son los mismos que `api`. */

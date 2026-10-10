@@ -4,6 +4,7 @@
  * Además, lo que NO tiene que poder pasar. Uso: `node --import ./scripts/test-hooks.mjs --test server/test/api.e2e.ts`
  */
 import assert from "node:assert/strict";
+import { createOTP } from "@better-auth/utils/otp";
 import { operatorTotp } from "../src/operator-auth";
 import { test } from "node:test";
 import WebSocket from "ws";
@@ -531,4 +532,31 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async (t)
   assert.equal((await adminCall("DELETE", `/platform/households/${householdId}`, { confirm: householdId })).status, 409);
   assert.equal((await adminCall("POST", `/platform/households/${householdId}/resume`)).status, 200);
   assert.equal((await adminCall("GET", "/platform/notices")).status, 200);
+
+  // Al final: encender los dos pasos cambia cómo entra Ana.
+  await twoFactorChecks(anaAgain, anaThird.authKey, anaEmail);
 });
+
+/** Dos pasos en el Worker: se enciende con la contraseña, frena el ingreso y la llave pide contraseña. */
+async function twoFactorChecks(client: Client, authKey: string, email: string) {
+  assert.equal((await client.call("GET", "/api/me")).body.user.twoFactorEnabled, false);
+  const enabled = await client.call("POST", "/api/auth/two-factor/enable", { password: authKey });
+  assert.equal(enabled.status, 200, JSON.stringify(enabled.body));
+  const bits = [...new URL(enabled.body.totpURI).searchParams.get("secret")!].map((char) => "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".indexOf(char).toString(2).padStart(5, "0")).join("");
+  const secret = Buffer.from(bits.match(/.{8}/g)!.map((byte) => parseInt(byte, 2))).toString();
+  const code = () => createOTP(secret).totp();
+  assert.equal((await client.call("POST", "/api/auth/two-factor/verify-totp", { code: await code() })).status, 200);
+  assert.equal((await client.call("GET", "/api/me")).body.user.twoFactorEnabled, true);
+
+  // Sumar una llave de acceso pide la contraseña (aunque haya sesión).
+  assert.equal((await client.call("GET", "/api/auth/passkey/generate-register-options")).status, 200);
+  assert.equal((await client.call("POST", "/api/auth/passkey/verify-registration", { response: {} })).status, 403);
+  assert.equal((await client.call("POST", "/api/auth/passkey/verify-registration", { response: {}, password: "x".repeat(43) })).status, 403);
+
+  const device = new Client();
+  const signIn = await device.call("POST", "/api/auth/sign-in/email", { email, password: authKey });
+  assert.equal(signIn.body.twoFactorRedirect, true);
+  assert.equal((await device.call("GET", "/api/me")).body.user, null);
+  assert.equal((await device.call("POST", "/api/auth/two-factor/verify-totp", { code: await code() })).status, 200);
+  assert.equal((await device.call("GET", "/api/me")).body.user.email, email);
+}

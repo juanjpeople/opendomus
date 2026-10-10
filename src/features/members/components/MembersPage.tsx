@@ -19,6 +19,7 @@ import { useMemberActions, useMembers } from "../hooks";
 import { CloudHouseholdPanel } from "@/features/cloud/components/CloudHouseholdPanel";
 import { InviteFamilyButton, MemberAccessButton } from "@/features/cloud/components/InviteModal";
 import { JoinRequests } from "@/features/cloud/components/JoinRequests";
+import { AdminSecurityPrompt } from "@/features/cloud/components/AdminSecurityPrompt";
 import { MemberModal } from "./MemberModal";
 import { SecurityDrawer } from "./SecurityDrawer";
 
@@ -46,6 +47,7 @@ export function MembersPage() {
         }
       />
       <JoinRequests />
+      <AdminSecurityPrompt />
       <Stagger delay={0.1}>
         <Row gutter={[16, 16]}>
           {members.map((member) => (

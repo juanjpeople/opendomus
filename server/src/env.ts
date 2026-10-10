@@ -34,6 +34,8 @@ export interface SessionUser {
   id: string;
   name: string;
   email: string;
+  /** Verificación en dos pasos encendida (código o llave de acceso además de la contraseña). */
+  twoFactorEnabled: boolean;
 }
 
 /** Variables por pedido (Hono `c.var`). */
