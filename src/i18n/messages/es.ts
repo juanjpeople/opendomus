@@ -249,6 +249,7 @@ export const es = {
       private: { label: "Privado", description: "Solo lo ve el perfil que lo creó." },
     },
     page: {
+      policyLink: "Política de privacidad de la app",
       eyebrow: "Tu casa, tus reglas",
       title: "Privacidad",
       description: "Revisá qué listas, proyectos, recetas y eventos compartís con cada grupo.",
@@ -292,6 +293,7 @@ export const es = {
       start: "Empezar",
       account: "Cuenta",
       feedback: "Comentarios",
+      privacyPolicy: "Política de privacidad",
       join: "Unirme a una casa",
       compras: "Compras",
       recipes: "Recetas",
@@ -1702,6 +1704,45 @@ export const es = {
     privacy: "No incluyas contraseñas, kits de recuperación ni información sensible de tu casa.",
   },
 
+  legal: {
+    privacy: {
+      eyebrow: "Política de privacidad",
+      title: "Qué hace {app} con tus datos",
+      updated: "Última actualización: 10 de octubre de 2026",
+      intro: "{app} es una app de código abierto para organizar la casa. Está pensada para que tus datos vivan en tus dispositivos. No muestra publicidad, no usa rastreadores y no vende datos.",
+      sections: {
+        android: {
+          title: "La app de Android",
+          body: "La app de Android funciona sin cuenta y sin conexión. Todo lo que cargás queda guardado en tu teléfono.\nNo envía tus datos a nuestros servidores ni a terceros.\nLa cámara se usa solo cuando la abrís, para sacar fotos o leer códigos QR. Las imágenes quedan en el teléfono.\nLos respaldos son un archivo que vos elegís dónde guardar. Ese archivo no está cifrado: guardalo en un lugar de confianza.\nSi desinstalás la app, Android borra todos sus datos.",
+        },
+        cloud: {
+          title: "La versión web con cuenta (opcional)",
+          body: "En {domain} podés crear una cuenta para compartir la casa entre varios dispositivos. Para eso guardamos tu nombre, tu email y tu contraseña protegida con un hash. Si entrás con Google o GitHub, recibimos tu nombre, tu email y tu foto de perfil.\nLos datos de tu casa y tus fotos se cifran en tu dispositivo antes de subir. Nosotros no tenemos las claves y no podemos leerlos.\nPor seguridad, cada sesión guarda la dirección IP y el navegador desde donde entraste. Una sesión dura hasta 30 días.\nSi nos mandás un comentario, guardamos el mensaje y el email que dejes.",
+        },
+        providers: {
+          title: "Servicios que usamos",
+          body: "Cloudflare aloja la web, la API y la base de datos de las cuentas.\nSupabase guarda las fotos cifradas de la versión con cuenta.\nGoogle y GitHub solo intervienen si elegís entrar con ellos.\nNinguno recibe tus datos para publicidad.",
+        },
+        retention: {
+          title: "Cuánto tiempo guardamos los datos",
+          body: "Lo que está en tu dispositivo se queda ahí hasta que lo borrás o desinstalás la app.\nUna casa en la nube sin actividad durante 90 días se pausa, con avisos antes.\nPodés pedir que borremos tu cuenta y todos sus datos escribiendo a {email}. Lo hacemos dentro de los 30 días.",
+        },
+        children: {
+          title: "Chicos",
+          body: "La app permite perfiles de chicos dentro de una casa, que maneja un adulto. Los perfiles de chicos no tienen cuenta propia ni email. No pedimos datos de menores.",
+        },
+        changes: {
+          title: "Cambios",
+          body: "Si cambia esta política, actualizamos esta página y su fecha. El código está publicado en GitHub, así que cualquiera puede revisar qué hace la app.",
+        },
+        contact: {
+          title: "Contacto",
+          body: "Por cualquier consulta sobre tus datos, escribinos a {email}.",
+        },
+      },
+      source: "Ver el código en GitHub",
+    },
+  },
   landing: {
     introduction: {
       eyebrow: "El proyecto",

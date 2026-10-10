@@ -33,6 +33,7 @@ const { Header, Content } = Layout;
 
 /** Rutas públicas: se ven sin sesión y sin el layout de la app (la landing, la bienvenida). */
 const PUBLIC_ROUTES = APP_ROUTES.filter((route) => route.external).map((route) => route.href);
+const STATIC_PUBLIC_ROUTES = ["/bienvenida", "/politica-de-privacidad"];
 
 /**
  * Estructura de la app. Decide qué mostrar según el estado del dispositivo y la sesión:
@@ -58,7 +59,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (firstVisit) router.replace(DEMO_ENABLED ? "/empezar" : "/bienvenida");
   }, [firstVisit, router]);
 
-  if (isPublic && pathname === "/bienvenida") return children;
+  // Páginas fijas que se leen antes de hidratar (buscadores, revisión de Play Store): no dependen del dispositivo.
+  if (isPublic && STATIC_PUBLIC_ROUTES.includes(pathname)) return children;
   if (!hydrated) return null;
   if (isPublic) return children;
   if (firstVisit) return null;
