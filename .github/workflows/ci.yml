@@ -1,4 +1,5 @@
 # Cada PR y cada push a main: tipos, lint, tests, build estático y pruebas de punta a punta.
+# Android con emulador corre aparte (android.yml): en main, semanal y a pedido, no en los PR.
 name: CI
 
 on:
@@ -79,7 +80,10 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run build:operator
       - run: npx playwright test --config playwright.operator.config.ts
+      # En los PR el celular corre solo las pruebas de pantalla chica; en main, todas.
       - run: npm run e2e
+        env:
+          E2E_FULL: ${{ github.event_name == 'push' && '1' || '' }}
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

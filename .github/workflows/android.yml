@@ -1,15 +1,30 @@
 name: Android
 
+# El emulador tarda y probaba pantallas web que Playwright ya cubre: no frena los PR.
+# En los PR que tocan Android solo se compila y se revisa (lint y tests unitarios de Gradle).
+# El recorrido nativo en emulador corre al mergear a main, una vez por semana y a pedido.
 on:
   pull_request:
     paths:
       - 'android/**'
-      - 'src/**'
-      - 'scripts/**'
-      - 'package*.json'
       - 'capacitor.config.ts'
-      - 'next.config.ts'
+      - 'package*.json'
+      - 'scripts/build-android.mjs'
+      - 'scripts/test-android.sh'
       - '.github/workflows/android.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'src/**'
+      - 'next.config.ts'
+      - 'capacitor.config.ts'
+      - 'package*.json'
+      - 'scripts/build-android.mjs'
+      - 'scripts/test-android.sh'
+      - '.github/workflows/android.yml'
+  schedule:
+    - cron: '41 6 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -40,8 +55,10 @@ jobs:
         working-directory: android
         run: bash gradlew --no-daemon :app:lintDebug :app:testDebugUnitTest
       - name: Habilitar KVM en el runner efímero
+        if: github.event_name != 'pull_request'
         run: sudo chmod 666 /dev/kvm
       - name: Recorridos nativos sin red
+        if: github.event_name != 'pull_request'
         uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
         with:
           api-level: 35
@@ -54,7 +71,7 @@ jobs:
             adb shell svc data disable
             bash scripts/test-android.sh
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         with:
           name: android-test-reports
           path: |

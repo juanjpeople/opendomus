@@ -118,7 +118,25 @@ public class NativeFlowTest {
         }
     }
 
-    private void verifySettingsRoundTrip(ActivityScenario<MainActivity> scenario) throws Exception {
+    /** The app seeds this house itself (src/features/demo/house.json): no onboarding screens to drive. */
+    static final String SAMPLE = "house=tests";
+    /** "Caja de recuerdos y piezas sueltas" in the sample house; it already has a photo. */
+    static final String CONTAINER = "84b424f4-349f-4569-9bfa-8c5bfd106fe0";
+
+    private void enterSampleHouse(ActivityScenario<MainActivity> scenario) throws Exception {
+        scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/empezar?" + SAMPLE));
+        await(scenario, "location.pathname === '/empezar' && document.querySelector('main .ant-btn-primary')");
+        evaluate(scenario, "document.querySelector('main .ant-btn-primary').click()");
+        await(scenario, "[...document.querySelectorAll('h5')].some(e => e.textContent === 'Administrador')");
+        evaluate(scenario, "[...document.querySelectorAll('h5')].find(e => e.textContent === 'Administrador').click()");
+        await(scenario, "JSON.parse(localStorage.getItem('opendomus-session-tests') || '{}').state?.currentProfileId");
+    }
+
+    private void openContainer(ActivityScenario<MainActivity> scenario) {
+        scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario/ver?id=" + CONTAINER + "&" + SAMPLE));
+    }
+
+    private void verifyBackupRoundTrip(ActivityScenario<MainActivity> scenario) throws Exception {
         Context context = ApplicationProvider.getApplicationContext();
         File photo = new File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "fixture.png");
         File backup = new File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "house.json");
@@ -131,55 +149,49 @@ public class NativeFlowTest {
         Uri backupUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", backup);
         Intents.init();
         try {
-            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/"));
-            await(scenario, "[...document.querySelectorAll('h5')].some(e => e.textContent === 'Administrador')");
-            evaluate(scenario, "[...document.querySelectorAll('h5')].find(e => e.textContent === 'Administrador').click()");
-            await(scenario, "JSON.parse(localStorage.getItem('opendomus-session') || '{}').state?.currentProfileId");
-            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario"));
-            // Se entra por la tarjeta del recinto y después por su mueble, como lo haría una persona.
-            await(scenario, "[...document.querySelectorAll('a[href^=\"/inventario/lugar\"]')].some(e => /Taller de herramientas|Tool workshop/.test(e.textContent))");
-            tap(scenario, "[...document.querySelectorAll('a[href^=\"/inventario/lugar\"]')].find(e => /Taller de herramientas|Tool workshop/.test(e.textContent))");
-            await(scenario, "location.pathname === '/inventario/lugar' && [...document.querySelectorAll('a[href^=\"/inventario/ver\"]')].some(e => /Estantería de herramientas|Tool shelf/.test(e.textContent))");
-            tap(scenario, "[...document.querySelectorAll('a[href^=\"/inventario/ver\"]')].find(e => /Estantería de herramientas|Tool shelf/.test(e.textContent))");
-            // El campo para anotar se abre con un botón: "Nueva anotación" lo abre y "Anotar" guarda.
-            await(scenario, "location.pathname === '/inventario/ver' && [...document.querySelectorAll('button')].some(b => /^(Nueva anotación|New note)$/.test(b.textContent.trim()))");
-            tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Nueva anotación|New note)$/.test(b.textContent.trim()))");
-            await(scenario, "document.querySelector('input[aria-label=\"Stored contents\"],input[aria-label=\"Contenido guardado\"]')");
-            evaluate(scenario, "(() => {const e=document.querySelector('input[aria-label=\"Stored contents\"],input[aria-label=\"Contenido guardado\"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'Cables Android'); e.dispatchEvent(new Event('input',{bubbles:true}));})()");
-            evaluate(scenario, "[...document.querySelectorAll('button')].find(b => /^(Anotar|Add note)$/.test(b.textContent.trim())).click()");
-            await(scenario, "document.body.innerText.includes('Cables Android')");
+            // Native image picker: the photo lands in IndexedDB.
+            openContainer(scenario);
+            await(scenario, "[...document.querySelectorAll('button')].some(b => /^(Agregar fotos|Add photos)$/.test(b.textContent.trim()) && !b.disabled)");
             intending(allOf(hasAction(Intent.ACTION_GET_CONTENT), hasType("image/*"))).respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(photoUri)));
             tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Agregar fotos|Add photos)$/.test(b.textContent.trim()))");
-            await(scenario, "document.querySelector('.od-photo-tile img')?.naturalWidth === 32");
+            await(scenario, "[...document.querySelectorAll('.od-photo-tile img')].some(i => i.naturalWidth === 32)");
             screenshot("container-with-photo");
+            // Native document picker: export writes the whole house, photos included.
             intending(hasAction(Intent.ACTION_CREATE_DOCUMENT)).respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(backupUri)));
-            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/ajustes"));
+            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/ajustes?" + SAMPLE));
             await(scenario, "[...document.querySelectorAll('button')].some(b => /^(Exportar|Export)$/.test(b.textContent.trim()) && !b.disabled)");
             tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Exportar|Export)$/.test(b.textContent.trim()))");
             await(scenario, "/Exportación lista|Export ready/.test(document.body.innerText)");
             JSONObject data = new JSONObject(new String(Files.readAllBytes(backup.toPath()), StandardCharsets.UTF_8));
             assertEquals("OpenDomus", data.getString("app"));
             JSONObject tables = data.getJSONObject("tables");
-            assertTrue(tables.getJSONArray("photos").length() > 0);
-            assertTrue(tables.getJSONArray("containerContents").toString().contains("Cables Android"));
-            String containerId = tables.getJSONArray("photos").getJSONObject(0).getString("ownerId");
+            JSONArray photos = tables.getJSONArray("photos");
+            int containerPhotos = 0;
+            for (int i = 0; i < photos.length(); i++) if (CONTAINER.equals(photos.getJSONObject(i).optString("ownerId"))) containerPhotos++;
+            assertTrue("the picked photo is in the backup", containerPhotos >= 2);
+            // Edit the file the way a person would restore another copy: rename, recode (for the QR) and add a note.
             JSONArray containers = tables.getJSONArray("containers");
             String previousCode = null;
             for (int i = 0; i < containers.length(); i++) {
                 JSONObject container = containers.getJSONObject(i);
-                if (container.getString("id").equals(containerId)) previousCode = container.getString("code");
+                if (container.getString("id").equals(CONTAINER)) previousCode = container.getString("code");
             }
             assertNotNull(previousCode);
             for (int i = 0; i < containers.length(); i++) {
                 JSONObject container = containers.getJSONObject(i);
-                if (container.getString("id").equals(containerId)) {
+                if (container.getString("id").equals(CONTAINER)) {
                     container.put("name", "Android importado");
                     container.put("code", "K7QM");
                 } else if (container.getString("code").equals("K7QM")) {
                     container.put("code", previousCode);
                 }
             }
+            long now = System.currentTimeMillis();
+            tables.getJSONArray("containerContents").put(new JSONObject()
+                .put("id", "android-native-note").put("containerId", CONTAINER).put("text", "Cables Android")
+                .put("createdBy", "profile-admin").put("createdAt", now).put("updatedAt", now));
             Files.write(backup.toPath(), data.toString().getBytes(StandardCharsets.UTF_8));
+            // Native file chooser for <input type=file>: import replaces the house and reloads.
             intending(allOf(hasAction(Intent.ACTION_GET_CONTENT), hasType("application/json"))).respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(backupUri)));
             tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Importar|Import)$/.test(b.textContent.trim()))");
             await(scenario, "document.querySelector('[role=dialog]') && /Reemplazar e importar|Replace and import/.test(document.querySelector('[role=dialog]').textContent)");
@@ -188,10 +200,11 @@ public class NativeFlowTest {
             evaluate(scenario, "window.__beforeImportReload = true");
             tap(scenario, "[...document.querySelectorAll('[role=dialog] button')].find(b => /Reemplazar e importar|Replace and import/.test(b.textContent))");
             await(scenario, "window.__beforeImportReload !== true && document.body.innerText.length > 20");
+            // A new activity must find the same house in IndexedDB.
             scenario.recreate();
             ready(scenario);
-            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario/ver?id=" + containerId));
-            await(scenario, "document.body.innerText.includes('Android importado') && document.body.innerText.includes('Cables Android') && document.querySelector('.od-photo-tile img')?.naturalWidth === 32");
+            openContainer(scenario);
+            await(scenario, "document.body.innerText.includes('Android importado') && document.body.innerText.includes('Cables Android') && [...document.querySelectorAll('.od-photo-tile img')].some(i => i.naturalWidth === 32)");
             screenshot("restored-container");
             System.out.println("ANDROID_WEBVIEW_CAPABILITIES " + evaluate(scenario, "({userAgent:navigator.userAgent,barcodeDetector:typeof window.BarcodeDetector,camera:!!navigator.mediaDevices?.getUserMedia})"));
         } finally {
@@ -201,33 +214,20 @@ public class NativeFlowTest {
         }
     }
 
+    /**
+     * Offline house with the native pickers and the scanner. The screens it passes through are covered
+     * by Playwright; here only what changes inside the Android app is checked, starting from the sample
+     * house so a change to onboarding or inventory navigation does not break it.
+     */
     @Test
-    public void offlineOnboardingAndReloadKeepTheHouse() throws Exception {
+    public void sampleHouseRoundTripsThroughNativePickersAndScanner() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             ready(scenario);
-            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/empezar"));
-            await(scenario, "location.pathname === '/empezar' && document.title.startsWith('Empezar')");
-            await(scenario, "[...document.querySelectorAll('button')].some(b => /Empezar acá|Start here/.test(b.textContent))");
-            await(scenario, "[...document.querySelectorAll('svg path[pathLength=\"1\"]')].every(p => parseFloat(getComputedStyle(p).strokeDasharray) >= 0.99)");
-            screenshot("onboarding");
-            tap(scenario, "[...document.querySelectorAll('button')].find(b => /Empezar acá|Start here/.test(b.textContent))");
-            // The initial house is now explicit: create the shelf used by the backup and QR round trips.
-            await(scenario, "[...document.querySelectorAll('button')].some(b => /Guardar esta selección|Save this selection/.test(b.textContent))");
-            tap(scenario, "[...document.querySelectorAll('[role=checkbox]')].find(e => /^(Taller de herramientas|Tool workshop)$/.test(e.textContent.trim()))");
-            tap(scenario, "[...document.querySelectorAll('[role=checkbox]')].find(e => /^(Estantería de herramientas|Tool shelf)$/.test(e.textContent.trim()))");
-            tap(scenario, "[...document.querySelectorAll('button')].find(b => /Guardar esta selección|Save this selection/.test(b.textContent))");
-            await(scenario, "/Who.s home|Quién está en casa/.test(document.body.innerText) && /Administrador|Administrator/.test(document.body.innerText)");
-            scenario.recreate();
-            ready(scenario);
-            await(scenario, "/Administrador|Administrator/.test(document.body.innerText)");
-            await(scenario, "(() => { let e=[...document.querySelectorAll('h5')].find(e => e.textContent === 'Administrador'); if (!e) return false; for (; e; e=e.parentElement) if (Number(getComputedStyle(e).opacity) < 0.99) return false; return true; })()");
-            await(scenario, "[...document.querySelectorAll('svg path[pathLength=\"1\"]')].every(p => parseFloat(getComputedStyle(p).strokeDasharray) >= 0.99)");
-            screenshot("persisted-house");
-            scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/cuenta?modo=crear"));
-            await(scenario, "location.pathname === '/cuenta' && /Esta instalación funciona sin servidor|This installation works without a server/.test(document.body.innerText)");
+            enterSampleHouse(scenario);
+            // The bundled app must not register a service worker inside the WebView.
             evaluate(scenario, "window.__swCount = -1; navigator.serviceWorker.getRegistrations().then(r => window.__swCount = r.length)");
             await(scenario, "window.__swCount === 0");
-            verifySettingsRoundTrip(scenario);
+            verifyBackupRoundTrip(scenario);
             verifyOfflineQrThroughScanner(scenario);
         }
     }
@@ -270,13 +270,13 @@ public class NativeFlowTest {
             fixture = input.readAllBytes();
         }
         String dataUrl = "data:image/png;base64," + android.util.Base64.encodeToString(fixture, android.util.Base64.NO_WRAP);
-        scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario/escanear"));
+        scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario/escanear?" + SAMPLE));
         await(scenario, "location.pathname === '/inventario/escanear' && [...document.querySelectorAll('button')].some(b=>/Activar cámara|Turn on camera/.test(b.textContent))");
         // A synthetic camera stream tests the actual shared decoder and route, not a mocked decode result.
         evaluate(scenario, "Object.defineProperty(window,'BarcodeDetector',{value:undefined,configurable:true});navigator.mediaDevices.getUserMedia=async()=>{const image=new Image();image.src=" + JSONObject.quote(dataUrl) + ";await image.decode();const canvas=document.createElement('canvas');canvas.width=canvas.height=320;const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);const stream=canvas.captureStream(10);window.__qrStream=stream;sessionStorage.removeItem('qrTestStopped');for(const track of stream.getTracks()){const stop=track.stop.bind(track);track.stop=()=>{stop();sessionStorage.setItem('qrTestStopped',String(stream.getTracks().every(t=>t.readyState==='ended')))}}window.__qrTimer=setInterval(()=>ctx.drawImage(image,0,0),100);return stream}");
         try {
             tap(scenario, "[...document.querySelectorAll('button')].find(b=>/Activar cámara|Turn on camera/.test(b.textContent))");
-            await(scenario, "location.pathname === '/inventario/ver' && document.body.innerText.includes('Android importado') && document.body.innerText.includes('Cables Android') && document.querySelector('.od-photo-tile img')?.naturalWidth === 32");
+            await(scenario, "location.pathname === '/inventario/ver' && document.body.innerText.includes('Android importado') && document.body.innerText.includes('Cables Android') && [...document.querySelectorAll('.od-photo-tile img')].some(i => i.naturalWidth === 32)");
             await(scenario, "sessionStorage.getItem('qrTestStopped') === 'true'");
             screenshot("qr-decoded-offline");
         } finally {
