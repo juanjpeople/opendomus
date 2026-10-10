@@ -40,7 +40,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   locale: "system",
   sidebar: "expanded",
   autoLockMinutes: 15,
-  inventoryView: "places",
+  inventoryView: "plan",
   spaceView: "plan",
 };
 

@@ -38,12 +38,12 @@ test("las tarjetas se ordenan por nombre, por cantidad o por alertas", () => {
 test("el mini plano muestra primero lo que necesita atención y resume el resto", () => {
   const many: SpaceOverview = { ...taller, containers: Array.from({ length: 9 }, (_, index) => node(`c${index}`, `Caja ${index}`, { needsAttention: index === 8 ? 1 : 0 })) };
   const { shown, more } = placeShortcuts(many);
-  assert.equal(shown.length, 6);
+  assert.equal(shown.length, 4);
   assert.equal(shown[0].id, "c8");
-  assert.equal(more, 3);
+  assert.equal(more, 5);
   // Si sobra uno solo, se muestra en lugar de "+1".
-  const seven: SpaceOverview = { ...taller, containers: many.containers.slice(0, 7) };
-  assert.deepEqual([placeShortcuts(seven).shown.length, placeShortcuts(seven).more], [7, 0]);
+  const five: SpaceOverview = { ...taller, containers: many.containers.slice(0, 5) };
+  assert.deepEqual([placeShortcuts(five).shown.length, placeShortcuts(five).more], [5, 0]);
 });
 
 test("la lista pliega los compartimentos de un contenedor", () => {

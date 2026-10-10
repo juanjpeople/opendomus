@@ -2,20 +2,21 @@
 
 import { App, Button, Card, Col, Collapse, Divider, Dropdown, Flex, Grid, Input, Row, Segmented, Select, Tag, Typography, theme } from "antd";
 import { AnimatePresence } from "framer-motion";
-import { Boxes, Camera, ClipboardList, EllipsisVertical, ExternalLink, Layers, ListPlus, NotebookPen, PackageMinus, Pencil, Plus, QrCode, ScanLine, Search, ShoppingCart, Trash2, X } from "lucide-react";
+import { Boxes, Camera, ClipboardList, EllipsisVertical, ExternalLink, Layers, ListPlus, NotebookPen, PackageMinus, PackageOpen, Pencil, Plus, QrCode, ScanLine, Search, ShoppingCart, Trash2, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Reveal } from "@/components/motion";
-import { CameraViewport, IconTile, ListRow, PageHeader, PathCrumbs, PlaceChip, QuantityStepper, RoomFloor, SectionHeader, StockTag, ViewSwitcher, type CameraDetection } from "@/components/ui";
+import { CameraViewport, EmptyState, IconTile, ListRow, PageHeader, PathCrumbs, PlaceChip, QuantityStepper, RoomFloor, SectionHeader, StockTag, ViewSwitcher, type CameraDetection } from "@/components/ui";
 import type { CatalogCategory } from "@/features/inventory/catalog";
 import { CATEGORY_APPEARANCE } from "@/features/inventory/catalog-appearance";
 import { getStockStatus, isUnit } from "@/features/inventory/domain";
 import { ContainerScene } from "@/features/storage/components/ContainerScene";
-import { ContainerTile } from "@/features/storage/components/ContainerTiles";
+import { AddTile, ContainerTile } from "@/features/storage/components/ContainerTiles";
 import { CardsView, ListView, PlacesView, PlanView, useViewOptions, ViewStage } from "@/features/storage/components/StorageViews";
 import { containerAppearance, spaceAppearance, type ContainerKind, type SpaceKind } from "@/features/storage/domain";
 import type { ContainerOverview, SpaceOverview } from "@/features/storage/hooks";
 import { flattenOverview, spaceTotals } from "@/features/storage/views";
 import { useT } from "@/i18n";
+import { tint } from "@/lib/appearance";
 import type { InventoryView, SpaceView } from "@/lib/preferences";
 import { DemoBlock, NoNavigate } from "./DemoBlock";
 import { FlowFrame } from "./FlowFrame";
@@ -353,8 +354,9 @@ function ContainerScreen({ id, highlight, go }: { id: string; highlight?: string
       {children.length > 0 && (
         <Reveal delay={0.1} style={{ marginBottom: token.marginXL }}>
           <SectionHeader icon={Layers} color={color} title={t("storage.subcontainers")} description={t("storage.childCount", { count: children.length })} extra={<Button icon={<Plus />}>{t("storage.addSubcontainer")}</Button>} />
-          <RoomFloor color={color} minTileWidth={150}>
+          <RoomFloor color={color} minTileWidth={token.controlHeightLG * 3}>
             {children.map((child) => <ContainerTile key={child.id} container={child} onLabel={() => message.info(`Acá se imprime la etiqueta de ${child.name}`)} />)}
+            <AddTile color={tint(token, color).solid} label={t("storage.addSubcontainer")} onClick={() => message.info("Acá se abre el formulario de subcontenedor")} />
           </RoomFloor>
         </Reveal>
       )}
@@ -363,7 +365,7 @@ function ContainerScreen({ id, highlight, go }: { id: string; highlight?: string
         <Reveal delay={0.15} style={{ marginBottom: token.marginXL }}>
           <SectionHeader icon={Boxes} title={t("storage.contents.inventory")} description={items.length ? t("storage.itemCount", { count: items.length }) : t("inventory.list.emptyHint")} extra={<Button type="primary" icon={<Plus />}>{t("inventory.form.title")}</Button>} />
           <Card styles={{ body: { padding: 0 } }}>
-            {items.length === 0 && <Typography.Paragraph type="secondary" style={{ margin: 0, padding: `${token.padding}px ${token.paddingLG}px` }}>{t("inventory.list.emptyShort")}</Typography.Paragraph>}
+            {items.length === 0 && <EmptyState icon={PackageOpen} title={t("inventory.list.emptyShort")} description={t("inventory.list.emptyHint")} />}
             <AnimatePresence initial={false}>
               {items.map((item, index) => {
                 const appearance = CATEGORY_APPEARANCE[item.category];
@@ -430,11 +432,11 @@ function ItemScreen({ id, go }: { id: string; go: Navigate }) {
 
   return (
     <DemoLinks go={go}>
-      <Card style={{ maxWidth: 480, marginInline: "auto" }} title={<Flex align="center" gap={token.marginXS}><span>{item.name}</span><StockTag status={getStockStatus(item)} /></Flex>} extra={<Button type="text" icon={<X />} aria-label={t("common.close")} onClick={() => go.onContainer(found.container.id)} />}>
-        <Flex vertical gap={token.margin} style={{ padding: token.padding, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
+      <Card style={{ maxWidth: 480, marginInline: "auto" }} title={<Flex align="center" gap={token.marginXS}><IconTile icon={CATEGORY_APPEARANCE[found.item.category].Icon} color={CATEGORY_APPEARANCE[found.item.category].color} size={token.controlHeight} solid /><span>{item.name}</span><StockTag status={getStockStatus(item)} /></Flex>} extra={<Button type="text" icon={<X />} aria-label={t("common.close")} onClick={() => go.onContainer(found.container.id)} />}>
+        <Flex vertical gap={token.margin} style={{ padding: token.padding, borderRadius: token.borderRadiusLG * 2, border: `${token.lineWidth}px solid ${tint(token, CATEGORY_APPEARANCE[found.item.category].color).border}`, background: `linear-gradient(160deg, ${tint(token, CATEGORY_APPEARANCE[found.item.category].color).bg} 0%, ${token.colorBgContainer} 70%)` }}>
           <Flex align="center" justify="space-between" gap={token.marginSM} wrap>
             <Typography.Text type="secondary">{t("inventory.item.quantity")}</Typography.Text>
-            <div style={{ fontSize: token.fontSizeLG }}><QuantityStepper value={quantity} unit={unit(quantity)} onStep={(delta) => setQuantity((current) => Math.max(0, current + delta))} /></div>
+            <div style={{ fontSize: token.fontSizeHeading4 }}><QuantityStepper value={quantity} unit={unit(quantity)} onStep={(delta) => setQuantity((current) => Math.max(0, current + delta))} /></div>
           </Flex>
           <Flex gap={token.marginXS} wrap>
             <Button icon={<PackageMinus />} disabled={quantity <= 0} onClick={() => setQuantity((current) => Math.max(0, current - 1))}>{t("inventory.consume.one")}</Button>

@@ -3,18 +3,21 @@
 import { formatQuantity, formatUnit } from "@/features/inventory/format";
 
 import { App, Button, Col, Collapse, Divider, Drawer, Flex, Form, Grid, Input, InputNumber, Row, Select, Space, Switch, Typography, theme } from "antd";
-import { Boxes, ListPlus, PackageMinus, Save } from "lucide-react";
+import { Boxes, ListPlus, PackageMinus, PackageOpen, Save } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Can } from "@/components/auth/Can";
-import { PathCrumbs, QuantityStepper, StockTag } from "@/components/ui";
+import { IconTile, PathCrumbs, QuantityStepper, StockTag } from "@/components/ui";
 import { PricePanel } from "@/features/prices/components/PricePanel";
 import { suggestedQuantity } from "@/features/shopping/domain";
 import { useShoppingActions } from "@/features/shopping/hooks";
 import { useContainer, useContainers } from "@/features/storage/hooks";
 import { useNow } from "@/hooks/useNow";
 import { useI18n, useT } from "@/i18n";
+import { tint } from "@/lib/appearance";
 import { usePermission } from "@/lib/auth/hooks";
 import { containerHref, spaceHref } from "@/lib/navigation/routes";
+import { findCatalogProduct } from "../catalog";
+import { CATEGORY_APPEARANCE } from "../catalog-appearance";
 import { getStockStatus, INVENTORY_LIMITS, UNITS, type InventoryItem, type InventoryItemPatch } from "../domain";
 import { useConsumption, useInventoryActions, useInventoryItem } from "../hooks";
 import { useConsumeWithUndo } from "./ConsumeButton";
@@ -25,8 +28,10 @@ import { useConsumeWithUndo } from "./ConsumeButton";
  */
 export function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose: () => void }) {
   const t = useT();
+  const { token } = theme.useToken();
   const item = useInventoryItem(itemId);
   const screens = Grid.useBreakpoint();
+  const appearance = item ? itemAppearance(item) : undefined;
 
   return (
     <Drawer
@@ -36,7 +41,8 @@ export function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose
       destroyOnHidden
       title={
         item ? (
-          <Flex align="center" gap={8}>
+          <Flex align="center" gap={token.marginXS}>
+            <IconTile icon={appearance?.Icon ?? PackageOpen} color={appearance?.color} size={token.controlHeight} solid />
             <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</span>
             <StockTag status={getStockStatus(item)} />
           </Flex>
@@ -55,7 +61,7 @@ export function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose
           <Collapse
             ghost
             items={[{ key: "details", label: <Typography.Text strong>{t("inventory.item.details")}</Typography.Text>, forceRender: true, children: <ItemForm item={item} /> }]}
-            style={{ marginInline: -16 }}
+            style={{ marginInline: -token.padding }}
           />
           <Divider />
           <PanelTitle>{t("prices.title")}</PanelTitle>
@@ -66,8 +72,15 @@ export function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose
   );
 }
 
+/** Ícono y color del rubro del producto, si está en el catálogo. */
+function itemAppearance(item: InventoryItem) {
+  const category = findCatalogProduct(item.name)?.category;
+  return category ? CATEGORY_APPEARANCE[category] : undefined;
+}
+
 function PanelTitle({ children }: { children: ReactNode }) {
-  return <Typography.Title level={5} style={{ margin: "0 0 12px" }}>{children}</Typography.Title>;
+  const { token } = theme.useToken();
+  return <Typography.Title level={5} style={{ margin: `0 0 ${token.marginSM}px` }}>{children}</Typography.Title>;
 }
 
 /** Cuánto hay, con +/- grande, "Usé uno" y anotarlo en la lista de compras. */
@@ -79,12 +92,22 @@ function QuantityPanel({ item }: { item: InventoryItem }) {
   const { add } = useShoppingActions();
   const { message } = App.useApp();
   const canAdjust = usePermission("inventory.adjust");
+  const palette = tint(token, itemAppearance(item)?.color ?? "blue");
 
   return (
-    <Flex vertical gap={token.margin} style={{ padding: token.padding, borderRadius: token.borderRadiusLG, background: token.colorFillQuaternary }}>
+    <Flex
+      vertical
+      gap={token.margin}
+      style={{
+        padding: token.padding,
+        borderRadius: token.borderRadiusLG * 2,
+        border: `${token.lineWidth}px solid ${palette.border}`,
+        background: `linear-gradient(160deg, ${palette.bg} 0%, ${token.colorBgContainer} 70%)`,
+      }}
+    >
       <Flex align="center" justify="space-between" gap={token.marginSM} wrap>
         <Typography.Text type="secondary">{t("inventory.item.quantity")}</Typography.Text>
-        <div style={{ fontSize: token.fontSizeLG }}>
+        <div style={{ fontSize: token.fontSizeHeading4 }}>
           <QuantityStepper
             aria-label={t("inventory.item.quantity")}
             value={item.quantity}

@@ -11,15 +11,16 @@ import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { EmptyState, PageHeader, PathCrumbs, RoomFloor, SectionHeader, StatTile, type StatTone } from "@/components/ui";
 import { ActivityDrawer } from "@/features/activity/components/ActivityButton";
 import { usePhotos } from "@/features/media/hooks";
-import { ContainerTile } from "@/features/storage/components/ContainerTiles";
+import { AddTile, ContainerTile } from "@/features/storage/components/ContainerTiles";
 import { ContainerScene } from "@/features/storage/components/ContainerScene";
 import type { LabelData } from "@/features/storage/components/ContainerLabel";
-import { NotesSection, PhotosSection } from "@/features/storage/components/ContainerContents";
+import { ANCHOR_OFFSET, NotesSection, PhotosSection } from "@/features/storage/components/ContainerContents";
 import { LabelModal } from "@/features/storage/components/LabelModal";
 import { ContainerModal } from "@/features/storage/components/StorageForms";
 import { containerAppearance, spaceAppearance, STORAGE_LIMITS } from "@/features/storage/domain";
 import { useContainer, useContainerContents, useSpaces, useStorageActions } from "@/features/storage/hooks";
 import { useT } from "@/i18n";
+import { tint } from "@/lib/appearance";
 import { usePermission } from "@/lib/auth/hooks";
 import { useTrackVisit } from "@/components/layout/useShell";
 import { cameraHref, containerHref, spaceHref } from "@/lib/navigation/routes";
@@ -191,7 +192,7 @@ export function ContainerPage() {
 
       {counts.children > 0 && (
         <Reveal delay={0.1}>
-          <section id={SECTIONS.children} style={{ scrollMarginTop: 96, marginBottom: token.marginXL }}>
+          <section id={SECTIONS.children} style={{ scrollMarginTop: ANCHOR_OFFSET, marginBottom: token.marginXL }}>
             <SectionHeader
               icon={Layers}
               color={appearance.color}
@@ -204,10 +205,11 @@ export function ContainerPage() {
                 </>
               }
             />
-            <RoomFloor color={appearance.color} minTileWidth={150}>
+            <RoomFloor color={appearance.color} minTileWidth={token.controlHeightLG * 3}>
               {container.children.map((child) => (
                 <ContainerTile key={child.id} container={child} onLabel={() => setLabels([labelOf(child, `${place} › ${container.name}`)])} />
               ))}
+              {canAddChild && <AddTile color={tint(token, appearance.color).solid} label={t("storage.addSubcontainer")} onClick={() => setDialog("addChild")} />}
             </RoomFloor>
             {canManage && container.depth + 1 >= STORAGE_LIMITS.maxDepth && (
               <Typography.Text type="secondary" style={{ display: "block", marginTop: token.marginXS, fontSize: token.fontSizeSM }}>
@@ -220,7 +222,7 @@ export function ContainerPage() {
 
       {!empty && (
         <Reveal delay={0.15}>
-          <section id={SECTIONS.items} style={{ scrollMarginTop: 96, marginBottom: token.marginXL }}>
+          <section id={SECTIONS.items} style={{ scrollMarginTop: ANCHOR_OFFSET, marginBottom: token.marginXL }}>
             <SectionHeader
               icon={Boxes}
               title={t("storage.contents.inventory")}
