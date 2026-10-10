@@ -7,7 +7,7 @@ import { AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
 import { PackageOpen, Tag as PriceTag, Trash2 } from "lucide-react";
 import { Can } from "@/components/auth/Can";
-import { IconTile, ListRow, QuantityStepper, StockTag } from "@/components/ui";
+import { EmptyState, IconTile, ListRow, QuantityStepper, StockTag } from "@/components/ui";
 import { usePriceSummaries } from "@/features/prices/hooks";
 import { useI18n } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
@@ -40,12 +40,10 @@ export function InventoryList({ containerId, onOpen, highlightId }: InventoryLis
 
   return (
     <Card styles={{ body: { padding: 0 } }}>
-      {items === undefined && <Skeleton active style={{ padding: 24 }} />}
+      {items === undefined && <Skeleton active style={{ padding: token.paddingLG }} />}
 
       {items?.length === 0 && (
-        <Typography.Paragraph type="secondary" style={{ margin: 0, padding: `${token.padding}px ${token.paddingLG}px` }}>
-          {t("inventory.list.emptyShort")}
-        </Typography.Paragraph>
+        <EmptyState icon={PackageOpen} title={t("inventory.list.emptyShort")} description={t("inventory.list.emptyHint")} />
       )}
 
       <AnimatePresence>

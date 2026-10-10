@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { SPRING } from "@/lib/motion";
+import { DURATION, SPRING, STAGGER } from "@/lib/motion";
 
 interface ListRowProps {
   /** Ícono o miniatura a la izquierda. Si una fila lo tiene, que lo tengan todas (con un respaldo genérico). */
@@ -79,10 +79,10 @@ export function ListRow({ leading, title, wrapTitle = false, meta, trailing, onO
     <motion.div
       id={id}
       layout
-      initial={{ opacity: 0, x: -16 }}
-      animate={{ opacity: 1, x: 0, transition: { ...SPRING.snappy, delay: Math.min(index, 8) * 0.03 } }}
-      exit={{ opacity: 0, x: 16, transition: { duration: 0.18 } }}
-      whileHover={{ backgroundColor: token.colorFillQuaternary, transition: { duration: 0.15 } }}
+      initial={{ opacity: 0, x: -token.margin }}
+      animate={{ opacity: 1, x: 0, transition: { ...SPRING.snappy, delay: Math.min(index, 8) * (STAGGER / 2) } }}
+      exit={{ opacity: 0, x: token.margin, transition: { duration: DURATION.fast } }}
+      whileHover={{ backgroundColor: token.colorFillQuaternary, transition: { duration: DURATION.fast } }}
       // Transparente como rgba (no "transparent"): framer necesita un color para interpolar el hover.
       style={{
         borderBottom: divider ? `1px solid ${token.colorBorderSecondary}` : undefined,
@@ -90,7 +90,7 @@ export function ListRow({ leading, title, wrapTitle = false, meta, trailing, onO
         boxShadow: highlighted ? `inset 3px 0 0 ${token.colorPrimary}` : undefined,
       }}
     >
-      <Flex justify="space-between" align="center" gap={16} wrap style={{ padding: "12px 24px" }}>
+      <Flex justify="space-between" align="center" gap={16} wrap style={{ padding: `${token.paddingSM}px ${token.paddingLG}px` }}>
         {href ? <Link href={href} aria-label={openLabel} className="od-focusable" style={openStyle}>{main}</Link> : onOpen ? (
           <button type="button" onClick={onOpen} aria-label={openLabel} className="od-focusable" style={openStyle}>
             {main}

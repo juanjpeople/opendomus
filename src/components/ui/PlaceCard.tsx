@@ -56,6 +56,7 @@ export function PlaceCard({ href, title, icon, color, meta, status, floor = "dot
       initial="rest"
       animate="rest"
       whileHover="hover"
+      whileTap={{ scale: TAP.card }}
       variants={{ rest: { y: 0, borderColor: palette.border }, hover: { y: HOVER_LIFT.card, borderColor: palette.solid } }}
       transition={SPRING.snappy}
       style={{
@@ -85,7 +86,7 @@ export function PlaceCard({ href, title, icon, color, meta, status, floor = "dot
               </Typography.Text>
             )}
           </div>
-          <motion.span variants={{ rest: { x: 0 }, hover: { x: 3 } }} transition={SPRING.snappy} style={{ display: "inline-flex", color: palette.solid, fontSize: token.fontSizeLG }}>
+          <motion.span variants={{ rest: { x: 0 }, hover: { x: -HOVER_LIFT.chip } }} transition={SPRING.snappy} style={{ display: "inline-flex", color: palette.solid, fontSize: token.fontSizeLG }}>
             <ChevronRight />
           </motion.span>
         </Flex>

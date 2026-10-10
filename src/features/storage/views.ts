@@ -61,7 +61,7 @@ export function spaceTotals(space: SpaceOverview): SpaceTotals {
  * Mini plano de un lugar: los muebles del primer nivel, primero los que necesitan atención.
  * Lo que no entra se resume en "+N".
  */
-export function placeShortcuts(space: SpaceOverview, max = 6): { shown: ContainerOverview[]; more: number } {
+export function placeShortcuts(space: SpaceOverview, max = 4): { shown: ContainerOverview[]; more: number } {
   const ordered = [...space.containers].sort((a, b) => Number(b.needsAttention > 0) - Number(a.needsAttention > 0));
   // Si sobra uno solo, se muestra en lugar del "+1".
   const limit = space.containers.length === max + 1 ? max + 1 : max;

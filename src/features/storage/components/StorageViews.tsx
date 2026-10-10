@@ -9,7 +9,7 @@ import { Stagger, StaggerItem } from "@/components/motion";
 import { FilterChips, IconTile, ListRow, PlaceCard, RoomFloor, type FloorPattern, type ViewOption } from "@/components/ui";
 import { useT } from "@/i18n";
 import { tint } from "@/lib/appearance";
-import { DURATION, SPRING } from "@/lib/motion";
+import { DURATION, SPRING, STAGGER } from "@/lib/motion";
 import { containerHref, spaceHref } from "@/lib/navigation/routes";
 import type { InventoryView, SpaceView } from "@/lib/preferences";
 import { containerAppearance, spaceAppearance, type Space, type SpaceKind } from "../domain";
@@ -67,7 +67,7 @@ export function PlacesView({ spaces }: { spaces: SpaceOverview[] }) {
   const totalsText = useTotalsText();
 
   return (
-    <Stagger stagger={0.06} style={{ ...grid(token.controlHeightLG * 7), gap: token.marginLG }}>
+    <Stagger stagger={STAGGER} style={{ ...grid(token.controlHeightLG * 7), gap: token.marginLG }}>
       {spaces.map((space) => {
         const { color, Icon } = spaceAppearance(space);
         const { attention } = spaceTotals(space);
@@ -112,7 +112,7 @@ export function PlanView({ spaces, actions = {}, single = false }: { spaces: Spa
   const { token } = theme.useToken();
   if (single && spaces[0]) return <SpacePlan space={spaces[0]} actions={actions} bare />;
   return (
-    <Stagger stagger={0.08} style={{ columnWidth: token.controlHeightLG * 10, columnGap: token.marginLG }}>
+    <Stagger stagger={STAGGER * 1.5} style={{ columnWidth: token.controlHeightLG * 10, columnGap: token.marginLG }}>
       {spaces.map((space) => (
         <StaggerItem key={space.id} style={{ breakInside: "avoid", marginBottom: token.marginLG }}>
           <SpacePlan space={space} actions={actions} />
@@ -142,15 +142,15 @@ function SpacePlan({ space, actions, bare = false }: { space: SpaceOverview; act
       {space.containers.map((container) => (
         <ContainerTile key={container.id} container={container} onLabel={onLabels ? () => onLabels([path(container)]) : undefined} />
       ))}
-      {space.containers.length === 0 && (onAddContainer ? (
-        <div style={{ gridColumn: "1 / -1" }}>
+      {onAddContainer ? (
+        <div style={space.containers.length === 0 ? { gridColumn: "1 / -1" } : undefined}>
           <AddTile color={palette.solid} label={t("storage.addContainer")} onClick={() => onAddContainer(space.id)} />
         </div>
-      ) : (
+      ) : space.containers.length === 0 && (
         <Typography.Text type="secondary" style={{ gridColumn: "1 / -1", padding: token.paddingSM }}>
           {t("storage.noContainers")}
         </Typography.Text>
-      ))}
+      )}
     </RoomFloor>
   );
 
@@ -220,7 +220,7 @@ export function ListView({ spaces, single = false }: { spaces: SpaceOverview[]; 
   });
 
   return (
-    <Stagger stagger={0.06}>
+    <Stagger stagger={STAGGER}>
       <Flex vertical gap={token.marginLG}>
         {spaces.map((space) => (
           <StaggerItem key={space.id}>
@@ -341,7 +341,7 @@ export function CardsView({ spaces, actions = {}, single = false }: { spaces: Sp
           options={(["name", "items", "alerts"] as const).map((value) => ({ value, label: t(`storage.sort.${value}`) }))}
         />
       </Flex>
-      <Stagger key={`${spaceId}:${sort}`} stagger={0.03} style={{ ...grid(token.controlHeightLG * 4), gap: token.marginSM }}>
+      <Stagger key={`${spaceId}:${sort}`} stagger={STAGGER / 2} style={{ ...grid(token.controlHeightLG * 4), gap: token.marginSM }}>
         {entries.map((entry) => (
           <StaggerItem key={entry.container.id} style={{ height: "100%" }}>
             <ContainerTile

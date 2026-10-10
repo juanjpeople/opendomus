@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { DEFAULT_PREFERENCES, isValidPreference, sanitizePreferences } from "./preferences";
 
 test("la vista de inventario se recuerda solo si es una conocida", () => {
-  assert.equal(DEFAULT_PREFERENCES.inventoryView, "places");
+  assert.equal(DEFAULT_PREFERENCES.inventoryView, "plan");
   assert.equal(DEFAULT_PREFERENCES.spaceView, "plan");
   assert.equal(isValidPreference("inventoryView", "cards"), true);
   assert.equal(isValidPreference("inventoryView", "mosaico"), false);
