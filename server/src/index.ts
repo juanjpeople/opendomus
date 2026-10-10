@@ -1285,7 +1285,7 @@ async function live(request: Request, env: Env, householdId: string) {
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
-    if (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) return operatorPage(request, env.ASSETS);
+    if (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) return operatorPage(request, env.ASSETS, env.APP_ORIGIN);
     const socket = url.pathname.match(/^\/api\/households\/([^/]+)\/live$/);
     if (socket) return live(request, env, socket[1]);
     // `run_worker_first` incluye /admin y /api/*; lo demás son archivos de la app.

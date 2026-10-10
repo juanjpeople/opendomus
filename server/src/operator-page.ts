@@ -6,8 +6,12 @@ const headers = {
   "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
 };
 /** La pantalla de ingreso y su código son públicos. Los datos exigen sesión en la API. */
-export async function operatorPage(request: Request, assets: { fetch(request: Request): Promise<Response> }) {
+export async function operatorPage(request: Request, assets: { fetch(request: Request): Promise<Response> }, appOrigin?: string) {
   const url = new URL(request.url);
+  // La API solo acepta el origen principal; desde otro dominio (p. ej. www) el ingreso fallaría siempre.
+  if (appOrigin && url.protocol === "https:" && url.origin !== appOrigin && ["GET", "HEAD"].includes(request.method)) {
+    return new Response(null, { status: 308, headers: { ...headers, Location: new URL(url.pathname + url.search, appOrigin).href } });
+  }
   if (!["GET", "HEAD"].includes(request.method) || !["/admin", "/admin/", "/admin/index.html", "/admin/panel.js", "/admin/panel.css"].includes(url.pathname)) return new Response(null, { status: 404, headers });
   if (!["/admin/panel.js", "/admin/panel.css"].includes(url.pathname)) url.pathname = "/admin/";
   const response = await assets.fetch(new Request(url, { method: request.method }));

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { operatorHash, operatorSession, operatorTotp } from "../src/operator-auth";
+import { operatorPage } from "../src/operator-page";
 import { operatorFixture, TEST_KEY, TEST_TOTP } from "./operator-fixture";
 
 test("TOTP coincide con todos los vectores SHA-1 de RFC 6238", async () => {
@@ -54,4 +55,12 @@ test("los intentos de ingreso se limitan en D1 y el cuerpo tiene un límite", as
     assert.equal(response.status, i < 10 ? 401 : 429);
   }
   assert.equal((await app.request(`${env.APP_ORIGIN}/api/admin/auth/login`, { method: "POST", headers, body: JSON.stringify({ key: "x".repeat(3000) }) }, env)).status, 413);
+});
+test("panel: otro dominio (www) redirige al origen principal, que es el único que acepta la API", async () => {
+  const assets = { fetch: async () => new Response("panel", { headers: { "Content-Type": "text/html" } }) };
+  const moved = await operatorPage(new Request("https://www.refugi.ar/admin?x=1"), assets, "https://refugi.ar");
+  assert.equal(moved.status, 308);
+  assert.equal(moved.headers.get("Location"), "https://refugi.ar/admin?x=1");
+  assert.equal((await operatorPage(new Request("https://refugi.ar/admin"), assets, "https://refugi.ar")).status, 200);
+  assert.equal((await operatorPage(new Request("http://localhost:8787/admin"), assets, "https://refugi.ar")).status, 200);
 });

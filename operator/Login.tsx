@@ -19,6 +19,14 @@ export function OperatorApp() {
       .finally(() => { if (!cancelled) setReady(true); });
     return () => { cancelled = true; };
   }, [t]);
+  function loginError(err: unknown) {
+    const status = err instanceof CloudError ? err.status : 0;
+    if (status === 401) return t("operator.invalid");
+    if (status === 429) return t("operator.tooMany");
+    if (status === 403) return t("operator.wrongOrigin");
+    if (status === 404) return t("operator.notConfigured");
+    return t("operator.error");
+  }
   async function login(values: { key: string; code: string }) {
     if (pending.current) return;
     pending.current = true;
@@ -28,7 +36,7 @@ export function OperatorApp() {
       form.resetFields(); setAuthenticated(true);
     } catch (err) {
       form.setFieldValue("code", "");
-      setError(err instanceof CloudError && err.status === 429 ? t("operator.tooMany") : t("operator.invalid"));
+      setError(loginError(err));
     } finally { pending.current = false; setBusy(false); }
   }
   if (!ready) return <OperatorLayout authenticated={false}><Typography.Text role="status">{t("operator.checking")}</Typography.Text></OperatorLayout>;
@@ -39,8 +47,8 @@ export function OperatorApp() {
       <Typography.Paragraph type="secondary">{t("operator.intro")}</Typography.Paragraph>
       {error && <Alert type="error" title={error} showIcon style={{ marginBottom: token.margin }} />}
       <Form form={form} layout="vertical" requiredMark={false} disabled={busy} onFinish={login}>
-        <Form.Item name="key" label={t("operator.key")} rules={[{ required: true, message: t("operator.keyRequired") }]}><Input.Password autoComplete="current-password" maxLength={64} style={{ minHeight: 44 }} /></Form.Item>
-        <Form.Item name="code" label={t("operator.code")} rules={[{ required: true, pattern: /^\d{6}$/, message: t("operator.codeRequired") }]}><Input inputMode="numeric" autoComplete="one-time-code" maxLength={6} style={{ minHeight: 44 }} /></Form.Item>
+        <Form.Item name="key" label={t("operator.key")} normalize={(value: string) => value.replace(/\s/g, "").toLowerCase()} rules={[{ required: true, message: t("operator.keyRequired") }]}><Input.Password autoComplete="current-password" style={{ minHeight: 44 }} /></Form.Item>
+        <Form.Item name="code" label={t("operator.code")} normalize={(value: string) => value.replace(/\D/g, "").slice(0, 6)} rules={[{ required: true, pattern: /^\d{6}$/, message: t("operator.codeRequired") }]}><Input inputMode="numeric" autoComplete="one-time-code" style={{ minHeight: 44 }} /></Form.Item>
         <Button aria-label={t("operator.login")} type="primary" htmlType="submit" loading={busy} block style={{ minHeight: 44 }}>{t("operator.login")}</Button>
       </Form>
     </Card>
