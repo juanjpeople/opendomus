@@ -1,4 +1,5 @@
-# Cada PR y cada push a main: tipos, lint, tests, build estático y pruebas de punta a punta.
+# Cada PR: tipos, lint, tests, API y las pruebas de punta a punta esenciales, en escritorio.
+# Al mergear a main corre todo: celular, temas, capturas y el paquete local para NAS.
 # Android con emulador corre aparte (android.yml): en main, semanal y a pedido, no en los PR.
 name: CI
 
@@ -82,7 +83,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run build:operator
       - run: npx playwright test --config playwright.operator.config.ts
-      # En los PR el celular corre solo las pruebas de pantalla chica; en main, todas.
+      # En los PR solo lo esencial en escritorio; en main, todo y también en celular.
       - run: npm run e2e
         env:
           E2E_FULL: ${{ github.event_name == 'push' && '1' || '' }}
@@ -102,6 +103,8 @@ jobs:
 
   local-package:
     name: Paquete local y navegador
+    # Cambia poco: se arma y se prueba al mergear a main, sin gastar minutos en cada PR.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: check
@@ -138,6 +141,8 @@ jobs:
       - run: npm run build:demo
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e:demo
+        env:
+          E2E_FULL: ${{ github.event_name == 'push' && '1' || '' }}
       - run: npx wrangler deploy --config wrangler.demo.jsonc --dry-run
       - uses: actions/upload-artifact@v7
         if: always()
