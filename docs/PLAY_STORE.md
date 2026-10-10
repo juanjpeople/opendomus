@@ -136,7 +136,28 @@ Open source (AGPL-3.0): github.com/juanjpeople/refugiar
 
 1. Mergear a `main`.
 2. Correr *Android release* (el `versionCode` sube solo).
-3. Subir el `.aab` a la pista que corresponda y escribir las novedades.
+3. Con la cuenta de servicio (abajo), el workflow sube el `.aab` a **Prueba interna** por su cuenta.
+   Sin ella, descargar el artefacto y subirlo a mano. Pasar de interna a cerrada o producción
+   se hace desde Play Console.
+
+Solo corre con el botón, nunca en cada merge: cada ejecución crea una versión nueva en Play.
+
+### Subida automática a Prueba interna (opcional, una sola vez)
+
+Usa la API oficial de Play con una cuenta de servicio: una cuenta "robot" que solo puede subir
+versiones de Refugiar. No tiene costo ni pide tarjeta. No sirve para la primera versión: esa va a mano.
+
+1. En [console.cloud.google.com](https://console.cloud.google.com/), crear un proyecto `refugiar`.
+2. Activar **Google Play Android Developer API** en ese proyecto.
+3. IAM y administración → Cuentas de servicio → Crear: `play-upload`. Sin roles de Cloud.
+4. En esa cuenta: Claves → Agregar clave → JSON. Guardar el archivo junto a la clave de subida.
+5. Play Console → Usuarios y permisos → Invitar usuario: el email de la cuenta
+   (`…@…iam.gserviceaccount.com`), con acceso a Refugiar y permiso para publicar versiones en pistas de prueba (en inglés, *Release to testing tracks*).
+6. GitHub → Settings → Secrets and variables → Actions: secreto `PLAY_SERVICE_ACCOUNT_JSON` con el
+   contenido completo del JSON.
+
+Si la app todavía figura como borrador en Play, la API solo acepta versiones en borrador: el
+workflow la deja así y hay que publicarla desde Play Console. El script es `scripts/play-upload.mjs`.
 
 Si cambia lo que la app guarda o envía, actualizar primero la política
 (`src/i18n/messages/*.ts`, `legal.privacy`, con su fecha) y el formulario de seguridad de datos.

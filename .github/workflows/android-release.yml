@@ -10,6 +10,10 @@ on:
         description: 'versionCode (vacío = número de ejecución). Tiene que ser mayor que el último subido.'
         required: false
         default: ''
+      subir_a_play:
+        description: 'Subir a Prueba interna de Play (necesita el secreto PLAY_SERVICE_ACCOUNT_JSON; la primera versión va a mano)'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -23,6 +27,8 @@ jobs:
     name: AAB firmado
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      HAS_PLAY_ACCOUNT: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -66,3 +72,12 @@ jobs:
           name: refugiar-${{ inputs.version_code || github.run_number }}-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 7
+      - name: Subir a Prueba interna de Play
+        if: inputs.subir_a_play && env.HAS_PLAY_ACCOUNT == 'true'
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: node scripts/play-upload.mjs android/app/build/outputs/bundle/release/app-release.aab internal
+      - name: Sin cuenta de servicio
+        if: inputs.subir_a_play && env.HAS_PLAY_ACCOUNT != 'true'
+        run: |
+          echo "::notice::No se subió a Play: falta el secreto PLAY_SERVICE_ACCOUNT_JSON. Descargá el .aab del artefacto. Ver docs/PLAY_STORE.md."
