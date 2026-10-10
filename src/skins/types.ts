@@ -1,5 +1,5 @@
 /** Un skin: el estilo completo de la app. Es solo datos; los componentes lo leen con `useSkin()`. */
-export const SKIN_IDS = ["casa", "calido", "sobrio"] as const;
+export const SKIN_IDS = ["casa", "calido", "sobrio", "oceano", "jardin", "papel"] as const;
 export type SkinId = (typeof SKIN_IDS)[number];
 
 /** Colores de superficie que un skin cambia de antd (lo que no se lista queda como en "Casa"). */

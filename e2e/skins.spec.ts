@@ -6,6 +6,11 @@ test("el estilo se elige en Ajustes, se recuerda y se puede volver al de siempre
   const html = page.locator("html");
   await expect(html).toHaveAttribute("data-skin", "casa");
 
+  // La vista previa muestra el estilo con el foco sin aplicarlo.
+  await page.getByRole("radio", { name: /Océano/ }).focus();
+  await expect(page.getByText("Vista previa: Océano", { exact: true })).toBeVisible();
+  await expect(html).toHaveAttribute("data-skin", "casa");
+
   await page.getByRole("radio", { name: /Cálido/ }).click();
   await expect(html).toHaveAttribute("data-skin", "calido");
   // Elegir un estilo aplica su color de marca y su redondeo.
