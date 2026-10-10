@@ -6,7 +6,8 @@ import { RotateCcw, Shuffle } from "lucide-react";
 import { useState } from "react";
 import { HouseMark } from "@/components/illustrations/HouseMark";
 import { AnimatedNumber, Reveal, Stagger, StaggerItem } from "@/components/motion";
-import { DURATION, EASE_OUT, HOVER_LIFT, SPRING, STAGGER, TAP } from "@/lib/motion";
+import { LoadingSkeleton } from "@/components/ui";
+import { DURATION, EASE_OUT, HOVER_LIFT, SKELETON_DELAY, SPRING, STAGGER, TAP } from "@/lib/motion";
 import { DemoBlock, DemoLabel } from "./DemoBlock";
 
 /** Los valores salen del código real: si cambia lib/motion.ts, cambia esta tabla. */
@@ -18,6 +19,7 @@ const TOKENS = [
   { name: "STAGGER", value: STAGGER, use: "Separación entre elementos de una lista escalonada" },
   { name: "HOVER_LIFT", value: HOVER_LIFT, use: "Cuánto sube lo que se puede tocar (px)" },
   { name: "TAP", value: TAP, use: "Escala al apretar" },
+  { name: "SKELETON_DELAY", value: SKELETON_DELAY, use: "Segundos que espera LoadingSkeleton antes de aparecer" },
 ];
 
 const LIFTS = [
@@ -46,7 +48,8 @@ export function MotionSection() {
       title="Movimiento"
       description="La app se siente viva pero nunca hace esperar: animaciones cortas, solo transform y opacity, y todo respeta 'reducir movimiento' (MotionConfig en ThemeProvider, más la preferencia de la app). Tiempos, curvas y distancias salen de lib/motion.ts: no se escriben números sueltos."
       code={`
-import { AnimatedNumber, Reveal, Stagger, StaggerItem } from "@/components/motion";
+import { AnimatedNumber, PageTransition, Reveal, Stagger, StaggerItem } from "@/components/motion";
+import { LoadingSkeleton } from "@/components/ui";
 import { HOVER_LIFT, SPRING, TAP } from "@/lib/motion";
 
 <Reveal>Entra con fade + subida</Reveal>
@@ -61,6 +64,14 @@ import { HOVER_LIFT, SPRING, TAP } from "@/lib/motion";
 </Stagger>
 
 <AnimatedNumber value={total} />   {/* cuenta hasta el valor, sin re-renders por frame */}
+
+// Cambio de página: ya está en app/template.tsx. El navegador funde la página vieja con la nueva
+// (View Transitions API); el menú y la cabecera no se funden. Ninguna pantalla lo repite.
+<PageTransition>{children}</PageTransition>
+
+// Cargando: nada durante SKELETON_DELAY y recién después el esqueleto. Los datos locales casi
+// siempre llegan antes, así que al navegar no parpadea un esqueleto.
+if (data === undefined) return <LoadingSkeleton />;
 <motion.div whileHover={{ y: HOVER_LIFT.card }} whileTap={{ scale: TAP.card }} transition={SPRING.snappy} />
 
 // Indicador que se desliza entre opciones: un solo elemento con layoutId.
@@ -175,6 +186,10 @@ import { HOVER_LIFT, SPRING, TAP } from "@/lib/motion";
             </Typography.Text>
             <Button icon={<Shuffle />} aria-label="Número al azar" onClick={() => setCount(Math.round(Math.random() * 2000))} />
           </Flex>
+        </Col>
+        <Col xs={24} md={12}>
+          <DemoLabel>LoadingSkeleton: aparece recién a los {SKELETON_DELAY * 1000} ms (repetí las animaciones)</DemoLabel>
+          <LoadingSkeleton paragraph={{ rows: 2 }} />
         </Col>
         <Col xs={24} md={6}>
           <DemoLabel>HouseMark</DemoLabel>

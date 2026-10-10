@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Flex, Segmented, Skeleton, Tag, Typography, theme } from "antd";
+import { Button, Card, Flex, Segmented, Tag, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
 import { HardHat, Plus } from "lucide-react";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
-import { EmptyState, IconTile, PageHeader, PrivacyBadge } from "@/components/ui";
+import { EmptyState, IconTile, PageHeader, PrivacyBadge, LoadingSkeleton } from "@/components/ui";
 import { BudgetBar } from "@/features/shopping/components/BudgetBar";
 import { useI18n } from "@/i18n";
 import { APPEARANCE_ICONS } from "@/lib/appearance";
@@ -41,7 +41,7 @@ export function ProjectsPage() {
       <PageHeader eyebrow={t("projects.eyebrow")} title={t("projects.title")} description={t("projects.description")} extra={newButton} />
 
       {!projects ? (
-        <Skeleton active />
+        <LoadingSkeleton />
       ) : projects.length === 0 ? (
         <Card>
           <EmptyState icon={HardHat} title={t("projects.emptyTitle")} description={t("projects.emptyText")} action={newButton} />

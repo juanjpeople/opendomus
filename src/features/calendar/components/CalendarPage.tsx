@@ -1,13 +1,13 @@
 "use client";
 
-import { Button, Flex, Grid, Segmented, Skeleton, Tooltip, Typography, theme } from "antd";
+import { Button, Flex, Grid, Segmented, Tooltip, Typography, theme } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
-import { PageHeader } from "@/components/ui";
+import { PageHeader, LoadingSkeleton } from "@/components/ui";
 import { MemberAvatar } from "@/components/ui/MemberAvatar";
 import { useElementWidth } from "@/hooks/useElementWidth";
 import { useMembers } from "@/features/members/hooks";
@@ -136,7 +136,7 @@ export function CalendarPage() {
 
       <div ref={areaRef}>
       {!occurrences || areaWidth === null ? (
-        <Skeleton active />
+        <LoadingSkeleton />
       ) : (
         <AnimatePresence mode="wait" custom={direction} initial={false}>
           <motion.div

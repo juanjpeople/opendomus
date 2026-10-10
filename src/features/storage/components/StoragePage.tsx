@@ -1,6 +1,6 @@
 "use client";
 
-import { App, Button, Card, Skeleton, theme } from "antd";
+import { App, Button, Card, theme } from "antd";
 import { Camera, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
-import { EmptyState, PageHeader, SectionHeader, ViewSwitcher } from "@/components/ui";
+import { EmptyState, PageHeader, SectionHeader, ViewSwitcher, LoadingSkeleton } from "@/components/ui";
 import { usePreferences, useSetPreference } from "@/hooks/usePreferences";
 import { useT } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
@@ -112,7 +112,7 @@ export function StoragePage() {
         }
       />
 
-      {!spaces && <Skeleton active />}
+      {!spaces && <LoadingSkeleton />}
       {spaces?.length === 0 && (
         <Card>
           <EmptyState

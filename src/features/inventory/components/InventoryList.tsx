@@ -2,12 +2,12 @@
 
 import { formatUnit } from "@/features/inventory/format";
 
-import { Button, Card, Flex, Popconfirm, Skeleton, Typography, theme } from "antd";
+import { Button, Card, Flex, Popconfirm, Typography, theme } from "antd";
 import { AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
 import { PackageOpen, Tag as PriceTag, Trash2 } from "lucide-react";
 import { Can } from "@/components/auth/Can";
-import { EmptyState, IconTile, ListRow, QuantityStepper, StockTag } from "@/components/ui";
+import { EmptyState, IconTile, ListRow, QuantityStepper, StockTag, LoadingSkeleton } from "@/components/ui";
 import { usePriceSummaries } from "@/features/prices/hooks";
 import { useI18n } from "@/i18n";
 import { usePermission } from "@/lib/auth/hooks";
@@ -40,7 +40,7 @@ export function InventoryList({ containerId, onOpen, highlightId }: InventoryLis
 
   return (
     <Card styles={{ body: { padding: 0 } }}>
-      {items === undefined && <Skeleton active style={{ padding: token.paddingLG }} />}
+      {items === undefined && <LoadingSkeleton style={{ padding: token.paddingLG }} />}
 
       {items?.length === 0 && (
         <EmptyState icon={PackageOpen} title={t("inventory.list.emptyShort")} description={t("inventory.list.emptyHint")} />

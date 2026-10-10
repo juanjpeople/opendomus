@@ -1,10 +1,10 @@
 "use client";
 
-import { App, Avatar, Button, Card, Col, Divider, Dropdown, Flex, Row, Skeleton, Tag, Typography, theme } from "antd";
+import { App, Avatar, Button, Card, Col, Divider, Dropdown, Flex, Row, Tag, Typography, theme } from "antd";
 import { Cloud, Crown, Ellipsis, LogOut, Trash2, UserMinus, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { IconTile } from "@/components/ui";
+import { IconTile, LoadingSkeleton } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { setAccountRole, unlinkAccount } from "@/features/members/service";
 import { useCurrentUser } from "@/lib/auth/session";
@@ -57,7 +57,7 @@ export function CloudHouseholdPanel() {
       </Flex>
 
       {status === "idle" || status === "restoring" ? (
-        <Skeleton active />
+        <LoadingSkeleton />
       ) : !session ? (
         <Card>
           <Flex align="center" justify="space-between" gap={16} wrap>
@@ -173,7 +173,7 @@ function HouseholdCard({ household }: { household: CloudHousehold }) {
       }
     >
       {!members ? (
-        <Skeleton active avatar />
+        <LoadingSkeleton avatar />
       ) : (
         <Row gutter={[12, 12]}>
           {members.map((member) => (

@@ -1,13 +1,13 @@
 "use client";
 
-import { Button, Card, Dropdown, Skeleton, theme } from "antd";
+import { Button, Card, Dropdown, theme } from "antd";
 import { ArrowLeft, Boxes, Camera, EllipsisVertical, MapPinOff, Pencil, Plus, Printer, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
-import { EmptyState, IconTile, PageHeader, PathCrumbs, SectionHeader, ViewSwitcher } from "@/components/ui";
+import { EmptyState, IconTile, PageHeader, PathCrumbs, SectionHeader, ViewSwitcher, LoadingSkeleton } from "@/components/ui";
 import { useTrackVisit } from "@/components/layout/useShell";
 import { usePreferences, useSetPreference } from "@/hooks/usePreferences";
 import { useT } from "@/i18n";
@@ -36,7 +36,7 @@ export function SpacePage() {
   useTrackVisit(space ? spaceHref(space.id) : null);
   usePageCrumbs(space ? [{ label: space.name }] : null);
 
-  if (spaces === undefined) return <Skeleton active />;
+  if (spaces === undefined) return <LoadingSkeleton />;
 
   if (!space) {
     return (

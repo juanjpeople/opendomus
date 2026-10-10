@@ -1,6 +1,6 @@
 "use client";
 
-import { App, Button, Card, Col, Dropdown, Flex, Row, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
+import { App, Button, Card, Col, Dropdown, Flex, Row, Tag, Tooltip, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { ArrowLeft, CircleCheck, Ellipsis, Pencil, Plus, RotateCcw, SearchX, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
-import { EmptyState, IconTile, PageHeader } from "@/components/ui";
+import { EmptyState, IconTile, PageHeader, LoadingSkeleton } from "@/components/ui";
 import { BudgetBar } from "@/features/shopping/components/BudgetBar";
 import { ListModal } from "@/features/shopping/components/ListModal";
 import { listName, type ListSummary } from "@/features/shopping/hooks";
@@ -37,7 +37,7 @@ export function ProjectView() {
   usePageCrumbs(summary ? [{ label: summary.project.name }] : null);
   useTrackVisit(summary ? projectHref(summary.project.id) : null);
 
-  if (summary === undefined) return <Skeleton active />;
+  if (summary === undefined) return <LoadingSkeleton />;
   if (summary === null) {
     return (
       <Card>

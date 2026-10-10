@@ -17,6 +17,12 @@ export const SPRING = {
   soft: { type: "spring", stiffness: 160, damping: 18 },
 } satisfies Record<string, Transition>;
 
+/**
+ * Segundos que espera un esqueleto de carga antes de aparecer (`LoadingSkeleton`). Los datos son
+ * locales y casi siempre llegan antes: así no parpadea un esqueleto en cada cambio de página.
+ */
+export const SKELETON_DELAY = 0.3;
+
 /** Separación entre elementos de una lista que entra escalonada. */
 export const STAGGER = 0.05;
 

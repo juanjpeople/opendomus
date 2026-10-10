@@ -1,10 +1,10 @@
 "use client";
 
-import { App, Button, Flex, Form, Input, Modal, Progress, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
+import { App, Button, Flex, Form, Input, Modal, Progress, Tag, Tooltip, Typography, theme } from "antd";
 import { KeyRound, Lock, LogIn, LogOut, Monitor, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { SettingRow } from "@/components/ui";
+import { SettingRow, LoadingSkeleton } from "@/components/ui";
 import { useI18n, useT } from "@/i18n";
 import { describeUserAgent, deviceLabel } from "@/lib/device";
 import { getErrorMessage } from "@/lib/errors";
@@ -23,7 +23,7 @@ export function AccountSettings() {
   const { status, session } = useCloudSession();
   const [dialog, setDialog] = useState<"password" | "kit" | null>(null);
 
-  if (status === "idle" || status === "restoring") return <Skeleton active paragraph={{ rows: 3 }} style={{ paddingBlock: 16 }} />;
+  if (status === "idle" || status === "restoring") return <LoadingSkeleton paragraph={{ rows: 3 }} style={{ paddingBlock: 16 }} />;
   if (!session) {
     return (
       <SettingRow label={t("cloud.account.signedOutTitle")} description={t("cloud.account.signedOutText")} last>
@@ -99,7 +99,7 @@ function Devices() {
     });
   }
 
-  if (!devices) return <Skeleton active paragraph={{ rows: 2 }} />;
+  if (!devices) return <LoadingSkeleton paragraph={{ rows: 2 }} />;
   return (
     <Flex vertical gap={8}>
       {devices.map((device) => {

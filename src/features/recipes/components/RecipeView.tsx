@@ -2,7 +2,7 @@
 
 import { formatQuantity, formatUnit } from "@/features/inventory/format";
 
-import { App, Button, Card, Col, Flex, Grid, Row, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
+import { App, Button, Card, Col, Flex, Grid, Row, Tag, Tooltip, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChefHat, CircleAlert, CircleCheck, CircleDashed, Clock, ListPlus, Pencil, SearchX, Trash2, TriangleAlert, Users } from "lucide-react";
 import Link from "next/link";
@@ -11,7 +11,7 @@ import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
-import { EmptyState, QuantityStepper } from "@/components/ui";
+import { EmptyState, QuantityStepper, LoadingSkeleton } from "@/components/ui";
 import { CommentsPanel } from "@/features/comments/components/CommentsPanel";
 import { useComments } from "@/features/comments/hooks";
 
@@ -44,7 +44,7 @@ export function RecipeView() {
   usePageCrumbs(data ? [{ label: data.recipe.name }] : null);
   useTrackVisit(data ? recipeHref(data.recipe.id) : null);
 
-  if (data === undefined) return <Skeleton active />;
+  if (data === undefined) return <LoadingSkeleton />;
   if (data === null) {
     return (
       <Card>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Breadcrumb, Button, Flex, Grid, Tooltip } from "antd";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -48,27 +48,25 @@ export function HeaderNavigation() {
       </Tooltip>
       {screens.md && trail.length > 0 && (
         <nav aria-label={t("nav.breadcrumb")} className="od-header-crumbs" style={{ marginInlineStart: 8, minWidth: 0, overflow: "hidden" }}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={`${pathname}|${tail.map((crumb) => crumb.label).join("/")}`}
-              initial={{ opacity: 0, x: -6 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 6 }}
-              transition={{ duration: DURATION.fast, ease: EASE_OUT }}
-            >
-              <Breadcrumb
-                items={shown.map((item, index) => ({
-                  key: item.key,
-                  title:
-                    index === shown.length - 1 || !item.href ? (
-                      <span aria-current={index === shown.length - 1 ? "page" : undefined} style={ellipsis}>{item.label}</span>
-                    ) : (
-                      <Link href={item.href} title={"title" in item ? item.title : undefined} aria-label={"title" in item ? item.title : undefined}>{item.label}</Link>
-                    ),
-                }))}
-              />
-            </motion.div>
-          </AnimatePresence>
+          {/* Sin salida: las migas nuevas entran enseguida, la cabecera nunca queda vacía entre páginas. */}
+          <motion.div
+            key={`${pathname}|${tail.map((crumb) => crumb.label).join("/")}`}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: DURATION.fast, ease: EASE_OUT }}
+          >
+            <Breadcrumb
+              items={shown.map((item, index) => ({
+                key: item.key,
+                title:
+                  index === shown.length - 1 || !item.href ? (
+                    <span aria-current={index === shown.length - 1 ? "page" : undefined} style={ellipsis}>{item.label}</span>
+                  ) : (
+                    <Link href={item.href} title={"title" in item ? item.title : undefined} aria-label={"title" in item ? item.title : undefined}>{item.label}</Link>
+                  ),
+              }))}
+            />
+          </motion.div>
         </nav>
       )}
     </Flex>
