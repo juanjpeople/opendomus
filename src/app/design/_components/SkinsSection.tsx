@@ -1,7 +1,7 @@
 "use client";
 
 import { Col, Row, Table, Typography, theme } from "antd";
-import { SkinPreview } from "@/features/settings/components/Previews";
+import { SkinLivePreview, SkinPreview } from "@/features/settings/components/Previews";
 import { useI18n } from "@/i18n";
 import { SKINS } from "@/skins/skins";
 import { SKIN_IDS } from "@/skins/types";
@@ -29,9 +29,13 @@ export function SkinsSection() {
       description="Un skin es un conjunto de datos (src/skins/skins.ts) que cada persona elige en Ajustes. 'Casa' es el aspecto original y no cambia nada; los demás varían superficies, sombras, tipografía e ilustraciones sin tocar las pantallas. En una pantalla se lee con useSkin(): nunca se escribe un estilo por skin."
       code={`const skin = useSkin();
 background: surfaceBackground(skin, palette.bg, token.colorBgContainer, 60)
-background: haloBackground(skin, \`radial-gradient(...)\`, token.colorBgLayout)`}
+background: haloBackground(skin, \`radial-gradient(...)\`, token.colorBgLayout)
+
+// Ajustes: vista previa en vivo del skin bajo el mouse o con el foco.
+<ChoiceCards onPreview={setPreviewing} ... />
+<SkinLivePreview skin={SKINS[previewing ?? preferences.skin]} />`}
     >
-      <DemoLabel>Los tres skins, con el tema actual</DemoLabel>
+      <DemoLabel>Los skins, con el tema actual</DemoLabel>
       <Row gutter={[token.marginSM, token.marginSM]} style={{ marginBottom: token.marginLG }}>
         {SKIN_IDS.map((id) => (
           <Col key={id} xs={24} sm={8}>
@@ -42,6 +46,14 @@ background: haloBackground(skin, \`radial-gradient(...)\`, token.colorBgLayout)`
               {t(`settings.appearance.skins.${id}.title`)}
             </Typography.Text>
             <Typography.Text type="secondary">{t(`settings.appearance.skins.${id}.text`)}</Typography.Text>
+          </Col>
+        ))}
+      </Row>
+      <DemoLabel>Vista previa en vivo (Ajustes): piezas reales con el tema del skin, antes de elegirlo</DemoLabel>
+      <Row gutter={[token.marginSM, token.marginSM]} style={{ marginBottom: token.marginLG }}>
+        {SKIN_IDS.map((id) => (
+          <Col key={id} xs={24} md={12} xl={8}>
+            <SkinLivePreview skin={SKINS[id]} />
           </Col>
         ))}
       </Row>

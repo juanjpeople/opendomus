@@ -7,7 +7,7 @@ import { Anchor, Button, Card, Col, ColorPicker, Flex, Grid, Row, Segmented, Sli
 import { motion } from "framer-motion";
 import { Check, Database, Info, Keyboard, Languages, MonitorDown, Paintbrush, PanelLeft, Sparkles, UserRound, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { FONT_SIZES } from "@/components/providers/ThemeProvider";
 import { ChoiceCards, PageHeader } from "@/components/ui";
@@ -29,7 +29,7 @@ import {
 } from "@/store/usePreferencesStore";
 import { APP_VERSION } from "../service";
 import { DataSettings } from "./DataSettings";
-import { SidebarPreview, SkinPreview, ThemePreview } from "./Previews";
+import { SidebarPreview, SkinLivePreview, SkinPreview, ThemePreview } from "./Previews";
 import { SettingRow } from "@/components/ui";
 import { usePwaStore } from "@/store/usePwaStore";
 
@@ -117,26 +117,46 @@ function AppearanceSettings() {
   const screens = Grid.useBreakpoint();
   const preferences = usePreferences();
   const setPreference = useSetPreference();
+  // El estilo bajo el mouse o con el foco se muestra en la vista previa; si no hay ninguno, el elegido.
+  const [previewing, setPreviewing] = useState<SkinId | null>(null);
+  const shown = previewing ?? preferences.skin;
 
   return (
     <>
       <SettingRow label={t("settings.appearance.skin")} description={t("settings.appearance.skinHint")} stacked>
-        <ChoiceCards<SkinId>
-          aria-label={t("settings.appearance.skin")}
-          value={preferences.skin}
-          onChange={(value) => {
-            // Elegir un estilo aplica su color y su redondeo; después se pueden ajustar a mano.
-            setPreference("skin", value);
-            setPreference("brandColor", SKINS[value].brandColor);
-            setPreference("borderRadius", SKINS[value].borderRadius);
-          }}
-          options={SKIN_IDS.map((value) => ({
-            value,
-            title: t(`settings.appearance.skins.${value}.title`),
-            description: t(`settings.appearance.skins.${value}.text`),
-            preview: <SkinPreview skin={SKINS[value]} />,
-          }))}
-        />
+        <Row gutter={[token.marginLG, token.marginLG]}>
+          <Col xs={24} lg={14}>
+            <ChoiceCards<SkinId>
+              aria-label={t("settings.appearance.skin")}
+              value={preferences.skin}
+              compact
+              onPreview={setPreviewing}
+              onChange={(value) => {
+                // Elegir un estilo aplica su color y su redondeo; después se pueden ajustar a mano.
+                setPreference("skin", value);
+                setPreference("brandColor", SKINS[value].brandColor);
+                setPreference("borderRadius", SKINS[value].borderRadius);
+              }}
+              options={SKIN_IDS.map((value) => ({
+                value,
+                title: t(`settings.appearance.skins.${value}.title`),
+                description: t(`settings.appearance.skins.${value}.text`),
+                preview: <SkinPreview skin={SKINS[value]} />,
+              }))}
+            />
+          </Col>
+          <Col xs={24} lg={10}>
+            <div style={screens.lg ? { position: "sticky", top: token.controlHeight * 3 } : undefined}>
+              <Typography.Text strong aria-live="polite" style={{ display: "block", marginBottom: token.marginXS }}>
+                {t("settings.appearance.livePreview.label", { name: t(`settings.appearance.skins.${shown}.title`) })}
+              </Typography.Text>
+              <SkinLivePreview skin={SKINS[shown]} />
+              <Typography.Paragraph type="secondary" style={{ margin: 0, marginTop: token.marginXS, fontSize: token.fontSizeSM }}>
+                {t("settings.appearance.livePreview.hint")}
+              </Typography.Paragraph>
+            </div>
+          </Col>
+        </Row>
       </SettingRow>
 
       <SettingRow label={t("settings.appearance.theme")} stacked>

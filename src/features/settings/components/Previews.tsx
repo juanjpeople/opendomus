@@ -1,13 +1,19 @@
 "use client";
 
-import { theme } from "antd";
+import { Button, Card, ConfigProvider, Flex, Segmented, Tag, Typography, theme } from "antd";
 import { motion } from "framer-motion";
+import { Plus, ShoppingCart } from "lucide-react";
 import { useMemo } from "react";
 import { SIDEBAR_WIDTH } from "@/components/layout/constants";
 import { useIsDark } from "@/hooks/useIsDark";
-import { SPRING } from "@/lib/motion";
+import { usePreferences } from "@/hooks/usePreferences";
+import { useT } from "@/i18n";
+import { tint } from "@/lib/appearance";
+import { DURATION, EASE_OUT, SPRING } from "@/lib/motion";
 import { createTheme } from "@/lib/theme";
+import { haloBackground, surfaceBackground } from "@/skins/surface";
 import type { Skin } from "@/skins/types";
+import { SkinContext, useSkin } from "@/skins/useSkin";
 import type { SidebarMode, ThemeMode } from "@/store/usePreferencesStore";
 
 type Token = ReturnType<typeof theme.getDesignToken>;
@@ -108,5 +114,82 @@ export function SkinPreview({ skin }: { skin: Skin }) {
         <div style={{ width: 22, height: 22, borderRadius: token.borderRadius, background: token.colorPrimary }} />
       </div>
     </div>
+  );
+}
+
+/**
+ * Vista previa en vivo de un skin: piezas reales de antd pintadas con el tema que tendría la app
+ * (con el tamaño de letra, la densidad y el modo claro u oscuro de la persona). No cambia nada
+ * hasta que se elige.
+ */
+export function SkinLivePreview({ skin }: { skin: Skin }) {
+  const isDark = useIsDark();
+  const { fontSize, density, motion: motionPreference } = usePreferences();
+  const config = useMemo(
+    () => createTheme({ brandColor: skin.brandColor, borderRadius: skin.borderRadius, fontSize, density, motion: motionPreference }, isDark, skin),
+    [skin, isDark, fontSize, density, motionPreference],
+  );
+  return (
+    <ConfigProvider theme={config}>
+      <SkinContext.Provider value={skin}>
+        <LivePage />
+      </SkinContext.Provider>
+    </ConfigProvider>
+  );
+}
+
+function LivePage() {
+  const t = useT();
+  const skin = useSkin();
+  const { token } = theme.useToken();
+  const green = tint(token, "green");
+  const items = [
+    { name: t("settings.appearance.livePreview.itemLow"), tag: t("settings.appearance.livePreview.low"), color: "warning" },
+    { name: t("settings.appearance.livePreview.itemOk"), tag: t("settings.appearance.livePreview.ok"), color: "success" },
+  ] as const;
+
+  return (
+    <motion.div
+      key={skin.id}
+      initial={{ opacity: 0.4 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: DURATION.fast, ease: EASE_OUT }}
+      style={{
+        padding: token.paddingLG,
+        borderRadius: token.borderRadiusLG,
+        border: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+        background: haloBackground(skin, `radial-gradient(ellipse 80% 55% at 70% 0%, ${token.colorPrimaryBg}, transparent 70%)`, token.colorBgLayout) ?? token.colorBgLayout,
+        color: token.colorText,
+      }}
+    >
+      <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        {t("settings.appearance.livePreview.eyebrow")}
+      </Typography.Text>
+      <Typography.Title level={4} style={{ margin: 0, fontFamily: skin.headingFont ?? undefined }}>
+        {t("settings.appearance.livePreview.title")}
+      </Typography.Title>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginSM }}>
+        {t("settings.appearance.livePreview.text")}
+      </Typography.Paragraph>
+      <Segmented
+        size="small"
+        options={[t("settings.appearance.livePreview.all"), t("settings.appearance.livePreview.missing")]}
+        style={{ marginBottom: token.marginSM }}
+      />
+      <Card size="small" style={{ background: surfaceBackground(skin, green.bg, token.colorBgContainer, 70), marginBottom: token.marginSM }}>
+        <Flex vertical gap={token.marginXS}>
+          {items.map((item) => (
+            <Flex key={item.name} align="center" justify="space-between" gap={token.marginXS}>
+              <Typography.Text>{item.name}</Typography.Text>
+              <Tag color={item.color} style={{ margin: 0 }}>{item.tag}</Tag>
+            </Flex>
+          ))}
+        </Flex>
+      </Card>
+      <Flex gap={token.marginXS} wrap>
+        <Button type="primary" icon={<Plus />}>{t("settings.appearance.livePreview.add")}</Button>
+        <Button icon={<ShoppingCart />}>{t("settings.appearance.livePreview.list")}</Button>
+      </Flex>
+    </motion.div>
   );
 }

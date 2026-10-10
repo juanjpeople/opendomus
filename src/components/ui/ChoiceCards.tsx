@@ -22,6 +22,8 @@ type ChoiceCardsProps<T extends string> = {
   layout?: "grid" | "list";
   compact?: boolean;
   disabled?: boolean;
+  /** La opción bajo el mouse o con el foco (`null` al salir): para mostrar una vista previa antes de elegir. */
+  onPreview?: (value: T | null) => void;
 } & ({ multiple?: false; value: T; onChange: (value: T) => void } | { multiple: true; value: T[]; onChange: (value: T[]) => void });
 
 /**
@@ -29,7 +31,7 @@ type ChoiceCardsProps<T extends string> = {
  * el borde de selección se desliza entre tarjetas (`layoutId`).
  */
 export function ChoiceCards<T extends string>(props: ChoiceCardsProps<T>) {
-  const { options, "aria-label": ariaLabel, layout = "grid", compact = false, disabled = false } = props;
+  const { options, "aria-label": ariaLabel, layout = "grid", compact = false, disabled = false, onPreview } = props;
   const { token } = theme.useToken();
   const groupId = useId();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -72,6 +74,10 @@ export function ChoiceCards<T extends string>(props: ChoiceCardsProps<T>) {
               tabIndex={props.multiple || index === (selectedIndex < 0 ? firstEnabled : selectedIndex) ? 0 : -1}
               onClick={() => choose(option.value)}
               onKeyDown={(event) => onKeyDown(event, index)}
+              onPointerEnter={onPreview && !unavailable ? () => onPreview(option.value) : undefined}
+              onPointerLeave={onPreview ? () => onPreview(null) : undefined}
+              onFocus={onPreview && !unavailable ? () => onPreview(option.value) : undefined}
+              onBlur={onPreview ? () => onPreview(null) : undefined}
               whileHover={unavailable ? undefined : { y: HOVER_LIFT.chip }}
               whileTap={unavailable ? undefined : { scale: TAP.card }}
               transition={SPRING.snappy}
