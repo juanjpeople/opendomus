@@ -28,10 +28,15 @@ El APK queda en `android/app/build/outputs/apk/debug/app-debug.apk`.
 Con `ANDROID_HOME` apuntando al SDK, `npm run android:build` hace el build web,
 la sincronización y la compilación debug en un solo comando, en Windows o Linux/macOS.
 El workflow Android compila y adjunta un APK de prueba, sin publicar ni desplegar.
+En los PR que tocan Android solo compila y corre lint y tests unitarios de Gradle; el
+recorrido en emulador corre al mergear a `main`, los lunes y a pedido (`workflow_dispatch`),
+sin frenar ningún PR. Las pantallas web se prueban con Playwright: el recorrido nativo
+arranca desde la casa de pruebas (`?house=tests`, sembrada por la app) y solo toca lo
+que cambia en Android (selectores, respaldo, cámara, actualización).
 `bash scripts/test-android.sh` usa GNU `timeout` (Linux CI) y ejecuta dos fases
 sobre un emulador conectado y limpio:
 el recorrido de la app, y después una instalación con `versionCode=2` sobre la primera.
-La segunda fase comprueba sesión, anotación y foto sin desinstalar. Cada prueba nativa tiene un máximo de tres minutos (90 segundos para actualizar). La primera
+La segunda fase comprueba sesión, contenido y foto sin desinstalar. Cada prueba nativa tiene un máximo de tres minutos (90 segundos para actualizar). La primera
 fase falla si supera ocho minutos y la instrumentación de actualización si supera
 dos; los logs del emulador y capturas sintéticas se conservan para diagnosticar
 incluso una espera que impida generar el reporte JUnit. No ejecutarlo
@@ -76,7 +81,7 @@ fallos ni omisiones con Android 15 sin Wi-Fi ni datos móviles, y una prueba
 posterior de actualización:
 
 - Inicio local, persistencia al recrear la actividad, navegación directa y ausencia de service workers.
-- Agregar una foto a un contenedor y anotar contenido libre desde la interfaz.
+- Agregar una foto a un contenedor de la casa de pruebas con el selector nativo.
 - Exportar por el selector nativo, comprobar el JSON y restaurar foto y contenido desde Ajustes.
 - Escritura UTF-8 del respaldo, cancelación sin informar éxito y falla con mensaje genérico seguida de reintento exitoso.
 - Captura de cámara real del emulador y cierre de su stream.
