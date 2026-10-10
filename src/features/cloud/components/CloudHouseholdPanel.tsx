@@ -1,9 +1,8 @@
 "use client";
 
-import { App, Avatar, Button, Card, Col, Divider, Dropdown, Flex, Input, Modal, Row, Segmented, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
-import { Cloud, Copy, Crown, Ellipsis, LogOut, Share2, ShieldCheck, Trash2, UserMinus, UserPlus } from "lucide-react";
+import { App, Avatar, Button, Card, Col, Divider, Dropdown, Flex, Row, Skeleton, Tag, Typography, theme } from "antd";
+import { Cloud, Crown, Ellipsis, LogOut, Trash2, UserMinus, UserPlus } from "lucide-react";
 import Link from "next/link";
-import QRCode from "qrcode";
 import { useCallback, useEffect, useState } from "react";
 import { IconTile } from "@/components/ui";
 import { useI18n } from "@/i18n";
@@ -17,6 +16,7 @@ import type { CloudHousehold, CloudInvite, CloudMember, CloudRole } from "../dom
 import { useCloudActions, useCloudSession, useCloudStore } from "../hooks";
 import * as service from "../service";
 import { LeaveCloudButton } from "./CloudDataPanel";
+import { InviteModal } from "./InviteModal";
 
 /**
  * La casa en la nube dentro de "Familia": quiénes tienen cuenta, con qué rol, e invitar por link
@@ -30,7 +30,7 @@ export function CloudHouseholdPanel() {
   if (!CLOUD_ENABLED) return null;
 
   return (
-    <section style={{ marginTop: 40 }}>
+    <section id="nube" style={{ marginTop: 40, scrollMarginTop: 80 }}>
       <Flex align="center" justify="space-between" gap={12} wrap style={{ marginBottom: 16 }}>
         <Flex align="center" gap={12}>
           <IconTile icon={Cloud} color="green" size={40} />
@@ -251,76 +251,5 @@ function HouseholdCard({ household }: { household: CloudHousehold }) {
 
       <InviteModal open={inviting} household={household} onClose={() => setInviting(false)} onCreated={load} />
     </Card>
-  );
-}
-
-function InviteModal({ open, household, onClose, onCreated }: { open: boolean; household: CloudHousehold; onClose: () => void; onCreated: () => void }) {
-  const { t, format } = useI18n();
-  const { token } = theme.useToken();
-  const { message } = App.useApp();
-  const session = useCloudStore((s) => s.session)!;
-  const [role, setRole] = useState<CloudRole>("adult");
-  const [result, setResult] = useState<{ link: string; expiresAt: number; qr: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function create() {
-    setBusy(true);
-    try {
-      const invite = await service.createInvite(session, household, role, window.location.origin);
-      const qr = await QRCode.toDataURL(invite.link, { margin: 1, width: 440, errorCorrectionLevel: "M" });
-      setResult({ ...invite, qr });
-      onCreated();
-    } catch (error) {
-      message.error(getErrorMessage(error, t));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Modal open={open} onCancel={onClose} footer={null} destroyOnHidden title={t("cloud.invite.title", { name: household.name })} afterClose={() => setResult(null)}>
-      {!result ? (
-        <Flex vertical gap={16}>
-          <Typography.Text type="secondary">{t("cloud.invite.chooseRole")}</Typography.Text>
-          <Segmented<CloudRole>
-            block
-            value={role}
-            onChange={setRole}
-            options={(["adult", "kid", "admin"] as CloudRole[]).map((value) => ({ value, label: t(`roles.${value}`) }))}
-          />
-          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-            {t(`cloud.invite.roleHint.${role}`)}
-          </Typography.Text>
-          <Button type="primary" size="large" block loading={busy} onClick={create}>
-            {t("cloud.invite.create")}
-          </Button>
-        </Flex>
-      ) : (
-        <Flex vertical gap={16} align="center">
-          {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada en el dispositivo (data URL). */}
-          <img src={result.qr} alt={t("cloud.invite.qrLabel")} width={220} height={220} style={{ padding: 12, background: token.colorWhite, borderRadius: token.borderRadiusLG }} />
-          <Input.Search value={result.link} readOnly enterButton={<Copy />} onSearch={async () => {
-            await navigator.clipboard.writeText(result.link);
-            message.success(t("cloud.invite.copied"));
-          }} />
-          {typeof navigator !== "undefined" && "share" in navigator && (
-            <Button block icon={<Share2 />} onClick={() => navigator.share({ title: t("cloud.invite.shareTitle", { name: household.name }), text: t("cloud.invite.shareText"), url: result.link }).catch(() => {})}>
-              {t("cloud.invite.share")}
-            </Button>
-          )}
-          <Flex align="flex-start" gap={8}>
-            <span style={{ display: "inline-flex", color: token.colorSuccess, marginTop: 3 }}>
-              <ShieldCheck />
-            </span>
-            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-              {t("cloud.invite.safety", { date: format.date(result.expiresAt, { day: "numeric", month: "long" }) })}
-            </Typography.Text>
-          </Flex>
-          <Tooltip title={t("cloud.invite.oneUse")}>
-            <Tag>{t("cloud.invite.forRole", { role: t(`roles.${role}`) })}</Tag>
-          </Tooltip>
-        </Flex>
-      )}
-    </Modal>
   );
 }

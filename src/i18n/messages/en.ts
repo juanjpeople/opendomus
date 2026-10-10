@@ -1198,6 +1198,7 @@ export const en: Messages = {
     entry: {
       title: "Your {app} account",
       description: "Your account is separate from your home. Signing up does not require an invitation code.",
+      invited: "I have an invitation",
     },
     steps: {
       access: "Access",
@@ -1210,6 +1211,8 @@ export const en: Messages = {
       signInTab: "I have an account",
       createTitle: "Create your account",
       createSubtitle: "One per person. It works on all your devices.",
+      invitedHint: "Were you invited? Open the link they sent you: you sign up and join their home in one step.",
+      invitedLink: "Open an invitation",
       signInTitle: "Sign in to your home",
       signInSubtitle: "With your email and password.",
       name: "Your name",
@@ -1295,6 +1298,8 @@ export const en: Messages = {
     },
     invite: {
       button: "Invite",
+      family: "Invite family",
+      whatsapp: "Send on WhatsApp",
       title: "Invite to {name}",
       chooseRole: "Which role do they join with?",
       roleHint: {
@@ -1666,7 +1671,10 @@ export const en: Messages = {
     },
     start: "Get started",
     goHome: "Go to my home",
+    signIn: "Sign in",
     hero: {
+      invited: "Invited? Open your invitation",
+      signIn: "Have an account? Sign in",
       tags: {
         open: "Open source",
         offline: "Offline-first",

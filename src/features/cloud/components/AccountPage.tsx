@@ -20,6 +20,7 @@ import { SocialAccess, SocialUnlock } from "./SocialAccess";
 import { ChooseProfile } from "./ChooseProfile";
 import { AccessCodeStep, CryptoSupportGate, InstallAppCard } from "./CloudSteps";
 import { HouseTransfer } from "./HouseTransfer";
+import { InviteModal } from "./InviteModal";
 import { RecoverForm } from "./RecoverForm";
 import { RecoveryKit } from "./RecoveryKit";
 import { useTransfer } from "./useTransfer";
@@ -55,6 +56,7 @@ export function AccountPage() {
   const session = useCloudStore((s) => s.session);
   const setDeviceMode = useDeviceStore((s) => s.setMode);
   const transfer = useTransfer();
+  const [inviting, setInviting] = useState(false);
 
   /** Cuenta sin casa en la nube: la casa sigue en este dispositivo. */
   const finishLocal = () => {
@@ -154,6 +156,11 @@ export function AccountPage() {
                     { value: "signin", label: t("cloud.auth.signInTab") },
                   ]}
                 />
+                {mode === "create" && !wantsHouse && (
+                  <Callout tone="primary" action={<Link href="/unirme"><Button>{t("cloud.auth.invitedLink")}</Button></Link>}>
+                    {t("cloud.auth.invitedHint")}
+                  </Callout>
+                )}
                 {params.get("socialError") === "1" && <Callout tone="danger" role="alert">{t(params.get("error") === "email_not_verified" ? "social.verificationPending" : "social.signinFailed")}</Callout>}
                 {params.get("social") === "1" && mode === "signin" ? <SocialUnlock onUnlocked={afterSignIn} onForgot={() => setMode("recover")} /> : <>
                 <AuthForm
@@ -197,9 +204,21 @@ export function AccountPage() {
             {step === "done" && household && (
               <ResultState title={t("cloud.done.title", { name: household.name })} description={wantsHouse ? t("cloud.done.created") : t("cloud.done.downloaded")}>
                 <InstallAppCard />
-                <Button type="primary" size="large" block onClick={() => router.push(wantsHouse ? "/familia" : "/")}>
-                  {wantsHouse ? t("cloud.done.invite") : t("cloud.done.go")}
-                </Button>
+                {wantsHouse ? (
+                  <>
+                    <Button type="primary" size="large" block onClick={() => setInviting(true)}>
+                      {t("cloud.done.invite")}
+                    </Button>
+                    <Button size="large" block onClick={() => router.push("/")}>
+                      {t("cloud.done.go")}
+                    </Button>
+                    <InviteModal open={inviting} household={household} onClose={() => setInviting(false)} />
+                  </>
+                ) : (
+                  <Button type="primary" size="large" block onClick={() => router.push("/")}>
+                    {t("cloud.done.go")}
+                  </Button>
+                )}
               </ResultState>
             )}
           </CryptoSupportGate>

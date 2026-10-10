@@ -64,7 +64,10 @@ test("la precarga se elige antes del alta cloud y llega cifrada a un segundo dis
   await page.getByRole("button", { name: "Crear mi casa", exact: true }).click();
   await expect.poll(() => operations.length).toBeGreaterThan(0);
   expect(JSON.stringify(operations)).not.toContain("Huevos");
-  await expect(page.getByRole("button", { name: "Invitar a mi familia", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Invitar a mi familia", exact: true }).click();
+  await expect(page.getByText("¿Con qué rol entra?")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Ir a mi casa", exact: true })).toBeVisible();
 
   const second = await browser.newContext({ locale: "es-AR" });
   try {

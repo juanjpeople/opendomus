@@ -12,10 +12,12 @@ import { useI18n } from "@/i18n";
 import { tint } from "@/lib/appearance";
 import { usePermission } from "@/lib/auth/hooks";
 import { useCurrentUser } from "@/lib/auth/session";
+import { CLOUD_ENABLED } from "@/lib/cloud/api";
 import { HOVER_LIFT, SPRING } from "@/lib/motion";
 import { isSecured, type Member } from "../domain";
 import { useMemberActions, useMembers } from "../hooks";
 import { CloudHouseholdPanel } from "@/features/cloud/components/CloudHouseholdPanel";
+import { InviteFamilyButton } from "@/features/cloud/components/InviteModal";
 import { MemberModal } from "./MemberModal";
 import { SecurityDrawer } from "./SecurityDrawer";
 
@@ -33,9 +35,12 @@ export function MembersPage() {
         description={t("members.description")}
         extra={
           <Can perform="members.manage">
-            <Button type="primary" icon={<UserPlus />} onClick={() => setEditing("new")}>
-              {t("members.add")}
-            </Button>
+            <Flex gap={8} wrap>
+              <InviteFamilyButton />
+              <Button type={CLOUD_ENABLED ? "default" : "primary"} icon={<UserPlus />} onClick={() => setEditing("new")}>
+                {t("members.add")}
+              </Button>
+            </Flex>
           </Can>
         }
       />
