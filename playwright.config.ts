@@ -10,18 +10,19 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = 4173;
 
 /**
- * En los PR, el celular corre solo las pruebas cuyo recorrido cambia en pantalla chica (menú del
- * perfil, selector de vistas, tarjetas). El resto ya se cubre en escritorio, y las que miden 320 px
- * fijan su propio tamaño. Al mergear a main (E2E_FULL=1) y en local corren todas en ambos.
+ * En los PR corre solo lo esencial, en escritorio: entrar, armar la casa, inventario, escanear,
+ * compras, recetas, respaldo, sin conexión y compartir. Lo demás (celular, temas, calendario,
+ * estadísticas, opiniones, portada) corre al mergear a main (E2E_FULL=1) y en local.
  */
-const FULL_MOBILE = !process.env.CI || process.env.E2E_FULL === "1";
-const MOBILE_ON_PR = ["navigation.spec.ts", "privacy-theme.spec.ts", "storage-overview.spec.ts", "inventory-controls.spec.ts", "skins.spec.ts"];
+const FULL = !process.env.CI || process.env.E2E_FULL === "1";
+const MAIN_ONLY = ["school-calendar.spec.ts", "project-stats.spec.ts", "feedback.spec.ts", "skins.spec.ts", "storage-theme.spec.ts", "privacy-theme.spec.ts", "platform.spec.ts", "entry-layout.spec.ts", "landing.spec.ts"];
 
 export default defineConfig({
   testDir: "e2e",
-  testIgnore: ["local-build.spec.ts", "demo.spec.ts", "visual-tour.spec.ts", "visual-comparison.spec.ts"],
+  testIgnore: ["local-build.spec.ts", "demo.spec.ts", "visual-tour.spec.ts", "visual-comparison.spec.ts", ...(FULL ? [] : MAIN_ONLY)],
   fullyParallel: true,
-  // Pocos a la vez: cada test levanta un navegador entero y la app anima bastante.
+  // Dos navegadores en el mismo runner: no suma minutos de CI, los reduce a la mitad.
+  // Más satura el runner gratuito y vuelve inestables las animaciones.
   workers: process.env.CI ? 2 : 3,
   timeout: 60_000,
   expect: { timeout: 10_000 },
@@ -37,11 +38,7 @@ export default defineConfig({
   },
   projects: [
     { name: "escritorio", use: { ...devices["Desktop Chrome"], channel: process.env.CI ? undefined : "chrome" } },
-    {
-      name: "celular",
-      use: { ...devices["Pixel 7"], channel: process.env.CI ? undefined : "chrome" },
-      ...(FULL_MOBILE ? {} : { testMatch: MOBILE_ON_PR }),
-    },
+    ...(FULL ? [{ name: "celular", use: { ...devices["Pixel 7"], channel: process.env.CI ? undefined : "chrome" } }] : []),
   ],
   webServer: {
     command: `npm start`,
