@@ -68,6 +68,14 @@ El nombre del paquete queda fijo en `ar.refugi.app` con la primera subida.
 | Seguridad de los datos | ¿Recopila o comparte datos? **No**. La app de Android guarda todo en el teléfono y no envía datos. La cámara se usa en el dispositivo y no sale de él, por eso no cuenta como recopilada. |
 | App gubernamental, funciones financieras, salud, noticias | No. |
 
+Comprobado el 2026-10-10 sobre `build:local`: `NEXT_PUBLIC_CLOUD=0` apaga en la variante Android
+la cuenta, el login social, la sincronización (incluidas las fotos en Supabase), las invitaciones y
+los accesos por integrante, y el formulario de comentarios (`/cuenta`, `/unirme` y `/feedback`
+muestran `LocalOnlyPage`). Además `NEXT_PUBLIC_API_URL` queda vacío: cualquier llamada a `/api` iría al
+servidor interno de Capacitor (`https://localhost`) y no saldría del teléfono. El bundle no contiene
+el host de la API ni de Supabase; las únicas URLs externas son enlaces que la persona abre en el
+navegador (tiendas de precios, WhatsApp, GitHub). Si eso cambia, revisar estas respuestas.
+
 ### Ficha de Play Store
 
 Categoría: **Casa y hogar**. Email de contacto: el mismo de la política (`privacidad@refugi.ar`).
