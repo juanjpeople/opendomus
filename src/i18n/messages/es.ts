@@ -1203,6 +1203,7 @@ export const es = {
     entry: {
       title: "Tu cuenta de {app}",
       description: "Tu cuenta es independiente de tu casa. Registrarte no requiere un código de invitación.",
+      invited: "Tengo una invitación",
     },
     steps: {
       access: "Acceso",
@@ -1215,6 +1216,8 @@ export const es = {
       signInTab: "Ya tengo cuenta",
       createTitle: "Creá tu cuenta",
       createSubtitle: "Una por persona. Te sirve en todos tus dispositivos.",
+      invitedHint: "¿Te invitaron? Abrí el link que te mandaron: ahí creás tu cuenta y entrás a su casa en un solo paso.",
+      invitedLink: "Abrir una invitación",
       signInTitle: "Entrá a tu casa",
       signInSubtitle: "Con tu email y tu contraseña.",
       name: "Tu nombre",
@@ -1300,6 +1303,8 @@ export const es = {
     },
     invite: {
       button: "Invitar",
+      family: "Invitar a la familia",
+      whatsapp: "Mandar por WhatsApp",
       title: "Invitar a {name}",
       chooseRole: "¿Con qué rol entra?",
       roleHint: {
@@ -1671,7 +1676,10 @@ export const es = {
     },
     start: "Empezar",
     goHome: "Ir a mi casa",
+    signIn: "Entrar",
     hero: {
+      invited: "¿Te invitaron? Abrí tu invitación",
+      signIn: "¿Ya tenés cuenta? Entrar",
       tags: {
         open: "Código abierto",
         offline: "Offline-first",

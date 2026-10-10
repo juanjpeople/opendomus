@@ -4,8 +4,11 @@ test("cuenta accesible sin invitación desde bienvenida y empezar", async ({ pag
   for (const route of ["/bienvenida", "/empezar"]) {
     await page.goto(route);
     await expect(page.getByRole("link", { name: "Ya tengo cuenta", exact: true })).toHaveAttribute("href", "/cuenta?modo=entrar");
+    await expect(page.getByRole("link", { name: "Tengo una invitación", exact: true })).toHaveAttribute("href", "/unirme");
     await page.getByRole("link", { name: "Crear cuenta", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Creá tu cuenta" })).toBeVisible();
+    // Quien fue invitado se registra desde el link, no acá.
+    await expect(page.getByRole("link", { name: "Abrir una invitación" })).toHaveAttribute("href", "/unirme");
     await expect(page.getByRole("heading", { name: "Código de acceso" })).toHaveCount(0);
     await page.goBack();
     await page.locator('a[href*="modo=recuperar"]').click();
@@ -20,6 +23,12 @@ test("cuenta accesible sin invitación desde bienvenida y empezar", async ({ pag
   await page.screenshot({ path: testInfo.outputPath("cuenta-claro.png"), fullPage: true });
   await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
   await page.screenshot({ path: testInfo.outputPath("cuenta-oscuro.png"), fullPage: true });
+});
+
+test("la portada muestra los tres accesos: empezar, invitación y cuenta", async ({ page }) => {
+  await page.goto("/bienvenida");
+  await expect(page.getByRole("link", { name: "¿Te invitaron? Abrí tu invitación" })).toHaveAttribute("href", "/unirme");
+  await expect(page.getByRole("link", { name: "¿Ya tenés cuenta? Entrar" })).toHaveAttribute("href", "/cuenta?modo=entrar");
 });
 
 test("la primera vez arranca por la landing y la bienvenida; después, directo a la casa", async ({ page }) => {

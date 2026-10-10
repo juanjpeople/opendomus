@@ -24,6 +24,7 @@ export function AccountLinks({ editorial = false }: { editorial?: boolean }) {
       <Flex gap={token.marginLG} wrap>
         <Link style={linkStyle} href="/cuenta?modo=entrar">{t("cloud.auth.signInTab")}</Link>
         <Link style={linkStyle} href="/cuenta?modo=crear">{t("cloud.auth.createTab")}</Link>
+        <Link style={linkStyle} href="/unirme">{t("cloud.entry.invited")}</Link>
         <Link style={linkStyle} href="/cuenta?modo=recuperar">{t("cloud.recover.title")}</Link>
       </Flex>
     </Flex></Reveal>

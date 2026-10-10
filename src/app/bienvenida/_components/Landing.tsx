@@ -22,6 +22,7 @@ import { IconTile, SectionTitle } from "@/components/ui";
 import { useT } from "@/i18n";
 import { GUIDELINES, ROADMAP, TRANSPARENCY_STAGES, TRUST_PROOFS, VALUES } from "./content";
 import { useHydrated } from "@/hooks/useHydrated";
+import { CLOUD_ENABLED } from "@/lib/cloud/api";
 import { useDeviceStore } from "@/store/useDeviceStore";
 import { ProjectStats } from "./ProjectStats";
 
@@ -95,6 +96,38 @@ function EnterButton({ size }: { size?: "large" }) {
   );
 }
 
+/** Quien ya tiene cuenta o recibió una invitación no pasa por "Empezar": va directo. */
+function useShowsAccess() {
+  const hydrated = useHydrated();
+  const mode = useDeviceStore((s) => s.mode);
+  return CLOUD_ENABLED && hydrated && mode === "unset";
+}
+
+function SignInLink() {
+  const t = useT();
+  const screens = Grid.useBreakpoint();
+  const shows = useShowsAccess();
+  if (!shows || !screens.sm) return null;
+  return (
+    <Link href="/cuenta?modo=entrar">
+      <Button type="text">{t("landing.signIn")}</Button>
+    </Link>
+  );
+}
+
+function AccessPaths() {
+  const { token } = theme.useToken();
+  const t = useT();
+  if (!useShowsAccess()) return null;
+  const linkStyle = { display: "inline-flex", alignItems: "center", minHeight: 44 };
+  return (
+    <Flex gap={token.marginLG} wrap style={{ marginTop: token.marginSM }}>
+      <Link style={linkStyle} href="/unirme">{t("landing.hero.invited")}</Link>
+      <Link style={linkStyle} href="/cuenta?modo=entrar">{t("landing.hero.signIn")}</Link>
+    </Flex>
+  );
+}
+
 function LandingHeader() {
   const { token } = theme.useToken();
   const t = useT();
@@ -122,6 +155,7 @@ function LandingHeader() {
           <Flex align="center" gap={12} style={{ flexShrink: 0, marginInlineStart: "auto" }}>
             <LanguageSwitch />
             {screens.sm && <ThemeModeSwitch />}
+            <SignInLink />
             <EnterButton />
           </Flex>
         </Flex>
@@ -183,6 +217,7 @@ function Hero() {
                   {t("landing.hero.secondary")}
                 </Button>
               </Flex>
+              <AccessPaths />
             </motion.div>
           </Col>
           <Col xs={24} md={11}>
