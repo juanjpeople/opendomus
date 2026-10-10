@@ -1,7 +1,7 @@
 "use client";
 
-import { Button, Flex, Grid, Input, Segmented, Tag, Typography, theme } from "antd";
-import { Link2, MailOpen } from "lucide-react";
+import { App, Button, Flex, Grid, Input, Segmented, Tag, Typography, theme } from "antd";
+import { Hourglass, Link2, MailOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PublicLayout } from "@/components/layout/PublicLayout";
@@ -30,7 +30,25 @@ type View =
   | { kind: "kit"; preview: InvitePreview; code: string }
   | { kind: "download"; preview: InvitePreview; household: CloudHousehold }
   | { kind: "profile"; preview: InvitePreview; household: CloudHousehold; candidates: Member[] }
+  | { kind: "pending"; preview: InvitePreview }
   | { kind: "joined"; preview: InvitePreview };
+
+/** El pedido para entrar queda guardado: si cierra la app antes de que lo aprueben, vuelve acá. */
+const PENDING_KEY = "refugiar-pending-join";
+function loadPending(): InvitePreview | null {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY);
+    return raw ? (JSON.parse(raw) as InvitePreview) : null;
+  } catch {
+    return null;
+  }
+}
+function savePending(preview: InvitePreview | null) {
+  try {
+    if (preview) localStorage.setItem(PENDING_KEY, JSON.stringify(preview));
+    else localStorage.removeItem(PENDING_KEY);
+  } catch {}
+}
 
 /**
  * `/unirme#<id>.<secreto>`: abrir una invitación. El secreto está después del #, así que nunca
@@ -42,11 +60,17 @@ export function JoinPage() {
   const { token } = theme.useToken();
   const router = useRouter();
   const { status, session } = useCloudSession();
-  const { acceptInvite } = useCloudActions();
+  const { acceptInvite, refresh } = useCloudActions();
+  const { message } = App.useApp();
+  const [checking, setChecking] = useState(false);
   const hydrated = useHydrated();
   // El link se lee una vez, al cargar (en el servidor no hay #: se muestra el esqueleto hasta hidratar).
   const [link, setLink] = useState(() => (typeof window === "undefined" ? null : parseInviteLink(window.location.hash)));
-  const [view, setView] = useState<View>(() => (link ? { kind: "loading" } : { kind: "paste" }));
+  const [view, setView] = useState<View>(() => {
+    if (link) return { kind: "loading" };
+    const pending = typeof window === "undefined" ? null : loadPending();
+    return pending ? { kind: "pending", preview: pending } : { kind: "paste" };
+  });
   const [mode, setMode] = useState<"create" | "signin">("create");
   const [pasted, setPasted] = useState("");
   const [joining, setJoining] = useState(false);
@@ -83,8 +107,23 @@ export function JoinPage() {
     setJoining(true);
     const householdId = await acceptInvite(link.id, link.secret);
     setJoining(false);
+    if (!householdId) return;
+    // Entra recién cuando un admin lo aprueba: mientras tanto, queda esperando.
     const household = useCloudStore.getState().session?.households.find((entry) => entry.id === householdId);
-    if (household) await download(preview, household);
+    if (household) return download(preview, household);
+    savePending(preview);
+    setView({ kind: "pending", preview });
+  }
+
+  /** "Ya me aprobó": si la casa ya aparece en su cuenta, se baja; si no, sigue esperando. */
+  async function checkApproval(preview: InvitePreview) {
+    setChecking(true);
+    await refresh();
+    setChecking(false);
+    const household = useCloudStore.getState().session?.households.find((entry) => entry.id === preview.householdId);
+    if (!household) return void message.info(t("cloud.join.pendingStill"));
+    savePending(null);
+    await download(preview, household);
   }
 
   /** Baja la casa (descifrándola acá) y, si hay perfiles libres de su rol, deja elegir uno. */
@@ -95,6 +134,11 @@ export function JoinPage() {
     if (!(await transfer.run(async (progress) => (member = await downloadHouse(current, household, progress))))) return;
     if (member) return setView({ kind: "joined", preview });
     const candidates = await claimableMembers(household.role);
+    // Una invitación para un perfil entra directo como esa persona.
+    if (preview.member && candidates.some((candidate) => candidate.id === preview.member!.id)) {
+      await chooseProfile(current, household, preview.member.id);
+      return setView({ kind: "joined", preview });
+    }
     if (candidates.length > 0) return setView({ kind: "profile", preview, household, candidates });
     await chooseProfile(current, household, null);
     setView({ kind: "joined", preview });
@@ -148,7 +192,11 @@ export function JoinPage() {
                     {view.preview.householdName}
                   </Typography.Title>
                   <Flex justify="center" gap={8} wrap>
-                    <Tag color="blue">{t("cloud.join.as", { role: roleLabel(view.preview.role) })}</Tag>
+                    {view.preview.member ? (
+                      <Tag color="blue">{t("cloud.join.asMember", { name: view.preview.member.name })}</Tag>
+                    ) : (
+                      <Tag color="blue">{t("cloud.join.as", { role: roleLabel(view.preview.role) })}</Tag>
+                    )}
                     <Tag>{t("cloud.join.expires", { date: format.date(view.preview.expiresAt, { day: "numeric", month: "long" }) })}</Tag>
                   </Flex>
                 </div>
@@ -197,6 +245,15 @@ export function JoinPage() {
                   setView({ kind: "joined", preview: view.preview });
                 }}
               />
+            )}
+
+            {view.kind === "pending" && (
+              <Flex vertical gap={16}>
+                <PanelHeader icon={Hourglass} color="gold" title={t("cloud.join.pendingTitle")} description={t("cloud.join.pendingText", { name: view.preview.inviterName, house: view.preview.householdName })} />
+                <Button type="primary" size="large" block loading={checking} disabled={!session} onClick={() => checkApproval(view.preview)}>
+                  {t("cloud.join.pendingCheck")}
+                </Button>
+              </Flex>
             )}
 
             {view.kind === "joined" && (

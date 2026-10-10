@@ -163,8 +163,20 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async (t)
     { scope: "private", version: 1, envelope: await sealEnvelope(newScopeKey(), flor.upload.encPublicKey, envelopeContext(householdId, "private", 1, flor.userId)) },
   ];
   const accepted = await flor.client.call("POST", `/api/invites/${inviteId}/accept`, { authToken: joinWith.authToken, envelopes: florEnvelopes });
-  assert.equal(accepted.status, 201, JSON.stringify(accepted.body));
+  assert.equal(accepted.status, 202, JSON.stringify(accepted.body));
   assert.equal(accepted.body.role, "adult");
+  assert.equal(accepted.body.pending, true);
+
+  // Todavía no es de la casa: espera que la admin la apruebe.
+  assert.equal((await flor.client.call("GET", `/api/households/${householdId}/members`)).status, 404);
+  assert.equal((await flor.client.call("POST", `/api/invites/${inviteId}/accept`, { authToken: joinWith.authToken, envelopes: florEnvelopes })).status, 410);
+  assert.equal((await flor.client.call("GET", `/api/households/${householdId}/join-requests`)).status, 403);
+  const requests = await ana.client.call("GET", `/api/households/${householdId}/join-requests`);
+  assert.equal(requests.status, 200, JSON.stringify(requests.body));
+  assert.deepEqual(requests.body.requests.map((request: { id: string; name: string; role: string }) => `${request.id}:${request.name}:${request.role}`), [`${inviteId}:Flor:adult`]);
+  const approved = await ana.client.call("POST", `/api/households/${householdId}/join-requests/${inviteId}/approve`);
+  assert.equal(approved.status, 200, JSON.stringify(approved.body));
+  assert.equal((await ana.client.call("POST", `/api/households/${householdId}/join-requests/${inviteId}/approve`)).status, 404);
 
   const members = await ana.client.call("GET", `/api/households/${householdId}/members`);
   assert.deepEqual(members.body.members.map((member: { name: string; role: string }) => `${member.name}:${member.role}`), ["Ana:admin", "Flor:adult"]);
@@ -247,7 +259,8 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async (t)
       { scope: "private", version: 1, envelope: await sealEnvelope(newScopeKey(), kid.upload.encPublicKey, envelopeContext(householdId, "private", 1, kid.userId)) },
     ],
   });
-  assert.equal(kidJoin.status, 201, JSON.stringify(kidJoin.body));
+  assert.equal(kidJoin.status, 202, JSON.stringify(kidJoin.body));
+  assert.equal((await ana.client.call("POST", `/api/households/${householdId}/join-requests/${kidInvite2Id}/approve`)).status, 200);
   assert.deepEqual((await pull(kid)).body.ops.map((stored: StoredOp) => stored.id), [leche.id]);
   assert.equal((await push(kid, [await op(kid, "adults", anaAdults, { changes: [] })])).status, 403);
 

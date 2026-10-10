@@ -28,6 +28,8 @@ const CLOUD_ERRORS: Record<string, MessageKey> = {
   used: "errors.cloud.inviteUsed",
   expired: "errors.cloud.inviteExpired",
   "already-member": "errors.cloud.alreadyMember",
+  "already-requested": "errors.cloud.alreadyRequested",
+  stale: "errors.cloud.requestStale",
   forbidden: "errors.cloud.forbidden",
   "last-admin": "errors.cloud.lastAdmin",
   USER_ALREADY_EXISTS: "errors.cloud.emailTaken",

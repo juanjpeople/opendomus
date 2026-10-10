@@ -2,7 +2,7 @@
 
 import { App, Button, Card, Col, Flex, Row, Tag, Typography, theme } from "antd";
 import { motion } from "framer-motion";
-import { Cake, FingerprintPattern as Fingerprint, KeyRound, Pencil, ShieldAlert, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { Cake, Cloud, FingerprintPattern as Fingerprint, KeyRound, Pencil, ShieldAlert, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { Stagger, StaggerItem } from "@/components/motion";
@@ -17,7 +17,8 @@ import { HOVER_LIFT, SPRING } from "@/lib/motion";
 import { isSecured, type Member } from "../domain";
 import { useMemberActions, useMembers } from "../hooks";
 import { CloudHouseholdPanel } from "@/features/cloud/components/CloudHouseholdPanel";
-import { InviteFamilyButton } from "@/features/cloud/components/InviteModal";
+import { InviteFamilyButton, MemberAccessButton } from "@/features/cloud/components/InviteModal";
+import { JoinRequests } from "@/features/cloud/components/JoinRequests";
 import { MemberModal } from "./MemberModal";
 import { SecurityDrawer } from "./SecurityDrawer";
 
@@ -44,6 +45,7 @@ export function MembersPage() {
           </Can>
         }
       />
+      <JoinRequests />
       <Stagger delay={0.1}>
         <Row gutter={[16, 16]}>
           {members.map((member) => (
@@ -111,6 +113,11 @@ function MemberCard({ member, onEdit, onSecurity }: { member: Member; onEdit: ()
               {t("members.status.biometric")}
             </Tag>
           )}
+          {member.userId && (
+            <Tag icon={<Cloud />} color="processing" style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
+              {t("cloud.memberAccess.linked")}
+            </Tag>
+          )}
           {!isSecured(member) && (
             <Tag icon={<ShieldAlert />} style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
               {t("members.status.unprotected")}
@@ -119,6 +126,7 @@ function MemberCard({ member, onEdit, onSecurity }: { member: Member; onEdit: ()
         </Flex>
 
         <Flex gap={8} wrap style={{ marginTop: 16 }}>
+          {canManage && !isMe && <MemberAccessButton member={member} />}
           {(isMe || canManage) && (
             <Button icon={<ShieldCheck />} onClick={onSecurity}>
               {t("members.security")}
