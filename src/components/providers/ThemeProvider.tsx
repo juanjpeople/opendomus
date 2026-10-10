@@ -6,6 +6,7 @@ import esES from "antd/locale/es_ES";
 import { MotionConfig } from "framer-motion";
 import { LucideProvider } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
+import { HeaderDensityContext } from "@/components/ui/PageHeader";
 import { useIsDark } from "@/hooks/useIsDark";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n, type Locale } from "@/i18n";
@@ -23,7 +24,7 @@ const ANTD_LOCALES = { es: esES, en: enUS } satisfies Record<Locale, unknown>;
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const isDark = useIsDark();
   const { locale } = useI18n();
-  const { brandColor, borderRadius, fontSize, density, motion, skin: skinId } = usePreferences();
+  const { brandColor, borderRadius, fontSize, density, headerDensity, motion, skin: skinId } = usePreferences();
   const skin = getSkin(skinId);
   const baseFontSize = FONT_SIZES[fontSize];
 
@@ -56,7 +57,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         <MotionConfig reducedMotion={REDUCED_MOTION[motion]}>
           {/* <App> habilita message/notification/modal con el tema actual vía App.useApp(). */}
           <SkinContext.Provider value={skin}>
-            <App>{children}</App>
+            <HeaderDensityContext.Provider value={headerDensity}>
+              <App>{children}</App>
+            </HeaderDensityContext.Provider>
           </SkinContext.Provider>
         </MotionConfig>
       </LucideProvider>

@@ -1,9 +1,15 @@
 "use client";
 
 import { Flex, Typography, theme } from "antd";
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { Reveal } from "@/components/motion/Reveal";
-import { usePreferences } from "@/hooks/usePreferences";
+
+/**
+ * Modo del encabezado para toda la app. Lo provee ThemeProvider con la preferencia del perfil
+ * (`headerDensity`); sin proveedor (panel de operador) queda el cómodo. Así PageHeader no depende
+ * de los stores de la app.
+ */
+export const HeaderDensityContext = createContext<"comfortable" | "compact">("comfortable");
 
 interface PageHeaderProps {
   title: ReactNode;
@@ -26,8 +32,8 @@ interface PageHeaderProps {
  */
 export function PageHeader({ title, description, eyebrow, crumbs, extra, leading, dense }: PageHeaderProps) {
   const { token } = theme.useToken();
-  const { headerDensity } = usePreferences();
-  const compact = dense ?? headerDensity === "compact";
+  const density = useContext(HeaderDensityContext);
+  const compact = dense ?? density === "compact";
   if (compact) {
     description = undefined;
     eyebrow = undefined;

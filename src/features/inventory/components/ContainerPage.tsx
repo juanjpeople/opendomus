@@ -4,10 +4,11 @@ import { App, Button, Card, Col, Dropdown, Flex, Row, Typography, theme } from "
 import { ArrowLeft, Boxes, Camera, EllipsisVertical, Layers, NotebookPen, PackageOpen, PackageX, Pencil, Plus, Printer, QrCode, RotateCcwClock, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type CSSProperties } from "react";
+import { useContext, useState, type CSSProperties } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
+import { HeaderDensityContext } from "@/components/ui/PageHeader";
 import { EmptyState, PageHeader, PathCrumbs, RoomFloor, SectionHeader, StatTile, type StatTone, LoadingSkeleton } from "@/components/ui";
 import { ActivityDrawer } from "@/features/activity/components/ActivityButton";
 import { usePhotos } from "@/features/media/hooks";
@@ -21,7 +22,6 @@ import { containerAppearance, spaceAppearance, STORAGE_LIMITS } from "@/features
 import { useContainer, useContainerContents, useSpaces, useStorageActions } from "@/features/storage/hooks";
 import { useT } from "@/i18n";
 import { tint } from "@/lib/appearance";
-import { usePreferences } from "@/hooks/usePreferences";
 import { usePermission } from "@/lib/auth/hooks";
 import { useTrackVisit } from "@/components/layout/useShell";
 import { cameraHref, containerHref, spaceHref } from "@/lib/navigation/routes";
@@ -266,7 +266,7 @@ function Summary({ counts }: { counts: Record<keyof typeof SECTIONS, number> }) 
     { key: "notes" as const, text: t("storage.noteCount", { count: counts.notes }) },
     { key: "photos" as const, text: t("storage.photoCount", { count: counts.photos }) },
   ].filter((part) => counts[part.key] > 0);
-  const { headerDensity } = usePreferences();
+  const headerDensity = useContext(HeaderDensityContext);
   const link: CSSProperties = { display: "inline-flex", alignItems: "center", minHeight: token.controlHeightLG + token.paddingXXS, color: token.colorTextSecondary, textDecoration: "underline", textDecorationColor: token.colorBorder, textUnderlineOffset: 4 };
   return (
     <Reveal delay={0.05}>
