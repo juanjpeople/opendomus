@@ -6,6 +6,14 @@
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
   "name": "opendomus",
   "main": "server/src/index.ts",
+  // Dominio propio: refugi.ar (zona en Cloudflare). www se redirige a refugi.ar con una Redirect Rule
+  // de la zona. Sin workers.dev: el login y las invitaciones solo aceptan APP_ORIGIN.
+  "routes": [
+    { "pattern": "refugi.ar", "custom_domain": true },
+    { "pattern": "www.refugi.ar", "custom_domain": true },
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
@@ -30,7 +38,7 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["HouseholdLog"] }],
   "vars": {
-    "APP_ORIGIN": "https://opendomus.juanjpeople.workers.dev",
+    "APP_ORIGIN": "https://refugi.ar",
     // Bucket privado: guarda solo bytes cifrados. La service role se configura como secreto.
     "SUPABASE_URL": "https://qaeqyeadwijphhlqcrku.supabase.co",
     "SUPABASE_PHOTOS_BUCKET": "opendomus-photos",
