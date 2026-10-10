@@ -19,7 +19,6 @@ El detalle de cada funcionalidad está en [docs/features](docs/features/).
 - **Votaciones** ("¿qué comemos?"). → [especificación](PLAN.md#4-votaciones)
 - **Cifrado local** de la base del dispositivo. → [seguridad](PLAN.md#-seguridad-qué-hay-y-qué-sigue)
 - **Google y GitHub reales**: configurar y probar las apps OAuth. → [acceso social](docs/ACCESO_SOCIAL.md)
-- **Hoja de ruta de la landing** al día con este archivo.
 - **Nombres internos de la nube** (Worker, D1, bucket) a Refugiar. Prioridad baja.
 
 ## 💡 Ideas

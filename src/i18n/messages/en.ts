@@ -1937,11 +1937,11 @@ export const en: Messages = {
       phase: "PHASE {n}",
       current: "In progress",
       phases: {
-        p1: { title: "Foundations and storeroom", items: "Inventories · Shopping list · Installable offline app" },
-        p2: { title: "Clear finances", items: "Transactions · Transparency dashboard · Budgets and goals" },
-        p3: { title: "Projects and lending", items: "Roles · Tool lending · Code scanner" },
-        p4: { title: "Family hub and vault", items: "Documents and warranties · Internal chat" },
-        p5: { title: "Entertainment", items: "Media on your NAS · Synced party mode" },
+        p1: { title: "Foundations", items: "Inventory with QR · Shopping and prices · Recipes and calendar" },
+        p2: { title: "A shared home", items: "Encrypted cloud · Access per person · Android app" },
+        p3: { title: "Safer and your way", items: "Passkeys and two-factor · More styles · Polls" },
+        p4: { title: "Clear finances", items: "Who paid what · Budgets and goals · Tool lending" },
+        p5: { title: "Family hub", items: "Documents and warranties · Internal chat · Media on your NAS" },
       },
     },
     closing: {
