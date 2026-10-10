@@ -1,4 +1,4 @@
-# OpenDomus
+# Refugiar
 
 Una app open source para organizar la casa, los proyectos y el inventario, con datos
 locales y sincronización cloud opcional. Licencia AGPL-3.0-or-later.
@@ -144,7 +144,7 @@ La preparación, migración desde Access, límites y recuperación están en
 local sin revelar credenciales. La publicación continúa siendo manual.
 
 Any static host works the same way (Netlify, GitHub Pages, nginx/Caddy on a NAS): serve
-`out/`. Household data stays on each device until sync exists (see `OPENDOMUS_PLAN.md`).
+`out/`. Household data stays on each device until sync exists (see `PLAN.md`).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
@@ -176,7 +176,7 @@ las versiones anteriores sigan recibiendo los datos que conocen durante la trans
 
 ## License
 
-OpenDomus is free software under the [GNU AGPL v3](LICENSE) (or later): you can use,
+Refugiar is free software under the [GNU AGPL v3](LICENSE) (or later): you can use,
 study, modify and share it. If you run a modified version as a service for others, you
 must offer them its source code too.
 

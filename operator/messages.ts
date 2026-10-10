@@ -1,6 +1,6 @@
 export const messages = {
   operator: {
-    section: "Sección del panel", brand: "OpenDomus", badge: "Operador", title: "Acceso de operador",
+    section: "Sección del panel", brand: "Refugiar", badge: "Operador", title: "Acceso de operador",
     intro: "Ingresá con tu clave de administración y el código de tu autenticador.",
     checking: "Comprobando sesión…", loading: "Cargando administración privada…",
     notConfigured: "El acceso de operador todavía no está configurado.",
@@ -23,7 +23,7 @@ export const messages = {
     },
   },
   platformAdmin: {
-    title: "Administración de OpenDomus",
+    title: "Administración de Refugiar",
     signIn: "Entrá con la cuenta autorizada para gestionar la plataforma.",
     forbidden: "Esta cuenta no está autorizada para administrar la plataforma.",
     activation: "El operador debe habilitar este ID de cuenta desde la herramienta administrativa. Registrarte con un correo permitido no otorga acceso por sí solo.",

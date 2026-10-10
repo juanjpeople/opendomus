@@ -47,6 +47,6 @@ export const useLabelSettings = create<LabelSettings>()(
       setBaseUrl: (baseUrl) => set({ baseUrl: baseUrl.trim() }),
       setSize: (size) => set({ size }),
     }),
-    { name: "opendomus-labels", version: 1 },
+    { name: "refugiar-labels", version: 1 },
   ),
 );

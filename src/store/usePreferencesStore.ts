@@ -44,7 +44,7 @@ export const usePreferencesStore = create<PreferencesState>()(
         }),
     }),
     {
-      name: "opendomus-preferences",
+      name: "refugiar-preferences",
       version: 2,
       // v1 guardaba { themeMode, brandColor, borderRadius } planos y globales: pasan a ser los del dispositivo.
       migrate: (persisted, version) => {

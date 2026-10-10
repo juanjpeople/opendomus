@@ -8,7 +8,7 @@ test("TOTP coincide con todos los vectores SHA-1 de RFC 6238", async () => {
 });
 test("operador: dos factores, cookies seguras, replay concurrente, revocación, expiración y rotación", async (t) => {
   const { app, env, database } = await operatorFixture(); t.after(() => database.close());
-  const headers = { Origin: env.APP_ORIGIN, "Content-Type": "application/json", "X-OpenDomus-Operator": "browser" };
+  const headers = { Origin: env.APP_ORIGIN, "Content-Type": "application/json", "X-Refugiar-Operator": "browser" };
   const code = await operatorTotp(TEST_TOTP, Math.floor(Date.now() / 30_000));
   const login = (key = TEST_KEY, otp = code, extra = {}) => app.request(`${env.APP_ORIGIN}/api/admin/auth/login`, { method: "POST", headers: { ...headers, ...extra }, body: JSON.stringify({ key, code: otp }) }, env);
   assert.equal((await login("cd".repeat(32))).status, 401);
@@ -42,13 +42,13 @@ test("sin credenciales no hay acceso; token legado, cuenta doméstica y cabecera
   for (const headers of [{}, { Authorization: `Bearer ${TEST_KEY}` }, { Cookie: "better-auth.session_token=household" }, { "Cf-Access-Jwt-Assertion": "forged", "Cf-Access-Authenticated-User-Email": env.OPERATOR_EMAIL! }] as Record<string, string>[]) {
     assert.equal((await app.request(`${env.APP_ORIGIN}/api/admin/platform/overview`, { headers }, env)).status, 404);
   }
-  assert.equal((await app.request(`${env.APP_ORIGIN}/api/admin/auth/session`, { headers: { "X-OpenDomus-Operator": "browser" } }, { ...env, OPERATOR_TOTP_SECRET: undefined })).status, 404);
+  assert.equal((await app.request(`${env.APP_ORIGIN}/api/admin/auth/session`, { headers: { "X-Refugiar-Operator": "browser" } }, { ...env, OPERATOR_TOTP_SECRET: undefined })).status, 404);
   const request = new Request("https://other.example/api/admin/platform/overview");
   assert.equal(await operatorSession(request, env), null);
 });
 test("los intentos de ingreso se limitan en D1 y el cuerpo tiene un límite", async (t) => {
   const { app, env, database } = await operatorFixture(); t.after(() => database.close());
-  const headers = { Origin: env.APP_ORIGIN, "X-OpenDomus-Operator": "browser", "Content-Type": "application/json" };
+  const headers = { Origin: env.APP_ORIGIN, "X-Refugiar-Operator": "browser", "Content-Type": "application/json" };
   for (let i = 0; i < 11; i++) {
     const response = await app.request(`${env.APP_ORIGIN}/api/admin/auth/login`, { method: "POST", headers, body: JSON.stringify({ key: "cd".repeat(32), code: "000000" }) }, env);
     assert.equal(response.status, i < 10 ? 401 : 429);

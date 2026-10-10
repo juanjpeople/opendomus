@@ -155,7 +155,7 @@ export async function leaveCloudOnDevice({ wipe }: { wipe: boolean }) {
     await db.delete();
     // Como "Borrar todo": el dispositivo vuelve a empezar (sin perfil elegido ni modo).
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith("opendomus-")) localStorage.removeItem(key);
+      if (key.startsWith("refugiar-")) localStorage.removeItem(key);
     }
     sessionStorage.clear();
     return;

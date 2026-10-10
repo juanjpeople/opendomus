@@ -1,6 +1,6 @@
 # Instalar, compilar y compartir
 
-OpenDomus tiene una interfaz estática y una API opcional. El paquete local contiene la
+Refugiar tiene una interfaz estática y una API opcional. El paquete local contiene la
 interfaz: los datos se guardan en IndexedDB del navegador. Alojar los archivos en una
 Raspberry o NAS **no convierte ese equipo en una base de datos compartida**.
 
@@ -58,7 +58,7 @@ incorporados al JavaScript; nunca deben contener claves privadas o tokens.
 npm run dist:local
 ```
 
-El comando imprime la ruta de un `dist/local-…/opendomus-local-0.1.0.tgz` y su hash.
+El comando imprime la ruta de un `dist/local-…/refugiar-local-0.1.0.tgz` y su hash.
 Cada ejecución conserva su propio directorio. El archivo incluye `public/`,
 instrucciones, licencia, Caddyfile y `files.sha256`; no contiene una copia del
 repositorio ni los datos domésticos. `npm pack` se ejecuta sin hooks, sin publicar
@@ -68,15 +68,15 @@ si sus metadatos indican que fue compilado para la nube.
 Verificá el archivo recibido antes de extraerlo:
 
 ```powershell
-Get-FileHash .\opendomus-local-0.1.0.tgz -Algorithm SHA256
-tar -xzf .\opendomus-local-0.1.0.tgz
+Get-FileHash .\refugiar-local-0.1.0.tgz -Algorithm SHA256
+tar -xzf .\refugiar-local-0.1.0.tgz
 ```
 
 En Linux:
 
 ```sh
-sha256sum -c opendomus-local-0.1.0.tgz.sha256
-tar -xzf opendomus-local-0.1.0.tgz
+sha256sum -c refugiar-local-0.1.0.tgz.sha256
+tar -xzf refugiar-local-0.1.0.tgz
 cd package
 sha256sum -c files.sha256
 ```

@@ -68,7 +68,7 @@ export async function operatorSession(request: Request, env: AppEnv["Bindings"])
 }
 /** Obligatorio incluso en GET: otros sitios no pueden usar una cookie del operador. */
 export function operatorRequestAllowed(request: Request, env: OperatorConfig): boolean {
-  if (!operatorOriginAllowed(request, env) || request.headers.get("X-OpenDomus-Operator") !== "browser") return false;
+  if (!operatorOriginAllowed(request, env) || request.headers.get("X-Refugiar-Operator") !== "browser") return false;
   const site = request.headers.get("Sec-Fetch-Site");
   if (site && site !== "same-origin") return false;
   const origin = request.headers.get("Origin");

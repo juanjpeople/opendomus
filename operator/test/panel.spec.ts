@@ -45,7 +45,7 @@ test("panel privado: rechazo, datos, licencia y revocación de identidad", async
   } };
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
-  const certDir = await mkdtemp(join(tmpdir(), "opendomus-operator-test-"));
+  const certDir = await mkdtemp(join(tmpdir(), "refugiar-operator-test-"));
   const keyPath = join(certDir, "key.pem"), certPath = join(certDir, "cert.pem");
   execFileSync(process.env.OPENSSL_BINARY ?? (process.platform === "win32" ? "C:/Program Files/Git/usr/bin/openssl.exe" : "openssl"), ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", keyPath, "-out", certPath, "-days", "1", "-subj", "/CN=localhost"], { stdio: "ignore", windowsHide: true });
   const server = createServer({ key: await readFile(keyPath), cert: await readFile(certPath) }, async (incoming, outgoing) => {
@@ -133,7 +133,7 @@ test("panel privado: rechazo, datos, licencia y revocación de identidad", async
     await testInfo.attach("browser-errors", { body: JSON.stringify(errors), contentType: "application/json" });
     database.close();
     await new Promise<void>(resolve => server.close(() => resolve()));
-    if (dirname(resolve(certDir)) !== resolve(tmpdir()) || !basename(certDir).startsWith("opendomus-operator-test-")) throw new Error("Unexpected test certificate directory");
+    if (dirname(resolve(certDir)) !== resolve(tmpdir()) || !basename(certDir).startsWith("refugiar-operator-test-")) throw new Error("Unexpected test certificate directory");
     await rm(certDir, { recursive: true });
   }
 });

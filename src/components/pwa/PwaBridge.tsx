@@ -69,7 +69,7 @@ export function PwaBridge() {
         onVisible = checkForUpdate(registration);
         document.addEventListener("visibilitychange", onVisible);
       })
-      .catch((error: unknown) => console.warn("OpenDomus: service worker not registered", error));
+      .catch((error: unknown) => console.warn("Refugiar: service worker not registered", error));
 
     return () => {
       cancelled = true;

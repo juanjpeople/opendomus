@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="package_name">io.github.juanjpeople.opendomus</string>
-    <string name="custom_url_scheme">io.github.juanjpeople.opendomus</string>
+    <string name="package_name">ar.refugi.app</string>
+    <string name="custom_url_scheme">ar.refugi.app</string>
 </resources>

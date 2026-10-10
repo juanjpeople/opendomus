@@ -1,4 +1,4 @@
-package io.github.juanjpeople.opendomus;
+package ar.refugi.app;
 
 import static androidx.test.espresso.intent.Intents.intended;
 import static androidx.test.espresso.intent.Intents.intending;
@@ -129,7 +129,7 @@ public class NativeFlowTest {
         evaluate(scenario, "document.querySelector('main .ant-btn-primary').click()");
         await(scenario, "[...document.querySelectorAll('h5')].some(e => e.textContent === 'Administrador')");
         evaluate(scenario, "[...document.querySelectorAll('h5')].find(e => e.textContent === 'Administrador').click()");
-        await(scenario, "JSON.parse(localStorage.getItem('opendomus-session-tests') || '{}').state?.currentProfileId");
+        await(scenario, "JSON.parse(localStorage.getItem('refugiar-session-tests') || '{}').state?.currentProfileId");
     }
 
     private void openContainer(ActivityScenario<MainActivity> scenario) {
@@ -163,7 +163,7 @@ public class NativeFlowTest {
             tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Exportar|Export)$/.test(b.textContent.trim()))");
             await(scenario, "/Exportación lista|Export ready/.test(document.body.innerText)");
             JSONObject data = new JSONObject(new String(Files.readAllBytes(backup.toPath()), StandardCharsets.UTF_8));
-            assertEquals("OpenDomus", data.getString("app"));
+            assertEquals("Refugiar", data.getString("app"));
             JSONObject tables = data.getJSONObject("tables");
             JSONArray photos = tables.getJSONArray("photos");
             int containerPhotos = 0;
@@ -289,7 +289,7 @@ public class NativeFlowTest {
         Context context = ApplicationProvider.getApplicationContext();
         File destination = new File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "retry-test.json");
         Uri valid = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", destination);
-        Uri missing = Uri.parse("content://io.github.juanjpeople.opendomus.missing/private-destination");
+        Uri missing = Uri.parse("content://ar.refugi.app.missing/private-destination");
         Intents.init();
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             ready(scenario);

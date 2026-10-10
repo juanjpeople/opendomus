@@ -10,7 +10,7 @@ import { copyExport, writeManifest } from "./distribution.mjs";
 
 function fixture(t) {
   const parent = tmpdir();
-  const root = mkdtempSync(join(parent, "opendomus-distribution-"));
+  const root = mkdtempSync(join(parent, "refugiar-distribution-"));
   t.after(() => {
     assert.equal(dirname(root), parent);
     rmSync(root, { recursive: true, force: true });

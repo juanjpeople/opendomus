@@ -1,6 +1,6 @@
 Additional third-party notices: local Android build and QR reader
 
-These components retain their own licenses. OpenDomus source is available at
+These components retain their own licenses. Refugiar source is available at
 https://github.com/juanjpeople/opendomus under AGPL-3.0-or-later.
 
 

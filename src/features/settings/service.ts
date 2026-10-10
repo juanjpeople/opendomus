@@ -18,10 +18,10 @@ function dataTables() {
 export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 
 /** Prefijo de todo lo que la app guarda en localStorage (preferencias, sesión, navegación). */
-const STORAGE_PREFIX = "opendomus-";
+const STORAGE_PREFIX = "refugiar-";
 
 export interface DataExport {
-  app: "OpenDomus";
+  app: "Refugiar";
   version: string;
   schemaVersion: number;
   exportedAt: string;
@@ -74,7 +74,7 @@ export async function exportAllData(actor: Actor | null): Promise<DataExport> {
   // Fuera de la transacción: leer un Blob no es una operación de IndexedDB y la cerraría antes de tiempo.
   const tables: Record<string, unknown[]> = {};
   for (const [name, rows] of Object.entries(raw)) tables[name] = await Promise.all(rows.map(encodeRow));
-  return { app: "OpenDomus", version: APP_VERSION, schemaVersion: db.verno, exportedAt: new Date().toISOString(), tables };
+  return { app: "Refugiar", version: APP_VERSION, schemaVersion: db.verno, exportedAt: new Date().toISOString(), tables };
 }
 
 /** Resumen de un archivo exportado, para confirmar antes de importarlo. */
@@ -87,7 +87,7 @@ export interface ImportPreview {
 /** Valida un export (lo que sea que haya elegido el usuario) sin tocar nada. */
 export function parseExport(raw: unknown): ImportPreview {
   const data = raw as Partial<DataExport> | null;
-  if (!data || typeof data !== "object" || data.app !== "OpenDomus" || typeof data.tables !== "object" || data.tables === null) {
+  if (!data || typeof data !== "object" || data.app !== "Refugiar" || typeof data.tables !== "object" || data.tables === null) {
     throw new ValidationError("errors.import.invalid");
   }
   if (!Number.isInteger(data.schemaVersion) || (data.schemaVersion ?? 0) < 1) throw new ValidationError("errors.import.invalid");
@@ -98,7 +98,7 @@ export function parseExport(raw: unknown): ImportPreview {
   return { data: data as DataExport, exportedAt: Number.isNaN(exportedAt) ? 0 : exportedAt, records: tables.reduce((sum, rows) => sum + rows.length, 0) };
 }
 
-const IMPORT_DB = "OpenDomusImport";
+const IMPORT_DB = "RefugiarImport";
 
 /**
  * Reemplaza TODOS los datos del dispositivo por los de un export. Si el archivo es de una

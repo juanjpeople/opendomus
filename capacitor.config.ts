@@ -1,9 +1,9 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "io.github.juanjpeople.opendomus",
+  appId: "ar.refugi.app",
   // Mismo nombre que la web (`src/config/brand.ts`): se define con NEXT_PUBLIC_APP_NAME.
-  appName: process.env.NEXT_PUBLIC_APP_NAME?.trim() || "OpenDomus",
+  appName: process.env.NEXT_PUBLIC_APP_NAME?.trim() || "Refugiar",
   webDir: "out",
   // Native calls can carry the entire backup. Do not log bridge payloads, even in debug APKs.
   loggingBehavior: "none",

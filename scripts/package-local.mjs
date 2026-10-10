@@ -19,14 +19,14 @@ copyFileSync(join(root, "docs", "PLATAFORMAS.md"), join(staging, "INSTALL.md"));
 copyFileSync(join(root, "deploy", "Caddyfile"), join(staging, "Caddyfile"));
 writeManifest(staging, files);
 writeFileSync(join(staging, "package.json"), JSON.stringify({
-  name: "opendomus-local", version: build.version, private: true, license: "AGPL-3.0-or-later",
+  name: "refugiar-local", version: build.version, private: true, license: "AGPL-3.0-or-later",
   description: "Distribución estática local. Fuente: https://github.com/juanjpeople/opendomus",
   files: ["public", "INSTALL.md", "LICENSE", "Caddyfile", "files.sha256"],
 }, null, 2));
 // npm pack no publica: produce un .tgz local, sin hooks ni red. Cada salida vive en su directorio único.
 const result = JSON.parse(execFileSync(process.execPath, [process.env.npm_execpath, "pack", "--ignore-scripts", "--offline", "--json"], { cwd: staging, encoding: "utf8", maxBuffer: 4 * 1024 * 1024 }));
 const filename = result[0]?.filename;
-if (!filename || !/^opendomus-local-[\w.+-]+\.tgz$/.test(filename)) throw new Error("npm devolvió un nombre de paquete inesperado.");
+if (!filename || !/^refugiar-local-[\w.+-]+\.tgz$/.test(filename)) throw new Error("npm devolvió un nombre de paquete inesperado.");
 const archive = join(staging, filename);
 const digest = createHash("sha256").update(readFileSync(archive)).digest("hex");
 writeFileSync(`${archive}.sha256`, `${digest}  ${filename}\n`);

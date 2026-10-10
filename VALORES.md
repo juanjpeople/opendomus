@@ -1,4 +1,4 @@
-# 🏠 OpenDomus: Valores y Lineamientos
+# 🏠 Refugiar: Valores y Lineamientos
 
 > El sistema operativo de tu casa. Que vive en tu casa.
 

@@ -15,7 +15,7 @@ permisos para consultar ese tráfico; si falta acceso o falla la red se informa
 `unavailable`, nunca un cero inventado. No copies el informe completo al repositorio
 ni a un log público de CI.
 
-El comando no consulta cuentas de OpenDomus, hogares, dispositivos ni fotos. No recoge
+El comando no consulta cuentas de Refugiar, hogares, dispositivos ni fotos. No recoge
 IPs, cookies ni eventos del navegador. Usa la autenticación local de GitHub CLI y
 no guarda tokens en archivos del proyecto ni los pasa como argumentos.
 

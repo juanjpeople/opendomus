@@ -4,7 +4,7 @@
  * Modelo de amenaza, dicho con claridad: el PIN y la biometría impiden que otra persona use
  * un perfil en este dispositivo (chicos, visitas, alguien que agarra la tablet). NO protegen
  * los datos ante quien tenga acceso técnico al equipo (DevTools): para eso hace falta cifrar
- * los datos con una clave derivada del PIN/biometría (próximo paso, ver OPENDOMUS_PLAN.md).
+ * los datos con una clave derivada del PIN/biometría (próximo paso, ver PLAN.md).
  */
 import { BRAND } from "@/config/brand";
 import { deviceLabel } from "@/lib/device";
@@ -55,7 +55,7 @@ export async function verifyPin(pin: string, stored: PinHash): Promise<boolean> 
 
 // --- Intentos fallidos (frena adivinar el PIN a prueba y error) ------------------
 
-const LOCKOUT_KEY = "opendomus-lockout";
+const LOCKOUT_KEY = "refugiar-lockout";
 const FREE_ATTEMPTS = 5;
 
 type Lockouts = Record<string, { fails: number; until: number }>;

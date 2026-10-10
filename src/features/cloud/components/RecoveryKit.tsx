@@ -23,7 +23,7 @@ export function RecoveryKit({ code, email, onDone }: { code: string; email: stri
     const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = "opendomus-kit-de-recuperacion.txt";
+    link.download = "refugiar-kit-de-recuperacion.txt";
     link.click();
     URL.revokeObjectURL(url);
   }

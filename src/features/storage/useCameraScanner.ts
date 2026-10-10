@@ -13,7 +13,7 @@ export interface ZoomRange {
 }
 
 // La lente elegida es del equipo, no del perfil: se guarda en el dispositivo.
-const LENS_KEY = "opendomus-camera-lens";
+const LENS_KEY = "refugiar-camera-lens";
 // Pedir resolución alta: con 640 px una etiqueta de 3 cm solo se lee a centímetros.
 const VIDEO = { width: { ideal: 1920 }, height: { ideal: 1080 } };
 

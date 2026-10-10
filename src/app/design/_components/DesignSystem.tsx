@@ -42,7 +42,7 @@ export function DesignSystem() {
       <PageHeader
         eyebrow="El estándar"
         title="Sistema de diseño"
-        description="Cómo se ve, se mueve y habla OpenDomus. Todo lo que se ve acá usa el código real: si cambia acá, cambia en la app. Si una pieza no está en esta página, se agrega acá antes de usarla en una pantalla."
+        description="Cómo se ve, se mueve y habla Refugiar. Todo lo que se ve acá usa el código real: si cambia acá, cambia en la app. Si una pieza no está en esta página, se agrega acá antes de usarla en una pantalla."
       />
       <Row gutter={32}>
         <Col xs={0} lg={5}>

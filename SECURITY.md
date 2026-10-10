@@ -1,6 +1,6 @@
 # Seguridad
 
-OpenDomus guarda información sensible de una casa. Los reportes responsables ayudan a
+Refugiar guarda información sensible de una casa. Los reportes responsables ayudan a
 proteger a todas las familias antes de que un problema se haga público.
 
 ## Reportar una vulnerabilidad

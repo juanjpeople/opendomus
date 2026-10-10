@@ -57,7 +57,7 @@ El adaptador nativo escribe únicamente en el documento elegido y confirma al
 cerrar la escritura. Cancelar no muestra un aviso de éxito. No usa permisos de
 acceso general al almacenamiento ni deja una copia temporal del respaldo.
 
-El identificador `io.github.juanjpeople.opendomus` y el origen `https://localhost`
+El identificador `ar.refugi.app` y el origen `https://localhost`
 deben mantenerse al actualizar. Incrementar `versionCode` y conservar la misma
 clave de firma; desinstalar borra los datos locales. No usar el APK efímero de CI
 para guardar la única copia de información: la clave debug del runner puede
@@ -147,7 +147,7 @@ Costo: la cuenta de desarrollador es un pago único ya realizado; nada de esto a
 
 1. **Clave de firma (una sola vez).** Es la identidad de la app: si se pierde, no se puede
    actualizar. Guardarla fuera del repositorio y con copia aparte.
-   `keytool -genkeypair -v -keystore opendomus-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`
+   `keytool -genkeypair -v -keystore refugiar-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`
 2. **`android/keystore.properties`** (ignorado por git):
    `storeFile=../../opendomus-upload.jks`, `storePassword=…`, `keyAlias=upload`, `keyPassword=…`.
    En CI se usan `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` y `ANDROID_KEY_PASSWORD`.
@@ -164,10 +164,15 @@ Costo: la cuenta de desarrollador es un pago único ya realizado; nada de esto a
 
 ## Nombre de la app
 
-El nombre visible sale de una sola variable: `NEXT_PUBLIC_APP_NAME` (por defecto, "OpenDomus").
+El nombre visible sale de una sola variable: `NEXT_PUBLIC_APP_NAME` (por defecto, "Refugiar").
 La lee la web (`src/config/brand.ts`: textos, título, manifest de la PWA, mensajes), `capacitor.config.ts`
 y Gradle (el nombre bajo el ícono de Android). Para compilar con otro nombre, definila en la terminal o
 en el CI antes de `npm run android:build`.
 
 No cambian con el nombre: el `applicationId` de Android, el nombre de las bases locales, el sello `app`
 de los respaldos y los datos ya guardados. Si cambiaran, se perdería el acceso a lo existente o a la app publicada.
+
+La app se llamó OpenDomus hasta antes de la primera publicación. Como no tenía usuarios, se renombró
+todo, incluidos los identificadores internos: el `applicationId` es `ar.refugi.app` (por el dominio
+`refugi.ar`), las bases locales son `RefugiarDB`, las claves de almacenamiento empiezan con `refugiar-` y el
+sello `app` de los respaldos es "Refugiar". Los datos y cuentas de prueba creados con OpenDomus no se leen.
