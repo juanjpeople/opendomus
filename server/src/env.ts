@@ -11,7 +11,7 @@ export interface Env extends SocialAuthEnv, OperatorConfig {
   ASSETS: Fetcher;
   /** Secreto de sesiones de Better Auth (`wrangler secret put BETTER_AUTH_SECRET`). */
   BETTER_AUTH_SECRET: string;
-  /** Origen público de la app, ej. https://opendomus.juanjpeople.workers.dev */
+  /** Origen público de la app, ej. https://refugi.ar */
   APP_ORIGIN: string;
   /** Orígenes extra separados por coma (en desarrollo: http://localhost:3000). */
   DEV_ORIGINS?: string;
