@@ -57,7 +57,7 @@ El adaptador nativo escribe únicamente en el documento elegido y confirma al
 cerrar la escritura. Cancelar no muestra un aviso de éxito. No usa permisos de
 acceso general al almacenamiento ni deja una copia temporal del respaldo.
 
-El identificador `io.github.juanjpeople.opendomus` y el origen `https://localhost`
+El identificador `ar.refugi.app` y el origen `https://localhost`
 deben mantenerse al actualizar. Incrementar `versionCode` y conservar la misma
 clave de firma; desinstalar borra los datos locales. No usar el APK efímero de CI
 para guardar la única copia de información: la clave debug del runner puede
@@ -164,10 +164,16 @@ Costo: la cuenta de desarrollador es un pago único ya realizado; nada de esto a
 
 ## Nombre de la app
 
-El nombre visible sale de una sola variable: `NEXT_PUBLIC_APP_NAME` (por defecto, "OpenDomus").
+El nombre visible sale de una sola variable: `NEXT_PUBLIC_APP_NAME` (por defecto, "Refugio").
 La lee la web (`src/config/brand.ts`: textos, título, manifest de la PWA, mensajes), `capacitor.config.ts`
 y Gradle (el nombre bajo el ícono de Android). Para compilar con otro nombre, definila en la terminal o
 en el CI antes de `npm run android:build`.
 
 No cambian con el nombre: el `applicationId` de Android, el nombre de las bases locales, el sello `app`
 de los respaldos y los datos ya guardados. Si cambiaran, se perdería el acceso a lo existente o a la app publicada.
+
+La app se llamó OpenDomus hasta la primera publicación. Por eso los identificadores internos (bases
+locales, claves de almacenamiento, cabeceras `X-OpenDomus-*`, sello `app` de los respaldos) conservan ese
+nombre. El `applicationId` pasó a `ar.refugi.app` antes de subirla a Play, por el dominio `refugi.ar`.
+Una instalación vieja con `io.github.juanjpeople.opendomus` es otra app para Android: para pasar sus datos,
+exportá un respaldo desde Ajustes e importalo en la nueva.

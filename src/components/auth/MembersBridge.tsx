@@ -21,7 +21,7 @@ export function MembersBridge() {
     }).subscribe({
       next: setMembers,
       error: (error: unknown) => {
-        console.error("OpenDomus: failed to load household members", error);
+        console.error("Refugio: failed to load household members", error);
         setLoadFailed();
       },
     });

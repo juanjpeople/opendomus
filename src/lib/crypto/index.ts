@@ -1,5 +1,5 @@
 /**
- * Cifrado de extremo a extremo de OpenDomus. Corre SOLO en el dispositivo (Web Crypto, sin
+ * Cifrado de extremo a extremo de Refugio. Corre SOLO en el dispositivo (Web Crypto, sin
  * dependencias): el servidor recibe claves públicas y datos ya cifrados, nunca la contraseña.
  *
  * Piezas:

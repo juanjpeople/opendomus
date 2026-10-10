@@ -12,8 +12,8 @@ if (signingFile.exists()) signingFile.withInputStream { signingProps.load(it) }
 def signingValue = { String key, String env -> signingProps.getProperty(key) ?: System.getenv(env) }
 def releaseStoreFile = signingValue('storeFile', 'ANDROID_KEYSTORE_FILE')
 
-// Nombre visible: el mismo de la web (NEXT_PUBLIC_APP_NAME), sin tocar el applicationId.
-def brandName = (System.getenv('NEXT_PUBLIC_APP_NAME') ?: '').trim() ?: 'OpenDomus'
+// Nombre visible: el mismo de la web (NEXT_PUBLIC_APP_NAME). El applicationId es fijo (ver docs/ANDROID.md).
+def brandName = (System.getenv('NEXT_PUBLIC_APP_NAME') ?: '').trim() ?: 'Refugio'
 
 android {
     namespace = "io.github.juanjpeople.opendomus"
@@ -22,7 +22,7 @@ android {
         resValues = true
     }
     defaultConfig {
-        applicationId "io.github.juanjpeople.opendomus"
+        applicationId "ar.refugi.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode buildVersionCode

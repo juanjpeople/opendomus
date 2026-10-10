@@ -121,7 +121,7 @@ function AccountPatterns() {
   const [busy, setBusy] = useState(false);
   return <>
     <DemoLabel>SettingRow y ProviderButton: ajustes adaptables y marcas monocromas en SVG</DemoLabel>
-    <SettingRow label="Acceso con proveedores" description="La contraseña de OpenDomus sigue abriendo tus datos cifrados." stacked>
+    <SettingRow label="Acceso con proveedores" description="La contraseña de Refugio sigue abriendo tus datos cifrados." stacked>
       <Flex vertical gap={12}>
         <Checkbox checked={busy} onChange={event => setBusy(event.target.checked)}>Simular espera</Checkbox>
         <ProviderButton provider="google" loading={busy} disabled={busy}>Continuar con Google</ProviderButton>

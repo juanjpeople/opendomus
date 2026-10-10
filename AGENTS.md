@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Costos y servicios externos
 
-OpenDomus debe poder mantenerse dentro de la capa gratuita. No introducir dependencias
+Refugio debe poder mantenerse dentro de la capa gratuita. No introducir dependencias
 que exijan tarjeta, activar facturación, planes pagos o suscripciones adicionales sin
 plantear el requisito y obtener autorización explícita antes de implementarlas.
 Conservar `/admin` sin Cloudflare Access/Zero Trust; ver `docs/ADMIN.md`.

@@ -1,4 +1,4 @@
-# OpenDomus: plan para llevarla a producción
+# Refugio: plan para llevarla a producción
 
 > Estado: ✅ Etapa 0 · ✅ Etapa 1 · 🔄 Etapa 2 (✅ landing + bienvenida · ✅ hito 1: cuentas, casas e invitaciones cifradas · ✅ hito 2: sincronización cifrada y privacidad · ✅ hito 3a: recuperación con el kit, contraseña, dispositivos y rotación de claves · 🔄 MVP: beta por invitación con licencias, fotos cifradas y prueba con la familia; después el 3b). Repo: https://github.com/juanjpeople/opendomus · App: https://opendomus.juanjpeople.workers.dev
 > Mantener este archivo al día al cerrar cada paso.
@@ -27,7 +27,7 @@ la app: distinguir siempre código disponible, pruebas aprobadas y función oper
 
 ## Contexto
 
-OpenDomus tiene un cliente estático (Next + Dexie/IndexedDB), modo local y un backend opcional en Workers con D1 y Durable Objects. El código incluye cuentas, invitaciones, sincronización cifrada, recuperación con kit y revocación de sesiones. Que una función esté en `main` no prueba que esté desplegada ni configurada en producción. Querés:
+Refugio tiene un cliente estático (Next + Dexie/IndexedDB), modo local y un backend opcional en Workers con D1 y Durable Objects. El código incluye cuentas, invitaciones, sincronización cifrada, recuperación con kit y revocación de sesiones. Que una función esté en `main` no prueba que esté desplegada ni configurada en producción. Querés:
 
 - que un admin **invite** a la familia y que las apps **se sincronicen** entre sí;
 - tenerla **deployada**: en la nube con **suscripción automática** y también **autoalojada** en una Raspberry/NAS (el ESP32, como dispositivo satélite);
@@ -233,7 +233,7 @@ El diseño de comandos, dominio en servidor y SSE que sigue **no es el protocolo
 
 ## Etapa 6: suscripciones automáticas
 
-> OpenDomus es **gratis y local por defecto**. La nube es **opcional**, con **licencia por casa**. El modelo de cobro está en definición y, por ahora, no se muestra en la app.
+> Refugio es **gratis y local por defecto**. La nube es **opcional**, con **licencia por casa**. El modelo de cobro está en definición y, por ahora, no se muestra en la app.
 
 - **Licencias y planes por casa** (✅ base técnica en el MVP: `cloud_licenses` y `household_plans`, admin API con token, CLI `npm run admin`, pausa = se baja pero no se sube). La app solo pregunta "¿puede?", como con los permisos.
 - **Cobro web**: *checkout* + portal del cliente + webhooks idempotentes → emiten o extienden la licencia de la casa.

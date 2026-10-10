@@ -11,7 +11,7 @@ interface HouseMarkProps {
   loading?: boolean;
 }
 
-/** Isotipo de OpenDomus: la casa del hero, mínima. Se dibuja al montarse. */
+/** Isotipo de Refugio: la casa del hero, mínima. Se dibuja al montarse. */
 export function HouseMark({ size = "1em", loading = false }: HouseMarkProps) {
   const { token } = theme.useToken();
   const { illustration } = useSkin();

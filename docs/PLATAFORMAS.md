@@ -1,6 +1,6 @@
 # Instalar, compilar y compartir
 
-OpenDomus tiene una interfaz estática y una API opcional. El paquete local contiene la
+Refugio tiene una interfaz estática y una API opcional. El paquete local contiene la
 interfaz: los datos se guardan en IndexedDB del navegador. Alojar los archivos en una
 Raspberry o NAS **no convierte ese equipo en una base de datos compartida**.
 

@@ -1,6 +1,6 @@
 import { isValidContainerCode, normalizeContainerCode } from "./domain";
 
-/** Extrae el código de un QR de OpenDomus (URL `/c/<código>`, `/c?code=<código>` o el código solo). */
+/** Extrae el código de un QR de Refugio (URL `/c/<código>`, `/c?code=<código>` o el código solo). */
 export function codeFromScan(raw: string): string | null {
   const candidate = (() => {
     try {

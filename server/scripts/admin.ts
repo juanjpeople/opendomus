@@ -64,7 +64,7 @@ async function main(args: string[]) {
     console.log(operatorDiagnostics(process.env).join("\n"));
     return;
   }
-  if (!API) throw new Error("Falta OPENDOMUS_API: usá el origen de OpenDomus.");
+  if (!API) throw new Error("Falta OPENDOMUS_API: usá el origen de Refugio.");
   operatorOrigin(API);
   if (command === "login") return operatorLogin(operatorOrigin(API).origin);
   if (command === "logout") return operatorLogout(operatorOrigin(API).origin);

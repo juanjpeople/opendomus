@@ -13,6 +13,6 @@ const directory = resolve("docs/privado", `operator-${Date.now()}`);
 mkdirSync(directory, { recursive: true, mode: 0o700 });
 writeFileSync(resolve(directory, "worker-secrets.json"), JSON.stringify({ OPERATOR_EMAIL: email, OPERATOR_KEY_HASH: createHash("sha256").update(key).digest("hex"), OPERATOR_TOTP_SECRET: secret }, null, 2), { mode: 0o600, flag: "wx" });
 writeFileSync(resolve(directory, "clave.txt"), key + "\n", { mode: 0o600, flag: "wx" });
-const uri = `otpauth://totp/${encodeURIComponent(`OpenDomus:${email}`)}?secret=${secret}&issuer=OpenDomus&algorithm=SHA1&digits=6&period=30`;
+const uri = `otpauth://totp/${encodeURIComponent(`Refugio:${email}`)}?secret=${secret}&issuer=Refugio&algorithm=SHA1&digits=6&period=30`;
 await QRCode.toFile(resolve(directory, "autenticador.png"), uri, { width: 360 });
 console.log(`Preparación local en ${directory}. Guardá la clave en tu gestor y escaneá autenticador.png. No se publicó ni activó nada. Consultá docs/ADMIN.md para probar y cargar los secretos.`);

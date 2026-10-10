@@ -2,7 +2,7 @@ import { BRAND } from "@/config/brand";
 import { APP_ROUTES } from "@/lib/navigation/routes";
 
 /**
- * Service worker de OpenDomus, servido en `/sw.js`. Se genera en el build: la versión de la
+ * Service worker de Refugio, servido en `/sw.js`. Se genera en el build: la versión de la
  * caché cambia con cada build, así una versión nueva nunca mezcla archivos con la anterior.
  *
  * Estrategia (offline-first de verdad: los datos ya viven en IndexedDB, falta la app):

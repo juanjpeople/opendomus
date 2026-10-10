@@ -6,7 +6,7 @@ test("las cabeceras conservan la marca y los controles a 320 px", async ({ page 
     paths.every((path) => parseFloat(getComputedStyle(path).strokeDasharray) >= 0.99),
   )).toBe(true);
   const checkBrand = async () => {
-    const brand = page.getByText("OpenDomus", { exact: true }).first();
+    const brand = page.getByText("Refugio", { exact: true }).first();
     await expect(brand).toBeVisible();
     const bounds = await brand.evaluate((element) => {
       const range = document.createRange();

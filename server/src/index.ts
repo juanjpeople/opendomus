@@ -1,5 +1,5 @@
 /**
- * Worker de OpenDomus: sirve la app (archivos estáticos) y la API en el mismo origen (`/api/*`),
+ * Worker de Refugio: sirve la app (archivos estáticos) y la API en el mismo origen (`/api/*`),
  * así las cookies de sesión son de primera parte: sin CORS ni cookies de terceros en producción.
  *
  * Cifrado de extremo a extremo: el servidor guarda claves y datos ya cifrados en los dispositivos.

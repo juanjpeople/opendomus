@@ -16,7 +16,7 @@ const RADII = [
   { factor: 3, use: "Cierre de la landing" },
 ] as const;
 
-/** Lo que hace que OpenDomus se reconozca. Cada pantalla nueva tiene que poder ponerse al lado de estas. */
+/** Lo que hace que Refugio se reconozca. Cada pantalla nueva tiene que poder ponerse al lado de estas. */
 export function SignatureSection() {
   const { token } = theme.useToken();
   const [replay, setReplay] = useState(0);
@@ -25,7 +25,7 @@ export function SignatureSection() {
     <DemoBlock
       id="firma"
       title="Firma visual"
-      description="Lo que hace que OpenDomus se reconozca de un vistazo. Antes de dar por terminada una pantalla, ponela al lado de estas piezas: si se ve más plana, le falta algo de acá."
+      description="Lo que hace que Refugio se reconozca de un vistazo. Antes de dar por terminada una pantalla, ponela al lado de estas piezas: si se ve más plana, le falta algo de acá."
       code={`
 // Brillo de marca (lo pone AppShell en todo el contenido; los héroes lo repiten adentro):
 background: \`radial-gradient(ellipse 70% 40% at 60% -5%, \${token.colorPrimaryBg}, transparent 70%)\`
@@ -73,7 +73,7 @@ borderBottom: \`1px solid \${token.colorBorderSecondary}\`,
             >
               <Flex align="center" gap={8}>
                 <HouseMark size={22} />
-                <Typography.Text strong>OpenDomus</Typography.Text>
+                <Typography.Text strong>Refugio</Typography.Text>
               </Flex>
               <Tag variant="filled" icon={<HardDrive />} style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
                 Este dispositivo
