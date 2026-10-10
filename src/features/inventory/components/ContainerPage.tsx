@@ -1,6 +1,6 @@
 "use client";
 
-import { App, Button, Card, Col, Dropdown, Flex, Row, Skeleton, Typography, theme } from "antd";
+import { App, Button, Card, Col, Dropdown, Flex, Row, Typography, theme } from "antd";
 import { ArrowLeft, Boxes, Camera, EllipsisVertical, Layers, NotebookPen, PackageOpen, PackageX, Pencil, Plus, Printer, QrCode, RotateCcwClock, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -8,7 +8,7 @@ import { useState, type CSSProperties } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
-import { EmptyState, PageHeader, PathCrumbs, RoomFloor, SectionHeader, StatTile, type StatTone } from "@/components/ui";
+import { EmptyState, PageHeader, PathCrumbs, RoomFloor, SectionHeader, StatTile, type StatTone, LoadingSkeleton } from "@/components/ui";
 import { ActivityDrawer } from "@/features/activity/components/ActivityButton";
 import { usePhotos } from "@/features/media/hooks";
 import { AddTile, ContainerTile } from "@/features/storage/components/ContainerTiles";
@@ -73,7 +73,7 @@ export function ContainerPage() {
       : null,
   );
 
-  if (container === undefined) return <Skeleton active />;
+  if (container === undefined) return <LoadingSkeleton />;
 
   if (container === null) {
     return (

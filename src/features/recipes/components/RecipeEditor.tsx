@@ -1,6 +1,6 @@
 "use client";
 
-import { AutoComplete, Button, Card, Col, Flex, Grid, Input, InputNumber, Row, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
+import { AutoComplete, Button, Card, Col, Flex, Grid, Input, InputNumber, Row, Tag, Tooltip, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, ArrowUp, ImagePlus, Link2, Plus, Save, Trash2, X } from "lucide-react";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
-import { PageHeader, PrivacySelect, StockTag } from "@/components/ui";
+import { PageHeader, PrivacySelect, StockTag, LoadingSkeleton } from "@/components/ui";
 import { getStockStatus, isUnit, UNITS } from "@/features/inventory/domain";
 import { PhotoGallery } from "@/features/media/components/PhotoGallery";
 import { PHOTO_LIMITS } from "@/features/media/domain";
@@ -42,7 +42,7 @@ const nextKey = () => `draft-${++draftKey}`;
 export function RecipeEditor() {
   const id = useSearchParams().get("id");
   const data = useRecipe(id);
-  if (id && data === undefined) return <Skeleton active />;
+  if (id && data === undefined) return <LoadingSkeleton />;
   // `key`: al cambiar de receta, el formulario arranca de cero con sus datos.
   return <EditorForm key={id ?? "new"} recipe={data?.recipe ?? null} />;
 }

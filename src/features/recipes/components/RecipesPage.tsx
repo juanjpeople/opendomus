@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Flex, Input, Segmented, Skeleton, Tag, Typography, theme } from "antd";
+import { Button, Card, Flex, Input, Segmented, Tag, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChefHat, Clock, Plus, Search, SearchX, Users } from "lucide-react";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal } from "@/components/motion";
-import { EmptyState, PageHeader, PrivacyBadge } from "@/components/ui";
+import { EmptyState, PageHeader, PrivacyBadge, LoadingSkeleton } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { SPRING } from "@/lib/motion";
 import { RECIPE_TAGS, type RecipeTag } from "../domain";
@@ -59,7 +59,7 @@ export function RecipesPage() {
       />
 
       {!recipes ? (
-        <Skeleton active />
+        <LoadingSkeleton />
       ) : recipes.length === 0 ? (
         <Card>
           <EmptyState

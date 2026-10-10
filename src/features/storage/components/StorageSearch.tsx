@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Input, Skeleton, Typography, theme } from "antd";
+import { Button, Card, Input, Typography, theme } from "antd";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Search, SearchX } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
@@ -9,7 +9,7 @@ import { useT } from "@/i18n";
 import { db } from "@/lib/db";
 import { containerHref } from "@/lib/navigation/routes";
 import { highlightSearch, normalizeSearch } from "@/lib/search";
-import { EmptyState, IconTile, ListRow } from "@/components/ui";
+import { EmptyState, IconTile, ListRow, LoadingSkeleton } from "@/components/ui";
 import { containerAppearance } from "../domain";
 import { indexStorage, matchedItem, searchStorage } from "../search";
 
@@ -33,7 +33,7 @@ export function StorageSearch() {
     <Input size="large" prefix={<Search />} placeholder={t("storage.search.placeholder")} aria-label={t("storage.search.placeholder")} value={query} allowClear onChange={(event) => { setQuery(event.target.value); setLimit(12); }} />
     {!query.trim() && <Typography.Paragraph type="secondary" style={{ margin: "8px 0 0" }}>{t("storage.search.hint")}</Typography.Paragraph>}
     {query.trim() && <div aria-live="polite" aria-busy={query !== deferred}>
-      {!results && <Skeleton active />}
+      {!results && <LoadingSkeleton />}
       {results?.length === 0 && <EmptyState icon={SearchX} title={t("storage.search.empty")} />}
       {!!results?.length && <>
         <Typography.Paragraph type="secondary" style={{ margin: "12px 0" }}>{t("storage.search.count", { count: results.length })}</Typography.Paragraph>

@@ -256,6 +256,9 @@ function DefaultLayout({ children }: { children: ReactNode }) {
           style={{
             padding: isMobile ? "24px 16px" : "32px 24px",
             background: haloBackground(skin, `radial-gradient(ellipse 70% 40% at 60% -5%, ${token.colorPrimaryBg}, transparent 70%)`),
+            // Del alto de la pantalla, no del contenido: si no, el halo se achica y crece al cambiar de página.
+            backgroundSize: "100% 100vh",
+            backgroundRepeat: "no-repeat",
           }}
         >
           <div style={{ maxWidth: 1100, margin: "0 auto" }}>{children}</div>

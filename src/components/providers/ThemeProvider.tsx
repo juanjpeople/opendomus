@@ -32,6 +32,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.fontSize = `${(baseFontSize / FONT_SIZES.md) * 100}%`;
   }, [baseFontSize]);
 
+  // "Reducir movimiento" de la app también apaga las transiciones de página del navegador (globals.css).
+  useEffect(() => {
+    document.documentElement.dataset.motion = motion;
+  }, [motion]);
+
   // El skin también se refleja en el html: el CSS global lo usa para las tipografías de los títulos.
   useEffect(() => {
     const root = document.documentElement;

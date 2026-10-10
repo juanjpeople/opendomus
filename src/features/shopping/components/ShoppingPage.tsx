@@ -2,7 +2,7 @@
 
 import { formatQuantity, formatUnit } from "@/features/inventory/format";
 
-import { App, Button, Card, Col, Dropdown, Flex, Grid, Progress, Row, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
+import { App, Button, Card, Col, Dropdown, Flex, Grid, Progress, Row, Tag, Tooltip, Typography, theme } from "antd";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { Archive, ArchiveRestore, ArrowLeftRight, ClipboardList, Ellipsis, Eraser, FolderOpen, MapPin, Pencil, ShoppingBag, ShoppingBasket, Trash2, Wallet, type LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { AnimatedNumber, Reveal, Stagger, StaggerItem } from "@/components/motion";
-import { EmptyState, IconTile, PageHeader, QuantityStepper } from "@/components/ui";
+import { EmptyState, IconTile, PageHeader, QuantityStepper, LoadingSkeleton } from "@/components/ui";
 
 import type { Currency } from "@/features/prices/domain";
 import { useI18n } from "@/i18n";
@@ -135,7 +135,7 @@ export function ShoppingPage() {
       {lists && <ListSwitcher lists={lists} selectedId={listId} onSelect={select} onCreate={canManage ? () => setDialog("create") : undefined} />}
 
       {!data || !list ? (
-        <Skeleton active />
+        <LoadingSkeleton />
       ) : (
         <>
           <Summary pending={data.pending.length} budget={data.budget} review={home ? data.candidates.length : undefined} />

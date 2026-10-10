@@ -2,11 +2,11 @@
 
 import { formatQuantity } from "@/features/inventory/format";
 
-import { Button, Flex, Skeleton, Tag, Typography, theme } from "antd";
+import { Button, Flex, Tag, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, ArrowUp, BellOff, ChefHat, ListPlus, MoveRight, PackageMinus, Pencil, Plus, RotateCcwClock, ShoppingBag, Tag as PriceTag, Trash2, Undo2, type LucideIcon } from "lucide-react";
 import { Fragment } from "react";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, LoadingSkeleton } from "@/components/ui";
 
 import { useInventoryActions } from "@/features/inventory/hooks";
 import { useNow } from "@/hooks/useNow";
@@ -37,7 +37,7 @@ export function ActivityList({ entries, showPlace = false }: ActivityListProps) 
   const { undo } = useInventoryActions();
   const canUndo = usePermission("inventory.adjust");
 
-  if (!entries) return <Skeleton active paragraph={{ rows: 4 }} />;
+  if (!entries) return <LoadingSkeleton paragraph={{ rows: 4 }} />;
   if (entries.length === 0) {
     return <EmptyState icon={RotateCcwClock} title={t("activity.empty")} description={t("activity.emptyText")} />;
   }

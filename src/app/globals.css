@@ -105,3 +105,45 @@ body {
 html[data-skin] :is(h1, h2, h3, h4, h5) {
   font-family: var(--od-font-heading, inherit);
 }
+
+/* Transición entre páginas (PageTransition, View Transitions API). Solo se anima el contenido:
+   el resto (menú, cabecera) cambia en el lugar, sin fundido, para que el indicador del menú se
+   deslice tranquilo. Duraciones de DURATION en src/lib/motion.ts (fast 180 ms, base 320 ms). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(.od-page-enter),
+::view-transition-group(.od-page-exit) {
+  animation: none;
+}
+::view-transition-old(.od-page-exit) {
+  animation: 180ms cubic-bezier(0.22, 1, 0.36, 1) both od-page-out;
+}
+::view-transition-new(.od-page-enter) {
+  animation: 320ms cubic-bezier(0.22, 1, 0.36, 1) both od-page-in;
+}
+@keyframes od-page-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes od-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+/* "Reducir movimiento": el de la app (data-motion, ThemeProvider) o el del sistema si la app sigue al sistema. */
+html[data-motion="reduced"]::view-transition-group(*),
+html[data-motion="reduced"]::view-transition-old(*),
+html[data-motion="reduced"]::view-transition-new(*) {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="full"])::view-transition-group(*),
+  html:not([data-motion="full"])::view-transition-old(*),
+  html:not([data-motion="full"])::view-transition-new(*) {
+    animation: none !important;
+  }
+}

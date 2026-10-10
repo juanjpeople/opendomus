@@ -30,3 +30,4 @@ export { PathCrumbs, type PathCrumb } from "./PathCrumbs";
 export { ViewSwitcher, type ViewOption } from "./ViewSwitcher";
 export { PlaceCard, type PlaceShortcut } from "./PlaceCard";
 export { PlaceChip } from "./PlaceChip";
+export { LoadingSkeleton } from "./LoadingSkeleton";

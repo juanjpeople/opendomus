@@ -1,10 +1,10 @@
 "use client";
 
-import { Avatar, Card, Col, Flex, Row, Skeleton, Tag, Tooltip, Typography, theme } from "antd";
+import { Avatar, Card, Col, Flex, Row, Tag, Tooltip, Typography, theme } from "antd";
 import { useLiveQuery } from "dexie-react-hooks";
 import { CalendarDays, ChefHat, HardHat, KeyRound, ShoppingCart, type LucideIcon } from "lucide-react";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
-import { IconTile, ListRow, PageHeader, PRIVACY_META } from "@/components/ui";
+import { IconTile, ListRow, PageHeader, PRIVACY_META, LoadingSkeleton } from "@/components/ui";
 import { MemberAvatar } from "@/components/ui/MemberAvatar";
 import type { Member } from "@/features/members/domain";
 import { useMembers } from "@/features/members/hooks";
@@ -91,7 +91,7 @@ export function PrivacyPage() {
       </Reveal>
 
       {items === undefined ? (
-        <Skeleton active />
+        <LoadingSkeleton />
       ) : (
         <Stagger stagger={0.06}>
           <Row gutter={[16, 16]}>

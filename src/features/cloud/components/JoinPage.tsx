@@ -1,12 +1,12 @@
 "use client";
 
-import { Button, Flex, Grid, Input, Segmented, Skeleton, Tag, Typography, theme } from "antd";
+import { Button, Flex, Grid, Input, Segmented, Tag, Typography, theme } from "antd";
 import { Link2, MailOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { Reveal } from "@/components/motion";
-import { Callout, PanelHeader, ResultState, StepFlow, TrustNote } from "@/components/ui";
+import { Callout, PanelHeader, ResultState, StepFlow, TrustNote, LoadingSkeleton } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getErrorMessage } from "@/lib/errors";
@@ -107,7 +107,7 @@ export function JoinPage() {
       <Reveal>
         <StepFlow screenKey={hydrated ? view.kind : "loading"}>
           <CryptoSupportGate>
-            {(!hydrated || view.kind === "loading") && <Skeleton active />}
+            {(!hydrated || view.kind === "loading") && <LoadingSkeleton />}
 
             {hydrated && view.kind === "paste" && (
               <Flex vertical gap={16}>
@@ -163,7 +163,7 @@ export function JoinPage() {
                     </Button>
                   </>
                 ) : status === "restoring" ? (
-                  <Skeleton active paragraph={{ rows: 2 }} />
+                  <LoadingSkeleton paragraph={{ rows: 2 }} />
                 ) : (
                   <>
                     <Segmented<"create" | "signin">
