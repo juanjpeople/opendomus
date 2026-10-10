@@ -1,0 +1,68 @@
+name: Android release
+
+# Paquete firmado para Play Store (.aab). Solo a pedido: no corre en PR ni en main.
+# Firma con la clave de subida guardada en los secretos del repo (ver docs/PLAY_STORE.md).
+# Play App Signing vuelve a firmar con la clave de la app, que guarda Google.
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: 'versionCode (vacío = número de ejecución). Tiene que ser mayor que el último subido.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    name: AAB firmado
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Preparar la clave de subida
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ]; then
+            echo "::error::Faltan los secretos de firma. Ver docs/PLAY_STORE.md."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+      - run: npm ci
+      - run: npm run android:sync
+      - name: Compilar el paquete
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/upload.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          # Si la clave no tiene contraseña propia, se usa la del almacén (lo que hace keytool por defecto).
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
+          VERSION_CODE: ${{ inputs.version_code || github.run_number }}
+        run: bash gradlew --no-daemon :app:bundleRelease "-PappVersionCode=$VERSION_CODE"
+      - name: Comprobar la firma
+        run: |
+          jarsigner -verify android/app/build/outputs/bundle/release/app-release.aab | tee "$RUNNER_TEMP/verify.txt"
+          grep -q "jar verified" "$RUNNER_TEMP/verify.txt"
+          rm -f "$RUNNER_TEMP/upload.jks"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: refugiar-${{ inputs.version_code || github.run_number }}-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 7

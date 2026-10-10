@@ -46,6 +46,7 @@ export const APP_ROUTES: AppRoute[] = [
   { id: "design", href: "/design", labelKey: "nav.routes.design", icon: Palette, permission: "settings.design", section: "system" },
   { id: "account", href: "/cuenta", labelKey: "nav.routes.account", icon: Sparkles, section: "system", external: true, hidden: true },
   { id: "feedback", href: "/feedback", labelKey: "nav.routes.feedback", icon: MessageSquare, section: "system", external: true, hidden: true },
+  { id: "privacyPolicy", href: "/politica-de-privacidad", labelKey: "nav.routes.privacyPolicy", icon: ShieldCheck, section: "system", external: true, hidden: true },
   { id: "join", href: "/unirme", labelKey: "nav.routes.join", icon: Sparkles, section: "system", external: true, hidden: true },
   { id: "start", href: "/empezar", labelKey: "nav.routes.start", icon: Sparkles, section: "system", external: true, hidden: true },
   { id: "values", href: "/bienvenida", labelKey: "nav.routes.values", icon: Sparkles, section: "system", external: true },

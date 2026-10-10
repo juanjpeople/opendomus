@@ -2,6 +2,7 @@
 
 import { Avatar, Card, Col, Flex, Row, Tag, Tooltip, Typography, theme } from "antd";
 import { useLiveQuery } from "dexie-react-hooks";
+import Link from "next/link";
 import { CalendarDays, ChefHat, HardHat, KeyRound, ShoppingCart, type LucideIcon } from "lucide-react";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { IconTile, ListRow, PageHeader, PRIVACY_META, LoadingSkeleton } from "@/components/ui";
@@ -164,6 +165,9 @@ export function PrivacyPage() {
           </Row>
         </Stagger>
       )}
+      <Typography.Paragraph type="secondary" style={{ marginTop: token.marginLG }}>
+        <Link href="/politica-de-privacidad">{t("privacy.page.policyLink")}</Link>
+      </Typography.Paragraph>
     </>
   );
 }

@@ -244,6 +244,7 @@ export const en: Messages = {
       private: { label: "Private", description: "Only the profile that created it can see it." },
     },
     page: {
+      policyLink: "App privacy policy",
       eyebrow: "Your home, your rules",
       title: "Privacy",
       description: "Review which lists, projects, recipes and events you share with each group.",
@@ -287,6 +288,7 @@ export const en: Messages = {
       start: "Get started",
       account: "Account",
       feedback: "Feedback",
+      privacyPolicy: "Privacy policy",
       join: "Join a home",
       compras: "Shopping",
       recipes: "Recipes",
@@ -1697,6 +1699,45 @@ export const en: Messages = {
     privacy: "Do not include passwords, recovery kits, or sensitive information about your home.",
   },
 
+  legal: {
+    privacy: {
+      eyebrow: "Privacy policy",
+      title: "What {app} does with your data",
+      updated: "Last updated: October 10, 2026",
+      intro: "{app} is an open source app to organize your home. It is built so your data lives on your devices. It shows no ads, uses no trackers and sells no data.",
+      sections: {
+        android: {
+          title: "The Android app",
+          body: "The Android app works without an account and offline. Everything you add stays on your phone.\nIt does not send your data to our servers or to third parties.\nThe camera is used only when you open it, to take photos or read QR codes. Images stay on the phone.\nBackups are a file you choose where to save. That file is not encrypted: keep it somewhere you trust.\nIf you uninstall the app, Android deletes all its data.",
+        },
+        cloud: {
+          title: "The web version with an account (optional)",
+          body: "On {domain} you can create an account to share your home across devices. For that we store your name, your email and your password protected with a hash. If you sign in with Google or GitHub, we receive your name, email and profile picture.\nYour home data and photos are encrypted on your device before upload. We do not have the keys and cannot read them.\nFor security, each session stores the IP address and browser you signed in from. A session lasts up to 30 days.\nIf you send us feedback, we store the message and any email you leave.",
+        },
+        providers: {
+          title: "Services we use",
+          body: "Cloudflare hosts the website, the API and the accounts database.\nSupabase stores the encrypted photos of the account version.\nGoogle and GitHub are involved only if you choose to sign in with them.\nNone of them receive your data for advertising.",
+        },
+        retention: {
+          title: "How long we keep data",
+          body: "What is on your device stays there until you delete it or uninstall the app.\nA cloud home with no activity for 90 days is paused, with notices first.\nYou can ask us to delete your account and all its data by writing to {email}. We do it within 30 days.",
+        },
+        children: {
+          title: "Children",
+          body: "The app allows kid profiles inside a home, managed by an adult. Kid profiles have no account or email of their own. We do not ask for data about minors.",
+        },
+        changes: {
+          title: "Changes",
+          body: "If this policy changes, we update this page and its date. The code is published on GitHub, so anyone can check what the app does.",
+        },
+        contact: {
+          title: "Contact",
+          body: "For any question about your data, write to {email}.",
+        },
+      },
+      source: "See the code on GitHub",
+    },
+  },
   landing: {
     introduction: {
       eyebrow: "The project",

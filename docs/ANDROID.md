@@ -115,8 +115,8 @@ Pendiente antes de distribuir:
 - Apariencia con teclado, barras del sistema y ambos temas en dispositivos físicos.
 - Revisar exclusión de datos de backup y transferencia entre dispositivos según versión Android.
 
-Hasta completar esas pruebas, el APK es experimental y el PR debe permanecer
-en borrador. No se configura firma de producción ni publicación en Play Store.
+Estas pruebas se completan en la prueba interna y la prueba cerrada de Play antes de
+pasar a producción.
 
 ## Advertencias de dependencias
 
@@ -143,24 +143,8 @@ incorporados por este MVP; no reemplaza una revisión de todas las dependencias 
 
 ## Publicar en Play Store
 
-Costo: la cuenta de desarrollador es un pago único ya realizado; nada de esto agrega cuotas.
-
-1. **Clave de firma (una sola vez).** Es la identidad de la app: si se pierde, no se puede
-   actualizar. Guardarla fuera del repositorio y con copia aparte.
-   `keytool -genkeypair -v -keystore refugiar-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`
-2. **`android/keystore.properties`** (ignorado por git):
-   `storeFile=../../opendomus-upload.jks`, `storePassword=…`, `keyAlias=upload`, `keyPassword=…`.
-   En CI se usan `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` y `ANDROID_KEY_PASSWORD`.
-3. **Paquete:** `npm run android:build -- --release` genera
-   `android/app/build/outputs/bundle/release/app-release.aab`. Sin clave configurada, sale sin firmar.
-   Subir el `versionCode` (`-PappVersionCode=N`) en cada envío.
-4. **Play Console:** crear la app, activar Play App Signing, subir el `.aab` a una prueba
-   cerrada, completar la ficha (descripción, capturas, ícono 512 px), el formulario de seguridad
-   de datos y la política de privacidad (`/privacidad`).
-5. **Cuenta personal nueva:** Google exige una prueba cerrada con al menos 12 testers durante
-   14 días seguidos antes de pedir acceso a producción
-   ([ayuda de Play](https://support.google.com/googleplay/android-developer/answer/14151465)).
-   Hasta entonces no se puede publicar en producción.
+Ver [PLAY_STORE.md](PLAY_STORE.md): clave de subida, paquete firmado desde GitHub Actions
+(*Android release*, solo a pedido), respuestas de Play Console y textos de la ficha.
 
 ## Nombre de la app
 
