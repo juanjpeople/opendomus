@@ -144,7 +144,7 @@ Objetivo: dejar `feat/fase-1` compilando, probada y mergeada a `main`.
    - mover un ítem a otra lista;
    - archivar la lista;
    - todo en escritorio, celular y modo oscuro, en es y en.
-   - Después: actualizar `OPENDOMUS_PLAN.md`, commit, merge a `main`.
+   - Después: actualizar `PLAN.md`, commit, merge a `main`.
 
 ## ✅ Etapa 1: profesionalizar la base
 
@@ -243,7 +243,7 @@ El diseño de comandos, dominio en servidor y SSE que sigue **no es el protocolo
 ## Etapa 7: listo para producción
 
 - **Seguridad**:
-  - cifrado local de IndexedDB (ya diseñado en `OPENDOMUS_PLAN.md`);
+  - cifrado local de IndexedDB (ya diseñado en `PLAN.md`);
   - límite de pedidos (rate limiting);
   - revisión de permisos del lado del servidor;
   - política de seguridad de contenido (CSP);

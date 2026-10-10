@@ -47,7 +47,7 @@ export const useSessionStore = create<SessionState>()(
         set({ currentProfileId: null });
       },
     }),
-    { name: houseStorageKey("opendomus-session"), version: 1 },
+    { name: houseStorageKey("refugio-session"), version: 1 },
   ),
 );
 
@@ -70,7 +70,7 @@ export const useLockStore = create<LockState>()(
       lock: () => set({ unlockedProfileId: null }),
       touch: () => set({ lastActivity: Date.now() }),
     }),
-    { name: houseStorageKey("opendomus-lock"), version: 1, storage: createJSONStorage(() => sessionStorage) },
+    { name: houseStorageKey("refugio-lock"), version: 1, storage: createJSONStorage(() => sessionStorage) },
   ),
 );
 

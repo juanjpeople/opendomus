@@ -373,7 +373,7 @@ async function countPending() {
 
 function withLock<T>(task: () => Promise<T>): Promise<T> {
   const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
-  return locks ? (locks.request("opendomus-sync", task) as Promise<T>) : task();
+  return locks ? (locks.request("refugio-sync", task) as Promise<T>) : task();
 }
 
 /** Sube y baja todo una vez (para la primera subida o bajada de una casa). Lanza si falla. */

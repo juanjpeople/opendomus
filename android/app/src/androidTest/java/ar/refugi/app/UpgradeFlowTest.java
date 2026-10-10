@@ -1,4 +1,4 @@
-package io.github.juanjpeople.opendomus;
+package ar.refugi.app;
 
 import static org.junit.Assert.*;
 
@@ -45,7 +45,7 @@ public class UpgradeFlowTest {
         Context context = ApplicationProvider.getApplicationContext();
         assertEquals(2, context.getPackageManager().getPackageInfo(context.getPackageName(), 0).getLongVersionCode());
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
-            await(scenario, "window.Capacitor && JSON.parse(localStorage.getItem('opendomus-session-tests') || '{}').state?.currentProfileId");
+            await(scenario, "window.Capacitor && JSON.parse(localStorage.getItem('refugio-session-tests') || '{}').state?.currentProfileId");
             scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario/ver?id=" + NativeFlowTest.CONTAINER + "&" + NativeFlowTest.SAMPLE));
             await(scenario, "document.body.innerText.includes('Android importado') && document.body.innerText.includes('Cables Android') && [...document.querySelectorAll('.od-photo-tile img')].some(i => i.naturalWidth === 32)");
         }

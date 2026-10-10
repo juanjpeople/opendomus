@@ -80,10 +80,10 @@ export interface PasswordKeys {
  * pedírsela al servidor antes de entrar, y no revela qué emails tienen cuenta.
  */
 export async function derivePasswordKeys(email: string, password: string, iterations = KDF_ITERATIONS): Promise<PasswordKeys> {
-  const salt = new Uint8Array(await subtle.digest("SHA-256", encoder.encode(`opendomus/kdf/v1|${normalizeEmail(email)}`)));
+  const salt = new Uint8Array(await subtle.digest("SHA-256", encoder.encode(`refugio/kdf/v1|${normalizeEmail(email)}`)));
   const base = await subtle.importKey("raw", encoder.encode(password.normalize("NFKC")), "PBKDF2", false, ["deriveBits"]);
   const master = new Uint8Array(await subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations }, base, 256));
-  const [auth, enc] = await Promise.all([hkdf(master, "opendomus/auth/v1"), hkdf(master, "opendomus/enc/v1")]);
+  const [auth, enc] = await Promise.all([hkdf(master, "refugio/auth/v1"), hkdf(master, "refugio/enc/v1")]);
   return { authKey: toB64u(auth), encKey: await aesKey(enc) };
 }
 
@@ -169,7 +169,7 @@ async function importPrivate(plain: PrivateKeysPlain, encPublicKey: string, sign
 
 /** Clave AES a partir del código del kit de recuperación. */
 async function recoveryAesKey(recoveryCode: string) {
-  return aesKey(await hkdf(decodeRecoveryCode(recoveryCode), "opendomus/recovery/v1"));
+  return aesKey(await hkdf(decodeRecoveryCode(recoveryCode), "refugio/recovery/v1"));
 }
 
 /**
@@ -177,7 +177,7 @@ async function recoveryAesKey(recoveryCode: string) {
  * pero por otro camino (HKDF con otro uso): con la prueba no se puede obtener la clave.
  */
 export async function recoveryProof(recoveryCode: string): Promise<string> {
-  return toB64u(await hkdf(decodeRecoveryCode(recoveryCode), "opendomus/recovery-auth/v1"));
+  return toB64u(await hkdf(decodeRecoveryCode(recoveryCode), "refugio/recovery-auth/v1"));
 }
 
 /** Un kit nuevo para las claves privadas (en claro, solo dentro de este módulo). */
@@ -313,7 +313,7 @@ async function envelopeKey(shared: ArrayBuffer, ephemeralPublic: Uint8Array, rec
   const salt = new Uint8Array(ephemeralPublic.length + recipientPublic.length);
   salt.set(ephemeralPublic);
   salt.set(recipientPublic, ephemeralPublic.length);
-  return aesKey(await hkdf(new Uint8Array(shared), "opendomus/envelope/v1", salt));
+  return aesKey(await hkdf(new Uint8Array(shared), "refugio/envelope/v1", salt));
 }
 
 /** Ensobra una clave de nivel para alguien (con su clave pública X25519). */
@@ -353,7 +353,7 @@ export interface InviteSecrets {
 export async function inviteSecrets(secret: string = toB64u(randomBytes(32))): Promise<InviteSecrets> {
   const raw = fromB64u(secret);
   if (raw.length !== 32) throw new Error("bad-invite");
-  const [auth, wrap] = await Promise.all([hkdf(raw, "opendomus/invite-auth/v1"), hkdf(raw, "opendomus/invite-wrap/v1")]);
+  const [auth, wrap] = await Promise.all([hkdf(raw, "refugio/invite-auth/v1"), hkdf(raw, "refugio/invite-wrap/v1")]);
   return { secret, authToken: toB64u(auth), wrapKey: await aesKey(wrap) };
 }
 

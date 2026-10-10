@@ -22,7 +22,7 @@ interface DeviceState {
 function initialMode(): DataMode {
   if (typeof window === "undefined") return "unset";
   try {
-    const session = JSON.parse(localStorage.getItem(houseStorageKey("opendomus-session")) ?? "null") as { state?: { currentProfileId?: string | null } } | null;
+    const session = JSON.parse(localStorage.getItem(houseStorageKey("refugio-session")) ?? "null") as { state?: { currentProfileId?: string | null } } | null;
     return session?.state?.currentProfileId ? "local" : "unset";
   } catch {
     return "unset";
@@ -35,6 +35,6 @@ export const useDeviceStore = create<DeviceState>()(
       mode: initialMode(),
       setMode: (mode) => set({ mode }),
     }),
-    { name: houseStorageKey("opendomus-device"), version: 1 },
+    { name: houseStorageKey("refugio-device"), version: 1 },
   ),
 );

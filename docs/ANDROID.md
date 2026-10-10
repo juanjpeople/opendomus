@@ -147,7 +147,7 @@ Costo: la cuenta de desarrollador es un pago único ya realizado; nada de esto a
 
 1. **Clave de firma (una sola vez).** Es la identidad de la app: si se pierde, no se puede
    actualizar. Guardarla fuera del repositorio y con copia aparte.
-   `keytool -genkeypair -v -keystore opendomus-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`
+   `keytool -genkeypair -v -keystore refugio-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`
 2. **`android/keystore.properties`** (ignorado por git):
    `storeFile=../../opendomus-upload.jks`, `storePassword=…`, `keyAlias=upload`, `keyPassword=…`.
    En CI se usan `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` y `ANDROID_KEY_PASSWORD`.
@@ -172,8 +172,7 @@ en el CI antes de `npm run android:build`.
 No cambian con el nombre: el `applicationId` de Android, el nombre de las bases locales, el sello `app`
 de los respaldos y los datos ya guardados. Si cambiaran, se perdería el acceso a lo existente o a la app publicada.
 
-La app se llamó OpenDomus hasta la primera publicación. Por eso los identificadores internos (bases
-locales, claves de almacenamiento, cabeceras `X-OpenDomus-*`, sello `app` de los respaldos) conservan ese
-nombre. El `applicationId` pasó a `ar.refugi.app` antes de subirla a Play, por el dominio `refugi.ar`.
-Una instalación vieja con `io.github.juanjpeople.opendomus` es otra app para Android: para pasar sus datos,
-exportá un respaldo desde Ajustes e importalo en la nueva.
+La app se llamó OpenDomus hasta antes de la primera publicación. Como no tenía usuarios, se renombró
+todo, incluidos los identificadores internos: el `applicationId` es `ar.refugi.app` (por el dominio
+`refugi.ar`), las bases locales son `RefugioDB`, las claves de almacenamiento empiezan con `refugio-` y el
+sello `app` de los respaldos es "Refugio". Los datos y cuentas de prueba creados con OpenDomus no se leen.

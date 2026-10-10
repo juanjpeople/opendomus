@@ -144,7 +144,7 @@ La preparación, migración desde Access, límites y recuperación están en
 local sin revelar credenciales. La publicación continúa siendo manual.
 
 Any static host works the same way (Netlify, GitHub Pages, nginx/Caddy on a NAS): serve
-`out/`. Household data stays on each device until sync exists (see `OPENDOMUS_PLAN.md`).
+`out/`. Household data stays on each device until sync exists (see `PLAN.md`).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

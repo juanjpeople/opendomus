@@ -108,9 +108,9 @@ export class HouseholdLog extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") return new Response("expected websocket", { status: 426 });
     const identity = liveIdentity({
-      householdId: request.headers.get("X-OpenDomus-Household"),
-      userId: request.headers.get("X-OpenDomus-User"),
-      sessionId: request.headers.get("X-OpenDomus-Session"),
+      householdId: request.headers.get("X-Refugio-Household"),
+      userId: request.headers.get("X-Refugio-User"),
+      sessionId: request.headers.get("X-Refugio-Session"),
     });
     if (!identity) return new Response("unauthorized", { status: 401 });
     const atCapacity = () => {

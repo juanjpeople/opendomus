@@ -1,4 +1,4 @@
-package io.github.juanjpeople.opendomus;
+package ar.refugi.app;
 
 import com.getcapacitor.BridgeActivity;
 import android.os.Bundle;

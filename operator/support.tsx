@@ -23,7 +23,7 @@ export const getErrorMessage = (error: unknown) => error instanceof Error ? erro
 
 export async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
 
-  const response = await fetch(path, { method, credentials: "same-origin", redirect: "error", cache: "no-store", headers: { "X-OpenDomus-Operator": "browser", ...(body === undefined ? {} : { "Content-Type": "application/json" }) }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const response = await fetch(path, { method, credentials: "same-origin", redirect: "error", cache: "no-store", headers: { "X-Refugio-Operator": "browser", ...(body === undefined ? {} : { "Content-Type": "application/json" }) }, body: body === undefined ? undefined : JSON.stringify(body) });
 
   if (!response.ok) throw new CloudError(response.status);
   if (!response.headers.get("Content-Type")?.includes("application/json")) throw new CloudError(401);

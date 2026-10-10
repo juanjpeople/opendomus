@@ -115,7 +115,7 @@ jobs:
       - run: npm run e2e:local
       - uses: actions/upload-artifact@v7
         with:
-          name: opendomus-local
+          name: refugio-local
           path: |
             dist/**/*.tgz
             dist/**/*.tgz.sha256

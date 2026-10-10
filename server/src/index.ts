@@ -1203,9 +1203,9 @@ async function live(request: Request, env: Env, householdId: string) {
   if (!uuid.safeParse(householdId).success || !(await membership(env, householdId, session.user.id))) return json("not-found", 404);
   // Sobrescribir también encabezados que pudiera enviar un cliente: solo vale la sesión verificada.
   const headers = new Headers(request.headers);
-  headers.set("X-OpenDomus-Household", householdId);
-  headers.set("X-OpenDomus-User", session.user.id);
-  headers.set("X-OpenDomus-Session", session.session.id);
+  headers.set("X-Refugio-Household", householdId);
+  headers.set("X-Refugio-User", session.user.id);
+  headers.set("X-Refugio-Session", session.session.id);
   return householdLog(env, householdId).fetch(new Request(request, { headers }));
 }
 

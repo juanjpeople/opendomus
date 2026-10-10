@@ -18,13 +18,13 @@ trap cleanup EXIT
 
 timeout --signal=TERM --kill-after=15s 8m bash gradlew --no-daemon :app:connectedDebugAndroidTest \
   -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true \
-  -Pandroid.testInstrumentationRunnerArguments.class=io.github.juanjpeople.opendomus.NativeFlowTest
+  -Pandroid.testInstrumentationRunnerArguments.class=ar.refugi.app.NativeFlowTest
 
 # Same application ID, origin and runner-local debug key; no uninstall or clear-data command.
 bash gradlew --no-daemon :app:assembleDebug -PappVersionCode=2
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 timeout --signal=TERM --kill-after=15s 2m adb shell am instrument -w \
-  -e class io.github.juanjpeople.opendomus.UpgradeFlowTest \
+  -e class ar.refugi.app.UpgradeFlowTest \
   ar.refugi.app.test/androidx.test.runner.AndroidJUnitRunner \
   | tee app/build/reports/upgrade-test.txt
 # am instrument may exit 0 even when JUnit fails. Require an executed, successful test.

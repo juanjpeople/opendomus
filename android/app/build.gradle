@@ -16,7 +16,7 @@ def releaseStoreFile = signingValue('storeFile', 'ANDROID_KEYSTORE_FILE')
 def brandName = (System.getenv('NEXT_PUBLIC_APP_NAME') ?: '').trim() ?: 'Refugio'
 
 android {
-    namespace = "io.github.juanjpeople.opendomus"
+    namespace = "ar.refugi.app"
     compileSdk = rootProject.ext.compileSdkVersion
     buildFeatures {
         resValues = true

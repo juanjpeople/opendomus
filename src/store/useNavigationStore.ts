@@ -38,7 +38,7 @@ export const useNavigationStore = create<NavigationState>()(
           return { recent };
         }),
     }),
-    { name: houseStorageKey("opendomus-navigation"), version: 1 },
+    { name: houseStorageKey("refugio-navigation"), version: 1 },
   ),
 );
 

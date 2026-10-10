@@ -1,4 +1,4 @@
-package io.github.juanjpeople.opendomus;
+package ar.refugi.app;
 
 import android.app.Activity;
 import android.content.Intent;
