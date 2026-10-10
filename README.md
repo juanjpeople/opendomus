@@ -3,6 +3,8 @@
 Una app open source para organizar la casa, los proyectos y el inventario, con datos
 locales y sincronización cloud opcional. Licencia AGPL-3.0-or-later.
 
+Qué hay y qué sigue: [ROADMAP.md](ROADMAP.md). Cada funcionalidad, en [docs/features](docs/features/).
+
 ## Empezar en tu equipo
 
 Requiere Node.js 24. Desde este repositorio:

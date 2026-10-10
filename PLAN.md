@@ -1,6 +1,6 @@
-# 🏠 Refugiar: Plan de Implementación y Estado Actual
+# 🏠 Refugiar: arquitectura y especificaciones
 
-Este documento consolida el plan de trabajo, el estado del proyecto y el diseño de las próximas funcionalidades, para poder retomarlo en cualquier momento. Los principios que guían cada decisión están en [VALORES.md](VALORES.md); las convenciones de código, en la página **`/design`** de la app y en [CONTRIBUTING.md](CONTRIBUTING.md). El camino a producción (cuentas, sincronización, deploy, Android, suscripciones) está en [docs/PLAN_PRODUCCION.md](docs/PLAN_PRODUCCION.md).
+Este documento guarda la arquitectura y el diseño de las funcionalidades. Qué hay y qué sigue está en [ROADMAP.md](ROADMAP.md). Los principios que guían cada decisión están en [VALORES.md](VALORES.md); las convenciones de código, en la página **`/design`** de la app y en [CONTRIBUTING.md](CONTRIBUTING.md). El camino a producción (cuentas, sincronización, deploy, Android, suscripciones) está en [docs/PLAN_PRODUCCION.md](docs/PLAN_PRODUCCION.md).
 
 ---
 
@@ -8,71 +8,20 @@ Este documento consolida el plan de trabajo, el estado del proyecto y el diseño
 
 - **Cliente:** Next.js 16 + React 19, Ant Design 6 (tokens, sin Tailwind), framer-motion, lucide-react. Se instala como **PWA** y funciona sin conexión.
 - **Datos locales:** **Dexie.js** (IndexedDB). Cada cambio de esquema es una versión nueva con migración (`declareSchema` en `src/lib/db.ts`); hoy vamos por la **v9**. La misma cadena de migraciones actualiza los exports viejos al importarlos.
-- **Servidor / sincronización:** a definir (Node.js o Go + SQLite/PostgreSQL). Hasta que exista, los datos viven en cada dispositivo.
+- **Servidor / sincronización:** Cloudflare Worker + D1 + Durable Objects, con cifrado de extremo a extremo; las fotos cifradas van a Supabase Storage. Sin cuenta, los datos viven en cada dispositivo. Detalle en [docs/PLAN_PRODUCCION.md](docs/PLAN_PRODUCCION.md).
 - **Despliegue:** sitio estático (`out/`, sin servidor de Next): Cloudflare Pages en la nube o cualquier servidor web en la NAS. Más adelante, el servidor de sincronización en Docker (ver el plan de producción).
 
 ---
 
-## 🗺️ Roadmap
+## 🗺️ Hoja de ruta y estado actual
 
-### 📍 Fase 1: Los cimientos y el pañol (MVP)
-1. ✅ **Base:** sistema de diseño, permisos, ajustes por perfil, navegación, historial de acciones, español e inglés.
-2. ✅ **Lugares e inventario:** recintos → contenedores (anidables) → productos, con color e ícono, etiquetas QR imprimibles y escaneo.
-3. ✅ **Precios:** historial por producto, el más barato y dónde, comparación online a pedido.
-4. ✅ **Consumo:** "Usé" con deshacer, consumo de los últimos 30 días, deshacer desde el historial y "Cociné esto" desde las recetas → [especificación](#1-consumo-y-descuento-de-insumos).
-5. ✅ **Listas de compras:** varias listas con presupuesto (la de la casa recibe las sugerencias de "Para revisar"), estimado, reposición al comprar y precio pagado → [especificación](#2-lista-de-compras-con-candidatos-automáticos).
-6. ✅ **PWA:** manifest, íconos, service worker con precache y aviso de versión nueva.
-
-### 📍 Fase 2: Cocina y vida en común
-1. ✅ **Miembros de la familia** (alta, roles, avatar, cumpleaños) con **PIN, biometría y bloqueo automático**.
-2. ✅ **Calendario compartido** (semana/mes, repetición, participantes, cumpleaños automáticos) → [especificación](#5-calendario-compartido).
-3. ✅ **Comidas y recetas** con fotos, comentarios, "Cociné esto" y "Agregar lo que falta" → [especificación](#3-comidas-y-recetas).
-4. **Votaciones** (empezando por "¿qué comemos?") → [especificación](#4-votaciones).
-
-### 📍 Fase 3: Cuentas claras y economía
-1. Registro de transacciones y orígenes de fondos (los precios de Fase 1 alimentan esto).
-2. Panel de transparencia: quién pagó qué, balances.
-3. Presupuestos y metas.
-
-### 📍 Fase 4: Proyectos, préstamos y roles
-0. ✅ **Proyectos** (`/proyectos`): agrupan listas de compras y suman su presupuesto ("Renovación del baño" → "Sanitarios", "Cerámicos"…).
-1. Gestión de usuarios y roles reales: cuentas, invitaciones y sincronización (ver el plan de producción).
-2. Inventarios temporales y préstamo de herramientas.
-
-### 📍 Fase 5: Hub familiar y bóveda
-1. Caja fuerte documental (PDFs, fotos, garantías).
-2. Chat interno con avisos automáticos del sistema.
-
-### 📍 Fase 6: Entretenimiento (NAS) y preparación SaaS
-1. Integración NAS (Jellyfin/Plex) y modo party sincronizado.
-2. Estructura multitenant para un SaaS público.
-
----
-
-## 📝 Estado actual
-
-- **Sistema de diseño (`/design`, solo admin):** principios, tokens, movimiento, componentes, formularios, tablas y permisos, con código de ejemplo.
-- **Shell:** menú completo / solo íconos / oculto, atrás-adelante, migas de pan, búsqueda global `Ctrl/⌘+K` (páginas, contenedores por nombre o código, acciones) y atajos.
-- **Ajustes por perfil (`/ajustes`):** tema, color de marca, tamaño de letra, densidad, animaciones, idioma, menú. Datos: exportar a JSON, borrar caché, borrar todo (con confirmación escrita).
-- **Sesión y permisos:** selector de perfiles y política RBAC única en `src/lib/auth/permissions.ts`. Fail-closed.
-  - ⚠️ Mientras la app sea 100 % cliente, los permisos ordenan la experiencia pero no son seguridad real: la matriz se evalúa en el servidor cuando exista.
-- **Historial de acciones:** cada servicio registra quién hizo qué dentro de la misma transacción; ajustes seguidos se agrupan.
-- **Consumo:** botón "Usé" en cada producto (con "Deshacer" en el aviso), consumo registrable en cualquier cantidad desde el detalle, y estadística de los últimos 30 días. Los cambios de cantidad se deshacen desde el historial durante 24 h: se revierte la diferencia, no se pisa lo que otros hicieron después.
-- **Lista de compras (`/compras`):** lo que cruza el mínimo entra en "Para revisar" (se suma con la cantidad que falta o se descarta, con "no volver a sugerir"); anotar con autocompletado vinculado al inventario; total estimado con el último precio y aviso de dónde está más barato; al marcar algo vinculado se repone el inventario en la misma transacción, y se puede registrar cuánto salió.
-- **PWA:** instalable (Ajustes → Acerca de, solo si el navegador lo permite), funciona sin conexión (páginas fijas y de cada contenedor precargadas), etiqueta "Sin conexión" en el header y aviso discreto cuando hay una versión nueva.
-- **Recetas (`/recetas`):** ingredientes vinculados al inventario (o texto libre), pasos, etiquetas, porciones. Cada receta dice si se puede cocinar con lo que hay (hay todo / falta poco / faltan cosas) y la lista se filtra por "se pueden hacer ya". "Cociné esto" muestra qué se descuenta y deja ajustarlo; "Agregar lo que falta" lo anota en la lista. Fotos comprimidas en el dispositivo (galería con portada) y comentarios con puntaje (caritas para los chicos). Detalle y editor en `/recetas/ver?id=` y `/recetas/editar?id=`: páginas fijas, sin rutas dinámicas.
-- **Listas y proyectos (`/compras?lista=`, `/proyectos`):** cada lista tiene presupuesto opcional; se calcula lo gastado (precio pagado anotado), lo comprado sin precio (último precio) y lo que falta (último precio o precio estimado a mano), con aviso cuando se pasa. Los ítems se mueven entre listas; las listas se archivan (su gasto queda). Un proyecto suma sus listas de la misma moneda contra su presupuesto total.
-- **Datos:** exportar e **importar** JSON (con resumen y confirmación; los exports viejos se migran).
-- **Tests:** `npm test` cubre permisos, dominio de inventario, compras, historial, precios y traductor.
-- **Inventario (`/inventario`):** plano de la casa con recintos (color, ícono) y contenedores adentro, con barra de stock. Los contenedores se anidan hasta 3 niveles (placard → puerta → cajón; cama → cajones), cada uno con su etiqueta QR. Página por contenedor con productos, detalle, precios, etiqueta e historial. QR en `/c/<código>` y escáner en `/inventario/escanear`.
-- **Internacionalización:** español e inglés, con diccionario tipado (`src/i18n/messages/`).
-- **Patrón por módulo** en `src/features/<modulo>/`: `domain.ts` (tipos, reglas, validación) → `service.ts` (único que escribe + permisos + historial) → `hooks.ts` (lecturas reactivas y acciones) → `components/`.
+Lo que está hecho, lo que se está haciendo y las ideas anotadas viven en [ROADMAP.md](ROADMAP.md). Cada funcionalidad tiene su página en [docs/features](docs/features/). Este archivo guarda la arquitectura, las especificaciones y la seguridad.
 
 ---
 
 ## 📐 Especificaciones de las próximas funcionalidades
 
-Consumo, lista de compras, calendario y recetas ya están hechos (ver Estado actual). Sigue: **votaciones**.
+Consumo, lista de compras, calendario y recetas ya están hechos (ver [docs/features](docs/features/)). Sigue: **votaciones**.
 
 ### 1. Consumo y descuento de insumos
 
