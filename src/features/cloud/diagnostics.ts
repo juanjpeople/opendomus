@@ -2,6 +2,7 @@
  * Diagnóstico para soporte: lo justo para entender un problema de sincronización, sin nada de la
  * persona ni de la casa (ni nombres, ni emails, ni contenido). Se copia y se manda a mano.
  */
+import { BRAND } from "@/config/brand";
 import { APP_VERSION } from "@/features/settings/service";
 import { describeUserAgent, deviceLabel } from "@/lib/device";
 import { getSyncLink } from "@/lib/sync/middleware";
@@ -40,7 +41,7 @@ export async function diagnosticText(mode: string, sync: SyncSnapshot): Promise<
   const persisted = await isStoragePersisted();
   const link = getSyncLink();
   return [
-    `OpenDomus ${APP_VERSION}`,
+    `${BRAND.name} ${APP_VERSION}`,
     `Dispositivo: ${deviceLabel(ua) || "?"}${mobile ? " (celular)" : ""}${standalone ? " · app instalada" : ""}`,
     `En línea: ${typeof navigator !== "undefined" && navigator.onLine ? "sí" : "no"}`,
     `Modo: ${mode}`,

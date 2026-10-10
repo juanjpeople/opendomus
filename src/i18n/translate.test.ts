@@ -21,6 +21,11 @@ describe("traductor", () => {
     assert.equal(t("home.hello", { greeting: "Hola" }), "Hola, {name}");
   });
 
+  test("el nombre de la marca sale de {app}, sin pasarlo en cada texto", () => {
+    assert.equal(t("common.appName"), "OpenDomus");
+    assert.equal(t("prices.emptyText"), "Registrá lo que pagaste o viste y OpenDomus te muestra el más barato.");
+  });
+
   test("elige el plural según count", () => {
     assert.equal(t("home.attention", { count: 1 }), "1 cosa necesita atención");
     assert.equal(t("home.attention", { count: 3 }), "3 cosas necesitan atención");

@@ -5,15 +5,30 @@ if (buildVersionCode < 1 || buildVersionCode > 2100000000) {
     throw new GradleException('appVersionCode must be between 1 and 2100000000')
 }
 
+// Firma de producción: android/keystore.properties (local, ignorado por git) o variables de entorno (CI).
+def signingProps = new Properties()
+def signingFile = rootProject.file('keystore.properties')
+if (signingFile.exists()) signingFile.withInputStream { signingProps.load(it) }
+def signingValue = { String key, String env -> signingProps.getProperty(key) ?: System.getenv(env) }
+def releaseStoreFile = signingValue('storeFile', 'ANDROID_KEYSTORE_FILE')
+
+// Nombre visible: el mismo de la web (NEXT_PUBLIC_APP_NAME), sin tocar el applicationId.
+def brandName = (System.getenv('NEXT_PUBLIC_APP_NAME') ?: '').trim() ?: 'OpenDomus'
+
 android {
     namespace = "io.github.juanjpeople.opendomus"
     compileSdk = rootProject.ext.compileSdkVersion
+    buildFeatures {
+        resValues = true
+    }
     defaultConfig {
         applicationId "io.github.juanjpeople.opendomus"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode buildVersionCode
         versionName "0.1.0"
+        resValue "string", "app_name", brandName
+        resValue "string", "title_activity_main", brandName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -21,8 +36,19 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (releaseStoreFile) {
+            release {
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword signingValue('storePassword', 'ANDROID_KEYSTORE_PASSWORD')
+                keyAlias signingValue('keyAlias', 'ANDROID_KEY_ALIAS')
+                keyPassword signingValue('keyPassword', 'ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
+            if (releaseStoreFile) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
