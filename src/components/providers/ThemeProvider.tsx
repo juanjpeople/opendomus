@@ -10,6 +10,7 @@ import { useIsDark } from "@/hooks/useIsDark";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n, type Locale } from "@/i18n";
 import { getSkin } from "@/skins/skins";
+import { SkinContext } from "@/skins/useSkin";
 import { createTheme, FONT_SIZES, REDUCED_MOTION } from "@/lib/theme";
 export { createTheme, FONT_SIZES } from "@/lib/theme";
 
@@ -49,7 +50,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         {/* framer-motion: "sistema" respeta prefers-reduced-motion del sistema operativo. */}
         <MotionConfig reducedMotion={REDUCED_MOTION[motion]}>
           {/* <App> habilita message/notification/modal con el tema actual vía App.useApp(). */}
-          <App>{children}</App>
+          <SkinContext.Provider value={skin}>
+            <App>{children}</App>
+          </SkinContext.Provider>
         </MotionConfig>
       </LucideProvider>
     </ConfigProvider>

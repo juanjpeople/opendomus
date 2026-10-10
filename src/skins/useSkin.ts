@@ -1,10 +1,16 @@
 "use client";
 
-import { usePreferences } from "@/hooks/usePreferences";
-import { getSkin } from "./skins";
+import { createContext, useContext } from "react";
+import { SKINS } from "./skins";
 import type { Skin } from "./types";
 
-/** El skin del perfil actual (el de "Casa" antes de hidratar, igual que el resto de las preferencias). */
+/**
+ * El skin vigente. Lo provee `ThemeProvider` (según las preferencias del perfil); fuera de él, como en
+ * el panel del operador, vale "Casa". No lee el store a propósito: así las piezas compartidas no arrastran
+ * sesión ni base de datos a quien no las usa.
+ */
+export const SkinContext = createContext<Skin>(SKINS.casa);
+
 export function useSkin(): Skin {
-  return getSkin(usePreferences().skin);
+  return useContext(SkinContext);
 }
