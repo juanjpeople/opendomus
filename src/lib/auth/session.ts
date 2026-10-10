@@ -47,7 +47,7 @@ export const useSessionStore = create<SessionState>()(
         set({ currentProfileId: null });
       },
     }),
-    { name: houseStorageKey("refugio-session"), version: 1 },
+    { name: houseStorageKey("refugiar-session"), version: 1 },
   ),
 );
 
@@ -70,7 +70,7 @@ export const useLockStore = create<LockState>()(
       lock: () => set({ unlockedProfileId: null }),
       touch: () => set({ lastActivity: Date.now() }),
     }),
-    { name: houseStorageKey("refugio-lock"), version: 1, storage: createJSONStorage(() => sessionStorage) },
+    { name: houseStorageKey("refugiar-lock"), version: 1, storage: createJSONStorage(() => sessionStorage) },
   ),
 );
 

@@ -20,7 +20,7 @@ interface NavCardProps {
 }
 
 /**
- * La tarjeta firma de Refugio: lleva a otra página. Al pasar el mouse sube, el ícono gira
+ * La tarjeta firma de Refugiar: lleva a otra página. Al pasar el mouse sube, el ícono gira
  * y crece apenas, y aparece una flecha. En grillas, envolverla en `StaggerItem`.
  */
 export function NavCard({ href, icon, color, title, children }: NavCardProps) {

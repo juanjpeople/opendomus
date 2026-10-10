@@ -1,4 +1,4 @@
-# Cómo contribuir a Refugio
+# Cómo contribuir a Refugiar
 
 Gracias por sumarte. Antes de escribir código, leé [VALORES.md](VALORES.md): cada decisión se mide contra esos valores y lineamientos. Las convenciones visuales y de código están en la página `/design` de la app.
 
@@ -42,7 +42,7 @@ Reglas que no se negocian:
 
 ## Licencia
 
-Refugio es software libre bajo la [GNU AGPL v3](LICENSE) o posterior. Al contribuir, aceptás que tu aporte se publique bajo esa misma licencia.
+Refugiar es software libre bajo la [GNU AGPL v3](LICENSE) o posterior. Al contribuir, aceptás que tu aporte se publique bajo esa misma licencia.
 
 ## Commits
 

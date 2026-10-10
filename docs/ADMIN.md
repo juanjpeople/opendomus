@@ -67,8 +67,8 @@ instancias; no reemplaza una protección completa contra denegación de servicio
 
 ## CLI opcional
 
-En `.env.admin` guardar `REFUGIO_API=https://HOST-DE-LA-APP` y
-`REFUGIO_OPERATOR_KEY` con la clave aleatoria. `npm run admin -- login` solicita el
+En `.env.admin` guardar `REFUGIAR_API=https://HOST-DE-LA-APP` y
+`REFUGIAR_OPERATOR_KEY` con la clave aleatoria. `npm run admin -- login` solicita el
 código TOTP y guarda una sesión de una hora en `.env.admin.session.json` (ignorado).
 Los comandos de consulta/licencias siguen disponibles; `npm run admin -- logout`
 revoca la sesión guardada. Proteger ambos archivos como credenciales. No se usa

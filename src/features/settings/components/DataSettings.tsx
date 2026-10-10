@@ -49,7 +49,7 @@ export function DataSettings() {
   const onExport = () =>
     run("export", async () => {
       const data = await exportAllData(user);
-      const saved = await downloadJson(data, `refugio-${new Date().toISOString().slice(0, 10)}.json`);
+      const saved = await downloadJson(data, `refugiar-${new Date().toISOString().slice(0, 10)}.json`);
       if (saved) message.success(t("settings.data.export.done"));
     });
 

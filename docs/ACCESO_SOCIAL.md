@@ -11,7 +11,7 @@ cifrada. No reemplaza la contraseña de cifrado ni el kit de recuperación.
    debe confirmar el mismo email verificado; no se enlazan cuentas automáticamente por
    coincidencia de email. Una cuenta OAuth nueva no crea una cuenta doméstica implícita.
 3. En `/cuenta?modo=entrar`, elegir el proveedor previamente vinculado.
-4. Al volver, introducir la contraseña de Refugio para abrir las claves localmente.
+4. Al volver, introducir la contraseña de Refugiar para abrir las claves localmente.
    Este paso solo consulta `/api/me`; no envía la contraseña al servidor ni al proveedor.
 
 La creación y aceptación de invitaciones siguen usando los flujos existentes. Los

@@ -19,7 +19,7 @@ export interface SyncLink {
   deviceId: string;
 }
 
-const LINK_KEY = houseStorageKey("refugio-sync-link");
+const LINK_KEY = houseStorageKey("refugiar-sync-link");
 
 function readLink(): SyncLink | null {
   if (DEMO_ENABLED) return null;
@@ -56,8 +56,8 @@ export function setSyncLink(next: SyncLink | null) {
   }
 }
 
-const UNTRACKED = "__refugioUntracked";
-const NOTIFY = "__refugioNotify";
+const UNTRACKED = "__refugiarUntracked";
+const NOTIFY = "__refugiarNotify";
 
 /**
  * Escrituras que no se suben: lo que llega de otros dispositivos y la limpieza propia de este
@@ -125,7 +125,7 @@ async function trackedMutate(down: DBCore, table: DBCoreTable, name: SyncTable, 
 
 export const syncMiddleware: Middleware<DBCore> = {
   stack: "dbcore",
-  name: "RefugioSync",
+  name: "RefugiarSync",
   // Debajo de las capas de Dexie (caché, observabilidad, hooks: niveles -1 a 2), pegada a
   // IndexedDB: esas capas leen el contexto de la transacción de Dexie, que no sobrevive a los
   // `await` de acá. Ellas siguen viendo cada escritura de la app, porque pasa por arriba.

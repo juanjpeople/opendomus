@@ -13,7 +13,7 @@ def signingValue = { String key, String env -> signingProps.getProperty(key) ?: 
 def releaseStoreFile = signingValue('storeFile', 'ANDROID_KEYSTORE_FILE')
 
 // Nombre visible: el mismo de la web (NEXT_PUBLIC_APP_NAME). El applicationId es fijo (ver docs/ANDROID.md).
-def brandName = (System.getenv('NEXT_PUBLIC_APP_NAME') ?: '').trim() ?: 'Refugio'
+def brandName = (System.getenv('NEXT_PUBLIC_APP_NAME') ?: '').trim() ?: 'Refugiar'
 
 android {
     namespace = "ar.refugi.app"

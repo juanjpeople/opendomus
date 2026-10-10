@@ -15,7 +15,7 @@
  *   npm run admin -- feedback
  *   npm run admin -- avisos
  *
- * Necesita REFUGIO_API y una sesión creada con login (clave de operador + TOTP).
+ * Necesita REFUGIAR_API y una sesión creada con login (clave de operador + TOTP).
  * Las cuentas domésticas no otorgan permisos globales. Ver docs/ADMIN.md.
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -31,7 +31,7 @@ function loadEnvFile(path: string) {
 }
 
 loadEnvFile(".env.admin");
-const API = (process.env.REFUGIO_API ?? "").replace(/\/$/, "");
+const API = (process.env.REFUGIAR_API ?? "").replace(/\/$/, "");
 
 
 function flag(args: string[], name: string) {
@@ -44,7 +44,7 @@ async function call<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string
   const response = await fetch(`${API}/api/admin${path}`, {
     method,
     redirect: "error",
-    headers: { Cookie: operatorCookie(url.origin), Origin: url.origin, "X-Refugio-Operator": "browser", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    headers: { Cookie: operatorCookie(url.origin), Origin: url.origin, "X-Refugiar-Operator": "browser", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = (await response.json().catch(() => null)) as (T & { error?: string }) | null;
@@ -64,7 +64,7 @@ async function main(args: string[]) {
     console.log(operatorDiagnostics(process.env).join("\n"));
     return;
   }
-  if (!API) throw new Error("Falta REFUGIO_API: usá el origen de Refugio.");
+  if (!API) throw new Error("Falta REFUGIAR_API: usá el origen de Refugiar.");
   operatorOrigin(API);
   if (command === "login") return operatorLogin(operatorOrigin(API).origin);
   if (command === "logout") return operatorLogout(operatorOrigin(API).origin);

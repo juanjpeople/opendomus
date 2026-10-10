@@ -29,7 +29,7 @@ const PARTICLE_ROUTES = [
 
 const INTRO_END = 3.2;
 
-/** Partes de la casa que se pueden resaltar (cada valor de Refugio enciende una). */
+/** Partes de la casa que se pueden resaltar (cada valor de Refugiar enciende una). */
 export type HouseHighlight = "datos" | "offline" | "cuentas" | "familia" | "abierto" | "calma";
 
 interface HouseProps {

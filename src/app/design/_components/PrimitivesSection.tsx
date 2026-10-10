@@ -119,7 +119,7 @@ function StatesBlock() {
             <EmptyState
               icon={PackageOpen}
               title="Todavía no hay productos"
-              description="Cargá el primero y Refugio te avisa cuando quede poco."
+              description="Cargá el primero y Refugiar te avisa cuando quede poco."
               action={
                 <Button type="primary" icon={<Plus />}>
                   Agregar

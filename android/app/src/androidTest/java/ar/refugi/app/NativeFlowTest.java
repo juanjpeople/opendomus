@@ -129,7 +129,7 @@ public class NativeFlowTest {
         evaluate(scenario, "document.querySelector('main .ant-btn-primary').click()");
         await(scenario, "[...document.querySelectorAll('h5')].some(e => e.textContent === 'Administrador')");
         evaluate(scenario, "[...document.querySelectorAll('h5')].find(e => e.textContent === 'Administrador').click()");
-        await(scenario, "JSON.parse(localStorage.getItem('refugio-session-tests') || '{}').state?.currentProfileId");
+        await(scenario, "JSON.parse(localStorage.getItem('refugiar-session-tests') || '{}').state?.currentProfileId");
     }
 
     private void openContainer(ActivityScenario<MainActivity> scenario) {
@@ -163,7 +163,7 @@ public class NativeFlowTest {
             tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Exportar|Export)$/.test(b.textContent.trim()))");
             await(scenario, "/Exportación lista|Export ready/.test(document.body.innerText)");
             JSONObject data = new JSONObject(new String(Files.readAllBytes(backup.toPath()), StandardCharsets.UTF_8));
-            assertEquals("Refugio", data.getString("app"));
+            assertEquals("Refugiar", data.getString("app"));
             JSONObject tables = data.getJSONObject("tables");
             JSONArray photos = tables.getJSONArray("photos");
             int containerPhotos = 0;

@@ -45,7 +45,7 @@ public class UpgradeFlowTest {
         Context context = ApplicationProvider.getApplicationContext();
         assertEquals(2, context.getPackageManager().getPackageInfo(context.getPackageName(), 0).getLongVersionCode());
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
-            await(scenario, "window.Capacitor && JSON.parse(localStorage.getItem('refugio-session-tests') || '{}').state?.currentProfileId");
+            await(scenario, "window.Capacitor && JSON.parse(localStorage.getItem('refugiar-session-tests') || '{}').state?.currentProfileId");
             scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario/ver?id=" + NativeFlowTest.CONTAINER + "&" + NativeFlowTest.SAMPLE));
             await(scenario, "document.body.innerText.includes('Android importado') && document.body.innerText.includes('Cables Android') && [...document.querySelectorAll('.od-photo-tile img')].some(i => i.naturalWidth === 32)");
         }

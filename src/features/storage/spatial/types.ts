@@ -1,4 +1,4 @@
-/** Superficie mínima de WebXR usada por Refugio. Sin polyfill que simule tracking espacial. */
+/** Superficie mínima de WebXR usada por Refugiar. Sin polyfill que simule tracking espacial. */
 export type XRSpaceLike = EventTarget;
 export interface XRTransformLike { matrix: Float32Array; inverse: { matrix: Float32Array } }
 export interface XRViewLike { projectionMatrix: Float32Array; transform: XRTransformLike }

@@ -15,8 +15,8 @@ for (const house of ['demo', 'tests']) {
       const { api, apiBytes, CLOUD_ENABLED } = await import('@/lib/cloud/api');
       const { getSyncLink, setSyncLink } = await import('@/lib/sync/middleware');
       assert.equal(mode.SAMPLE_HOUSE, '${house}');
-      assert.notEqual(mode.HOUSE_DB, 'RefugioDB');
-      assert.notEqual(mode.houseStorageKey('refugio-session'), 'refugio-session');
+      assert.notEqual(mode.HOUSE_DB, 'RefugiarDB');
+      assert.notEqual(mode.houseStorageKey('refugiar-session'), 'refugiar-session');
       assert.equal(CLOUD_ENABLED, false);
       setSyncLink({householdId:'other',userId:'other',deviceId:'other'});
       assert.equal(getSyncLink(), null);

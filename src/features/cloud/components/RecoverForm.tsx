@@ -16,7 +16,7 @@ interface Values {
 
 /**
  * "Olvidé mi contraseña", con el kit de recuperación. No pasa por el email: el kit es lo único que
- * abre tus claves sin la contraseña (ni Refugio puede). Al terminar se cierran todas tus sesiones
+ * abre tus claves sin la contraseña (ni Refugiar puede). Al terminar se cierran todas tus sesiones
  * y te damos un kit nuevo (el usado deja de servir).
  */
 export function RecoverForm({ onRecovered }: { onRecovered: (recoveryCode: string) => void }) {

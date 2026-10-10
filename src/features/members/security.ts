@@ -55,7 +55,7 @@ export async function verifyPin(pin: string, stored: PinHash): Promise<boolean> 
 
 // --- Intentos fallidos (frena adivinar el PIN a prueba y error) ------------------
 
-const LOCKOUT_KEY = "refugio-lockout";
+const LOCKOUT_KEY = "refugiar-lockout";
 const FREE_ATTEMPTS = 5;
 
 type Lockouts = Record<string, { fails: number; until: number }>;

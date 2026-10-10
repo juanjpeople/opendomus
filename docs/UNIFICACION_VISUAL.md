@@ -1,6 +1,6 @@
 # Unificación visual
 
-Plan para que toda la app se vea, se mueva y hable como la versión original de Refugio.
+Plan para que toda la app se vea, se mueva y hable como la versión original de Refugiar.
 Está pensado para que lo pueda seguir cualquier persona o agente, una fase por PR.
 
 **La referencia es `/design`.** Usa el código real, y ahí están la firma visual, los tokens de
@@ -362,7 +362,7 @@ local acumulado se cerró con `EMFILE`; la repetición con servidor nuevo pasó.
   - enums con etiquetas legibles;
   - fechas con locale;
   - el riesgo en `Descriptions`, no en JSON.
-- [x] **Cabecera:** `HouseMark` + "Refugio" + Tag "Operador".
+- [x] **Cabecera:** `HouseMark` + "Refugiar" + Tag "Operador".
 
 Verificado: 180 checks (`npm run check`), build normal y bundle de operador.
 El recorrido privado pasó en escritorio y a 320 px con clave/TOTP sintéticos:

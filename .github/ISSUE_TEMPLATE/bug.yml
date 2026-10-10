@@ -22,5 +22,5 @@ body:
   - type: input
     id: version
     attributes:
-      label: Versión de Refugio
+      label: Versión de Refugiar
       description: Está en Ajustes → Acerca de.

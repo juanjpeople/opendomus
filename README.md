@@ -1,4 +1,4 @@
-# Refugio
+# Refugiar
 
 Una app open source para organizar la casa, los proyectos y el inventario, con datos
 locales y sincronización cloud opcional. Licencia AGPL-3.0-or-later.
@@ -176,7 +176,7 @@ las versiones anteriores sigan recibiendo los datos que conocen durante la trans
 
 ## License
 
-Refugio is free software under the [GNU AGPL v3](LICENSE) (or later): you can use,
+Refugiar is free software under the [GNU AGPL v3](LICENSE) (or later): you can use,
 study, modify and share it. If you run a modified version as a service for others, you
 must offer them its source code too.
 

@@ -24,7 +24,7 @@ export const DERIVED_AUTH_KEY_LENGTH = 43;
 
 export function authOptions(database: BetterAuthOptions["database"], env: AuthEnv): BetterAuthOptions {
   return {
-    appName: "Refugio",
+    appName: "Refugiar",
     database,
     secret: env.secret,
     baseURL: env.baseURL,

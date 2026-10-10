@@ -47,7 +47,7 @@ export function CryptoSupportGate({ children }: { children: ReactNode }) {
 }
 
 /**
- * Primer paso de "Crear mi casa en la nube": la licencia. Refugio es gratis en el dispositivo;
+ * Primer paso de "Crear mi casa en la nube": la licencia. Refugiar es gratis en el dispositivo;
  * la nube es opcional y hoy está en beta por invitación. Se valida antes de crear la cuenta, así
  * nadie arma una cuenta que después no puede usar.
  */

@@ -11,8 +11,8 @@ Ambas casas incluyen 84 productos/herramientas/insumos, 8 recintos, 17 contenedo
 Hay stock normal, bajo y agotado; herramientas que no generan compras automáticas;
 contenedores anidados y códigos QR válidos. No son personas conectadas ni precios reales.
 
-Cada casa se guarda en una base local distinta: `RefugioDB` (habitual),
-`RefugioDemoDB` (demo), `RefugioTestDB` (pruebas). La selección se conserva por
+Cada casa se guarda en una base local distinta: `RefugiarDB` (habitual),
+`RefugiarDemoDB` (demo), `RefugiarTestDB` (pruebas). La selección se conserva por
 pestaña y las sesiones, bloqueo, navegación y modo de datos tienen claves separadas.
 **Volver a mi casa** recupera la habitual sin reemplazar sus datos. Los ejemplos no
 usan cuentas, sincronización, invitaciones ni API. No demuestran colaboración real.

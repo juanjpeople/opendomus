@@ -73,13 +73,13 @@ let adminSession = "";
 function adminToken() { return "ab".repeat(32); }
 async function adminCall(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown, token = adminToken()) {
   if (!adminSession && token === adminToken()) {
-    const login = await fetch(API + "/api/admin/auth/login", { method: "POST", headers: { Origin: API, "Content-Type": "application/json", "X-Refugio-Operator": "browser" }, body: JSON.stringify({ key: token, code: await operatorTotp("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", Math.floor(Date.now() / 30000)) }) });
+    const login = await fetch(API + "/api/admin/auth/login", { method: "POST", headers: { Origin: API, "Content-Type": "application/json", "X-Refugiar-Operator": "browser" }, body: JSON.stringify({ key: token, code: await operatorTotp("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", Math.floor(Date.now() / 30000)) }) });
     assert.equal(login.status, 200);
     adminSession = login.headers.get("set-cookie")!.split(";")[0];
   }
   const response = await fetch(`${API}/api/admin${path}`, {
     method,
-    headers: { Cookie: token === adminToken() ? adminSession : "", Origin: API, "X-Refugio-Operator": "browser", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    headers: { Cookie: token === adminToken() ? adminSession : "", Origin: API, "X-Refugiar-Operator": "browser", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   return { status: response.status, body: JSON.parse(await response.text() || "null") };
@@ -364,7 +364,7 @@ test("cuenta, casa, invitación y unión, de punta a punta y cifrado", async (t)
   const other = devices.body.devices.find((device: { current: boolean }) => !device.current);
   const currentDevice = devices.body.devices.find((device: { current: boolean }) => device.current);
   // Los encabezados internos falsificados no pueden cambiar la identidad del socket.
-  const tabletLive = await persistentLive(tablet, { "X-Refugio-Session": currentDevice.id, "X-Refugio-User": flor.userId });
+  const tabletLive = await persistentLive(tablet, { "X-Refugiar-Session": currentDevice.id, "X-Refugiar-User": flor.userId });
   const retainedLive = await persistentLive(anaAgain);
   assert.equal((await flor.client.call("DELETE", `/api/account/devices/${other.id}`)).status, 200);
   assert.ok((await tablet.call("GET", "/api/me")).body.user); // Otra cuenta no puede revocarlo.

@@ -17,7 +17,7 @@ export interface VaultEntry {
   savedAt: number;
 }
 
-const vault = new Dexie("RefugioVault") as Dexie & { identities: EntityTable<VaultEntry, "userId"> };
+const vault = new Dexie("RefugiarVault") as Dexie & { identities: EntityTable<VaultEntry, "userId"> };
 vault.version(1).stores({ identities: "userId" });
 
 export async function saveIdentity(entry: VaultEntry) {

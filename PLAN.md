@@ -1,4 +1,4 @@
-# 🏠 Refugio: Plan de Implementación y Estado Actual
+# 🏠 Refugiar: Plan de Implementación y Estado Actual
 
 Este documento consolida el plan de trabajo, el estado del proyecto y el diseño de las próximas funcionalidades, para poder retomarlo en cualquier momento. Los principios que guían cada decisión están en [VALORES.md](VALORES.md); las convenciones de código, en la página **`/design`** de la app y en [CONTRIBUTING.md](CONTRIBUTING.md). El camino a producción (cuentas, sincronización, deploy, Android, suscripciones) está en [docs/PLAN_PRODUCCION.md](docs/PLAN_PRODUCCION.md).
 
@@ -174,7 +174,7 @@ Consumo, lista de compras, calendario y recetas ya están hechos (ver Estado act
 - **2FA real:** TOTP (apps de autenticación) y passkeys verificadas en el servidor. Sin servidor, un segundo factor guardado en el mismo dispositivo que los datos no agrega seguridad, por eso no se implementó.
 - La matriz de permisos se evalúa también en el servidor.
 
-**¿Vault de contraseñas?** Decisión: **no construir un gestor de contraseñas propio** (es de lo más sensible que existe y un error es carísimo). Para eso, **integrar Vaultwarden** (compatible con Bitwarden, self-hosted en la misma NAS): enlace desde Refugio y, a futuro, SSO. La **bóveda** de Refugio (Fase 5) guarda información de la casa (wifi, pólizas, garantías, documentos), cifrada con el mismo esquema que el cifrado local.
+**¿Vault de contraseñas?** Decisión: **no construir un gestor de contraseñas propio** (es de lo más sensible que existe y un error es carísimo). Para eso, **integrar Vaultwarden** (compatible con Bitwarden, self-hosted en la misma NAS): enlace desde Refugiar y, a futuro, SSO. La **bóveda** de Refugiar (Fase 5) guarda información de la casa (wifi, pólizas, garantías, documentos), cifrada con el mismo esquema que el cifrado local.
 
 ## 🚀 Pendientes técnicos
 

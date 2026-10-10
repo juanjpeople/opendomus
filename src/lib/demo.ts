@@ -5,9 +5,9 @@ function selectedHouse(): SampleHouse | null {
   if (typeof window === "undefined") return DEMO_BUILD ? "demo" : null;
   const requested = new URLSearchParams(window.location.search).get("house");
   try {
-    if (requested === "demo" || requested === "tests") sessionStorage.setItem("refugio-sample-house", requested);
-    else if (requested === "home") sessionStorage.removeItem("refugio-sample-house");
-    const stored = sessionStorage.getItem("refugio-sample-house");
+    if (requested === "demo" || requested === "tests") sessionStorage.setItem("refugiar-sample-house", requested);
+    else if (requested === "home") sessionStorage.removeItem("refugiar-sample-house");
+    const stored = sessionStorage.getItem("refugiar-sample-house");
     return stored === "demo" || stored === "tests" ? stored : DEMO_BUILD ? "demo" : null;
   } catch {
     // Never open the real house when an explicit sample selection could not be saved.
@@ -17,7 +17,7 @@ function selectedHouse(): SampleHouse | null {
 }
 export const SAMPLE_HOUSE = selectedHouse();
 export const DEMO_ENABLED = SAMPLE_HOUSE !== null;
-export const HOUSE_DB = SAMPLE_HOUSE === "tests" ? "RefugioTestDB" : DEMO_ENABLED ? "RefugioDemoDB" : "RefugioDB";
+export const HOUSE_DB = SAMPLE_HOUSE === "tests" ? "RefugiarTestDB" : DEMO_ENABLED ? "RefugiarDemoDB" : "RefugiarDB";
 export function houseStorageKey(key: string): string {
   return SAMPLE_HOUSE ? `${key}-${SAMPLE_HOUSE}` : key;
 }

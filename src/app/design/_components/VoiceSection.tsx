@@ -24,7 +24,7 @@ const EXAMPLES = [
   { no: "Cámara y AR · AR espacial · Mirar y encontrar (tres nombres)", yes: "Cámara, con modos: Escanear QR · Mirar y encontrar · AR" },
 ] as const;
 
-/** Cómo habla Refugio. La voz es parte de la identidad tanto como el color. */
+/** Cómo habla Refugiar. La voz es parte de la identidad tanto como el color. */
 export function VoiceSection() {
   const { token } = theme.useToken();
 
@@ -32,7 +32,7 @@ export function VoiceSection() {
     <DemoBlock
       id="voz"
       title="Voz y textos"
-      description="Cómo habla Refugio. Un texto largo o frío se nota tanto como un color fuera de lugar. Ningún texto se escribe en el componente: todo pasa por t() (esta página es la única excepción, porque es documentación interna)."
+      description="Cómo habla Refugiar. Un texto largo o frío se nota tanto como un color fuera de lugar. Ningún texto se escribe en el componente: todo pasa por t() (esta página es la única excepción, porque es documentación interna)."
       code={`
 // i18n/messages/es.ts es la fuente; en.ts está tipado contra ella (falta una clave = no compila).
 // Claves: módulo → parte de la pantalla → elemento.

@@ -1,5 +1,5 @@
 /**
- * Worker de Refugio: sirve la app (archivos estáticos) y la API en el mismo origen (`/api/*`),
+ * Worker de Refugiar: sirve la app (archivos estáticos) y la API en el mismo origen (`/api/*`),
  * así las cookies de sesión son de primera parte: sin CORS ni cookies de terceros en producción.
  *
  * Cifrado de extremo a extremo: el servidor guarda claves y datos ya cifrados en los dispositivos.
@@ -1203,9 +1203,9 @@ async function live(request: Request, env: Env, householdId: string) {
   if (!uuid.safeParse(householdId).success || !(await membership(env, householdId, session.user.id))) return json("not-found", 404);
   // Sobrescribir también encabezados que pudiera enviar un cliente: solo vale la sesión verificada.
   const headers = new Headers(request.headers);
-  headers.set("X-Refugio-Household", householdId);
-  headers.set("X-Refugio-User", session.user.id);
-  headers.set("X-Refugio-Session", session.session.id);
+  headers.set("X-Refugiar-Household", householdId);
+  headers.set("X-Refugiar-User", session.user.id);
+  headers.set("X-Refugiar-Session", session.session.id);
   return householdLog(env, householdId).fetch(new Request(request, { headers }));
 }
 

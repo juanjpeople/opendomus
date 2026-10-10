@@ -22,8 +22,8 @@ describe("traductor", () => {
   });
 
   test("el nombre de la marca sale de {app}, sin pasarlo en cada texto", () => {
-    assert.equal(t("common.appName"), "Refugio");
-    assert.equal(t("prices.emptyText"), "Registrá lo que pagaste o viste y Refugio te muestra el más barato.");
+    assert.equal(t("common.appName"), "Refugiar");
+    assert.equal(t("prices.emptyText"), "Registrá lo que pagaste o viste y Refugiar te muestra el más barato.");
   });
 
   test("elige el plural según count", () => {
