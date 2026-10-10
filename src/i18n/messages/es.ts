@@ -1942,11 +1942,11 @@ export const es = {
       phase: "FASE {n}",
       current: "En obra",
       phases: {
-        p1: { title: "Los cimientos y el pañol", items: "Inventarios · Lista de compras · App instalable offline" },
-        p2: { title: "Cuentas claras", items: "Transacciones · Panel de transparencia · Presupuestos y metas" },
-        p3: { title: "Proyectos y préstamos", items: "Roles · Préstamo de herramientas · Lector de códigos" },
-        p4: { title: "Hub familiar y bóveda", items: "Documentos y garantías · Chat interno" },
-        p5: { title: "Entretenimiento", items: "Multimedia en tu NAS · Modo party sincronizado" },
+        p1: { title: "Los cimientos", items: "Inventario con QR · Compras y precios · Recetas y calendario" },
+        p2: { title: "La casa compartida", items: "Nube cifrada · Acceso por persona · App para Android" },
+        p3: { title: "Más segura y a tu gusto", items: "Passkeys y doble factor · Más estilos · Votaciones" },
+        p4: { title: "Cuentas claras", items: "Quién pagó qué · Presupuestos y metas · Préstamo de herramientas" },
+        p5: { title: "Hub familiar", items: "Documentos y garantías · Chat interno · Multimedia en tu NAS" },
       },
     },
     closing: {

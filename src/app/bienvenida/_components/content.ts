@@ -74,10 +74,10 @@ export const GUIDELINES: { key: GuidelineKey; icon: LucideIcon }[] = [
 
 export type PhaseKey = keyof Messages["landing"]["roadmap"]["phases"];
 
-/** Fases para la landing. La hoja de ruta al día está en ROADMAP.md. */
+/** Fases para la landing, resumen de ROADMAP.md: al mover algo ahí, revisar estas. */
 export const ROADMAP: { key: PhaseKey; current?: boolean }[] = [
-  { key: "p1", current: true },
-  { key: "p2" },
+  { key: "p1" },
+  { key: "p2", current: true },
   { key: "p3" },
   { key: "p4" },
   { key: "p5" },
