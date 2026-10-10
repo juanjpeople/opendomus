@@ -58,7 +58,23 @@ export interface CloudInvite {
   expiresAt: number;
 }
 
+/** Alguien abrió una invitación y espera que un admin lo deje entrar. */
+export interface JoinRequest {
+  id: string;
+  name: string;
+  email: string;
+  role: CloudRole;
+  createdAt: number;
+}
+
+/** El perfil de la casa para el que es una invitación (viaja cifrado con el secreto del link). */
+export interface InviteMember {
+  id: string;
+  name: string;
+}
+
 export interface InvitePreview {
+  member?: InviteMember;
   householdId: string;
   householdName: string;
   inviterName: string;

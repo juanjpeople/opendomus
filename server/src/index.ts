@@ -734,19 +734,79 @@ app.post("/invites/:id/accept", async (c) => {
   );
   if (!valid || !input.envelopes.some((entry) => entry.scope === "family")) return c.json({ error: "invalid-envelopes" }, 400);
 
+  const pending = await c.env.DB.prepare("select 1 from join_requests where household_id = ? and user_id = ?").bind(invite.householdId, user.id).first();
+  if (pending) return c.json({ error: "already-requested" }, 409);
+
   const now = Date.now();
-  // El "used_at is null" en el update hace que dos aceptaciones simultáneas no entren las dos.
+  // Abrir el link no hace miembro a nadie: queda un pedido que un admin aprueba. El "used_at is
+  // null" en el update hace que dos aceptaciones simultáneas no dejen dos pedidos.
   const results = await c.env.DB.batch([
     c.env.DB.prepare("update invites set used_at = ?, used_by = ? where id = ? and used_at is null").bind(now, user.id, invite.id),
-    c.env.DB.prepare("insert into memberships (household_id, user_id, role, joined_at) select ?, ?, ?, ? where changes() = 1").bind(invite.householdId, user.id, invite.role, now),
-    ...input.envelopes.map((entry) =>
-      c.env.DB.prepare(
-        "insert into key_envelopes (household_id, scope, version, recipient_user_id, envelope, created_by, created_at) select ?, ?, ?, ?, ?, ?, ? where exists (select 1 from memberships where household_id = ? and user_id = ?)",
-      ).bind(invite.householdId, entry.scope, entry.version, user.id, entry.envelope, user.id, now, invite.householdId, user.id),
-    ),
+    c.env.DB.prepare(
+      "insert into join_requests (invite_id, household_id, user_id, role, envelopes, created_at) select ?, ?, ?, ?, ?, ? where changes() = 1",
+    ).bind(invite.id, invite.householdId, user.id, invite.role, JSON.stringify(input.envelopes), now),
   ]);
   if (results[0].meta.changes === 0) return c.json({ error: "used" }, 410);
-  return c.json({ householdId: invite.householdId, role: invite.role }, 201);
+  return c.json({ householdId: invite.householdId, role: invite.role, pending: true }, 202);
+});
+
+app.get("/households/:id/join-requests", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const householdId = c.req.param("id");
+  if ((await membership(c.env, householdId, user.id))?.role !== "admin") return c.json({ error: "forbidden" }, 403);
+  const requests = await c.env.DB.prepare(
+    `select r.invite_id as id, r.role, r.created_at as createdAt, u.name, u.email
+       from join_requests r join "user" u on u.id = r.user_id where r.household_id = ? order by r.created_at`,
+  )
+    .bind(householdId)
+    .all();
+  return c.json({ requests: requests.results });
+});
+
+app.post("/households/:id/join-requests/:inviteId/approve", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const householdId = c.req.param("id");
+  if ((await membership(c.env, householdId, user.id))?.role !== "admin") return c.json({ error: "forbidden" }, 403);
+  const request = await c.env.DB.prepare("select user_id as userId, role, envelopes from join_requests where invite_id = ? and household_id = ?")
+    .bind(c.req.param("inviteId"), householdId)
+    .first<{ userId: string; role: Role; envelopes: string }>();
+  if (!request) return c.json({ error: "not-found" }, 404);
+  const household = await c.env.DB.prepare("select family_key_version as family, adults_key_version as adults from households where id = ?")
+    .bind(householdId)
+    .first<{ family: number; adults: number }>();
+  if (!household) return c.json({ error: "not-found" }, 404);
+  const envelopes = JSON.parse(request.envelopes) as { scope: Scope; version: number; envelope: string }[];
+  // Si las claves cambiaron mientras esperaba (alguien salió de la casa), sus sobres ya no sirven:
+  // el pedido se descarta y hace falta una invitación nueva.
+  const current = envelopes.every((entry) => entry.version === (entry.scope === "private" ? 1 : household[entry.scope as "family" | "adults"]));
+  if (!current) {
+    await c.env.DB.prepare("delete from join_requests where invite_id = ?").bind(c.req.param("inviteId")).run();
+    return c.json({ error: "stale" }, 409);
+  }
+  if (await membership(c.env, householdId, request.userId)) return c.json({ error: "already-member" }, 409);
+
+  const now = Date.now();
+  await c.env.DB.batch([
+    c.env.DB.prepare("delete from join_requests where invite_id = ?").bind(c.req.param("inviteId")),
+    c.env.DB.prepare("insert into memberships (household_id, user_id, role, joined_at) select ?, ?, ?, ? where changes() = 1").bind(householdId, request.userId, request.role, now),
+    ...envelopes.map((entry) =>
+      c.env.DB.prepare(
+        "insert into key_envelopes (household_id, scope, version, recipient_user_id, envelope, created_by, created_at) select ?, ?, ?, ?, ?, ?, ? where exists (select 1 from memberships where household_id = ? and user_id = ?)",
+      ).bind(householdId, entry.scope, entry.version, request.userId, entry.envelope, request.userId, now, householdId, request.userId),
+    ),
+  ]);
+  return c.json({ ok: true });
+});
+
+app.delete("/households/:id/join-requests/:inviteId", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const householdId = c.req.param("id");
+  if ((await membership(c.env, householdId, user.id))?.role !== "admin") return c.json({ error: "forbidden" }, 403);
+  await c.env.DB.prepare("delete from join_requests where invite_id = ? and household_id = ?").bind(c.req.param("inviteId"), householdId).run();
+  return c.json({ ok: true });
 });
 
 // --- Sincronización -----------------------------------------------------------------------

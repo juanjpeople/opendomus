@@ -27,7 +27,7 @@ import {
   type Identity,
   type Scope,
 } from "@/lib/crypto";
-import type { CloudDevice, CloudHousehold, CloudInvite, CloudMember, CloudRole, CloudUser, FormerMember, InvitePreview } from "./domain";
+import type { CloudDevice, CloudHousehold, CloudInvite, CloudMember, CloudRole, CloudUser, FormerMember, InviteMember, InvitePreview, JoinRequest } from "./domain";
 
 interface MeResponse {
   /** `null` si no hay sesión. */
@@ -37,7 +37,7 @@ interface MeResponse {
 }
 
 const nameContext = (householdId: string) => `household-name|${householdId}`;
-const inviteContext = (inviteId: string, scope: Scope) => `invite|${inviteId}|${scope}`;
+const inviteContext = (inviteId: string, scope: Scope | "member") => `invite|${inviteId}|${scope}`;
 
 /** Niveles que puede abrir cada rol (igual que el servidor). */
 export function scopesFor(role: CloudRole): Scope[] {
@@ -161,10 +161,15 @@ export async function createHousehold(session: CloudSession, name: string, acces
  * Invitación por link: las claves de la casa que le corresponden al rol viajan cifradas con una
  * clave que sale del secreto del link (#…). El servidor guarda solo el hash del token.
  */
-export async function createInvite(session: CloudSession, household: CloudHousehold, role: CloudRole, origin: string): Promise<{ link: string; expiresAt: number }> {
+/**
+ * Una invitación de un solo uso. Con `member`, es para ese perfil de la casa: quien la abre entra
+ * directo como esa persona (el perfil viaja cifrado con el secreto del link, el servidor no lo ve).
+ */
+export async function createInvite(session: CloudSession, household: CloudHousehold, role: CloudRole, origin: string, member?: InviteMember): Promise<{ link: string; expiresAt: number }> {
   const id = crypto.randomUUID();
   const secrets = await inviteSecrets();
   const carried: Record<string, unknown> = { name: household.encryptedName };
+  if (member) carried.member = await seal(secrets.wrapKey, JSON.stringify(member), inviteContext(id, "member"));
   for (const scope of scopesFor(role).filter((scope) => scope !== "private")) {
     const { raw } = await openScopeKey(session.identity, session.user.id, household, scope);
     const version = scope === "family" ? household.familyKeyVersion : household.adultsKeyVersion;
@@ -198,9 +203,10 @@ interface PreviewResponse {
 export async function previewInvite(id: string, secret: string): Promise<InvitePreview> {
   const secrets = await inviteSecrets(secret);
   const preview = await api<PreviewResponse>("POST", `/invites/${id}/preview`, { authToken: secrets.authToken });
-  const carried = JSON.parse(preview.wrappedKeys) as { name: string; family: { key: string } };
+  const carried = JSON.parse(preview.wrappedKeys) as { name: string; family: { key: string }; member?: string };
   const family = await importScopeKey(await open(secrets.wrapKey, carried.family.key, inviteContext(id, "family")));
   return {
+    member: carried.member ? (JSON.parse(await openText(secrets.wrapKey, carried.member, inviteContext(id, "member"))) as InviteMember) : undefined,
     householdId: preview.householdId,
     householdName: await openText(family, carried.name, nameContext(preview.householdId)),
     inviterName: preview.inviterName,
@@ -210,6 +216,7 @@ export async function previewInvite(id: string, secret: string): Promise<InviteP
 }
 
 /** Unirse: abre las claves que trae la invitación y las vuelve a ensobrar para uno mismo. */
+/** Pide entrar a la casa: queda pendiente hasta que un admin lo apruebe. */
 export async function acceptInvite(session: CloudSession, id: string, secret: string): Promise<string> {
   const secrets = await inviteSecrets(secret);
   const preview = await api<PreviewResponse>("POST", `/invites/${id}/preview`, { authToken: secrets.authToken });
@@ -332,6 +339,18 @@ export function listInvites(householdId: string) {
 
 export function revokeInvite(householdId: string, inviteId: string) {
   return api("DELETE", `/households/${householdId}/invites/${inviteId}`);
+}
+
+export function listJoinRequests(householdId: string) {
+  return api<{ requests: JoinRequest[] }>("GET", `/households/${householdId}/join-requests`).then((result) => result.requests);
+}
+
+export function approveJoinRequest(householdId: string, requestId: string) {
+  return api("POST", `/households/${householdId}/join-requests/${requestId}/approve`, {});
+}
+
+export function rejectJoinRequest(householdId: string, requestId: string) {
+  return api("DELETE", `/households/${householdId}/join-requests/${requestId}`);
 }
 
 /**
