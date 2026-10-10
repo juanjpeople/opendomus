@@ -32,3 +32,4 @@ export { ViewSwitcher, type ViewOption } from "./ViewSwitcher";
 export { PlaceCard, type PlaceShortcut } from "./PlaceCard";
 export { PlaceChip } from "./PlaceChip";
 export { LoadingSkeleton } from "./LoadingSkeleton";
+export { CodeInput } from "./CodeInput";

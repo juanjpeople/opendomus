@@ -81,17 +81,25 @@ export function useCloudActions() {
         useCloudStore.getState().setSession(result.session);
         return result;
       }),
+    /** Con la verificación en dos pasos devuelve `secondStep`: falta el código o la llave. */
     signIn: (input: { email: string; password: string }) =>
       run(async () => {
-        const session = await service.signIn(input);
-        useCloudStore.getState().setSession(session);
-        return session;
+        const result = await service.signIn(input);
+        if ("session" in result) useCloudStore.getState().setSession(result.session);
+        return result;
       }),
     recover: (input: { email: string; recoveryCode: string; password: string }) =>
       run(async () => {
         const result = await service.recoverAccount(input);
-        useCloudStore.getState().setSession(result.session);
+        if ("session" in result) useCloudStore.getState().setSession(result.session);
         return result;
+      }),
+    /** Termina un ingreso que quedó esperando el segundo paso (ya verificado). */
+    finishSecondStep: (step: service.SecondStep) =>
+      run(async () => {
+        const session = await step.finish();
+        useCloudStore.getState().setSession(session);
+        return session;
       }),
     signOut: () =>
       run(async () => {

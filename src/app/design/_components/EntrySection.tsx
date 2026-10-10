@@ -3,7 +3,7 @@
 import { Button, Checkbox, Flex, Input, Typography, theme } from "antd";
 import { HardDrive, House, KeyRound, UserPlus } from "lucide-react";
 import { useState } from "react";
-import { Callout, ChoiceCards, ContextBadge, PanelHeader, ProviderButton, ResultState, SectionTitle, SettingRow, StepFlow, TrustNote } from "@/components/ui";
+import { Callout, ChoiceCards, CodeInput, ContextBadge, PanelHeader, ProviderButton, ResultState, SectionTitle, SettingRow, StepFlow, TrustNote } from "@/components/ui";
 import { DemoBlock, DemoLabel } from "./DemoBlock";
 
 type Path = "local" | "create" | "join";
@@ -19,7 +19,7 @@ const STEPS = {
 };
 
 export function EntrySection() {
-  return <DemoBlock id="componentes-entrada" title="Entrada: PanelHeader, Callout, StepFlow, ResultState, TrustNote, SettingRow y ProviderButton"
+  return <DemoBlock id="componentes-entrada" title="Entrada: PanelHeader, Callout, StepFlow, ResultState, TrustNote, SettingRow, ProviderButton y CodeInput"
     description="El panel conserva el ancho al cambiar de paso. Cada paso tiene un título, una acción principal y un regreso seguro. Volver queda a la izquierda. Otra salida del paso, como empezar sin precarga, va en secondary, al lado de la acción principal. En pantallas angostas, las dos ocupan el ancho. Los borradores pertenecen al flujo: volver no los borra. Los estados de carga bloquean el doble envío. El foco acompaña el cambio de paso."
     code={`<StepFlow steps={steps} current={current} screenKey={step}
   header={<PanelHeader icon={House} title={t("cloud.house.title")} />}
@@ -129,8 +129,23 @@ function AccountPatterns() {
         {linked && <Button onClick={() => setLinked(false)}>Reiniciar ejemplo</Button>}
       </Flex>
     </SettingRow>
+    <DemoLabel>CodeInput: el segundo paso del ingreso. Una casilla por número, se puede pegar y se envía solo al completarse.</DemoLabel>
+    <CodeDemo />
     <SettingRow label="Estado" description="Los controles quedan debajo del texto cuando falta espacio." last>
       <Typography.Text type="secondary">Referencia sin conexión</Typography.Text>
     </SettingRow>
   </>;
+}
+
+function CodeDemo() {
+  const [checking, setChecking] = useState(false);
+  const [last, setLast] = useState("");
+  return <Flex vertical gap={8} align="flex-start">
+    <CodeInput label="Código de verificación" autoFocus={false} disabled={checking} onComplete={(code) => {
+      setLast(code);
+      setChecking(true);
+      window.setTimeout(() => setChecking(false), 900);
+    }} />
+    <Typography.Text type="secondary">{checking ? "Verificando…" : last ? `Último código: ${last}. Se vació para el próximo intento.` : "Probá escribir o pegar 6 números."}</Typography.Text>
+  </Flex>;
 }

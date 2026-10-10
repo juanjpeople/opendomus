@@ -7,6 +7,9 @@
  * Better Auth. Por eso el mínimo es alto: una contraseña humana cruda se rechaza.
  */
 import type { BetterAuthOptions } from "better-auth";
+import { twoFactor } from "better-auth/plugins/two-factor";
+import { passkey } from "@better-auth/passkey";
+import { passkeyAsSecondStep, refugiarTwoFactor } from "./two-factor";
 
 export interface AuthEnv {
   google?: { clientId: string; clientSecret: string };
@@ -72,5 +75,20 @@ export function authOptions(database: BetterAuthOptions["database"], env: AuthEn
       ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
     },
     telemetry: { enabled: false },
+    plugins: [
+      // Segundo paso opcional por cuenta: código de una app autenticadora + 10 códigos de respaldo.
+      // Sin "recordar este dispositivo": la sesión ya dura 30 días y se renueva sola.
+      twoFactor({ issuer: "Refugiar", backupCodeOptions: { amount: 10, length: 10 } }),
+      // Llaves de acceso, solo como segundo paso (ver two-factor.ts). Residentes: el navegador
+      // las encuentra sin saber de quién es la cuenta.
+      passkey({
+        rpName: "Refugiar",
+        rpID: new URL(env.baseURL).hostname,
+        origin: [env.baseURL, ...env.trustedOrigins],
+        authenticatorSelection: { residentKey: "required", userVerification: "preferred" },
+        authentication: { afterVerification: passkeyAsSecondStep },
+      }),
+      refugiarTwoFactor(),
+    ],
   };
 }

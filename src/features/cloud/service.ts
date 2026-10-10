@@ -27,7 +27,8 @@ import {
   type Identity,
   type Scope,
 } from "@/lib/crypto";
-import type { CloudDevice, CloudHousehold, CloudInvite, CloudMember, CloudRole, CloudUser, FormerMember, InviteMember, InvitePreview, JoinRequest } from "./domain";
+import { startAuthentication, startRegistration, type PublicKeyCredentialCreationOptionsJSON, type PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
+import type { CloudDevice, CloudHousehold, CloudInvite, CloudMember, CloudPasskey, CloudRole, CloudUser, FormerMember, InviteMember, InvitePreview, JoinRequest, SecondStepProof } from "./domain";
 
 interface MeResponse {
   /** `null` si no hay sesión. */
@@ -93,13 +94,45 @@ export async function signUp(input: { name: string; email: string; password: str
   return { session: await sessionFrom(me, identity), recoveryCode };
 }
 
-/** Entra en un dispositivo: la contraseña abre la identidad guardada (cifrada) en la nube. */
-export async function signIn(input: { email: string; password: string }): Promise<CloudSession> {
-  const keys = await derivePasswordKeys(input.email, input.password);
-  await api("POST", "/auth/sign-in/email", { email: input.email.trim(), password: keys.authKey });
+/**
+ * Con la verificación en dos pasos, la contraseña deja el ingreso a medio camino: falta el código
+ * o la llave de acceso. `finish` termina de abrir la sesión (las claves ya salieron de la contraseña
+ * y quedan solo en memoria mientras tanto).
+ */
+export interface SecondStep {
+  finish: () => Promise<CloudSession>;
+}
+
+export type SignInResult = { session: CloudSession } | { secondStep: SecondStep };
+
+async function openWithPassword(encKey: CryptoKey): Promise<CloudSession> {
   const me = await api<MeResponse>("GET", "/me");
   if (!me.keys) throw new Error("no-keys");
-  return sessionFrom(me, await unlockIdentity(me.keys, keys.encKey));
+  return sessionFrom(me, await unlockIdentity(me.keys, encKey));
+}
+
+/** Entra en un dispositivo: la contraseña abre la identidad guardada (cifrada) en la nube. */
+export async function signIn(input: { email: string; password: string }): Promise<SignInResult> {
+  const keys = await derivePasswordKeys(input.email, input.password);
+  const result = await api<{ twoFactorRedirect?: boolean }>("POST", "/auth/sign-in/email", { email: input.email.trim(), password: keys.authKey });
+  if (result?.twoFactorRedirect) return { secondStep: { finish: () => openWithPassword(keys.encKey) } };
+  return { session: await openWithPassword(keys.encKey) };
+}
+
+/** ¿Este navegador puede usar llaves de acceso? */
+export function passkeysSupported() {
+  return typeof window !== "undefined" && typeof window.PublicKeyCredential === "function";
+}
+
+/** Completa el segundo paso del ingreso (deja la sesión abierta en el servidor). */
+export async function verifySecondStep(proof: SecondStepProof) {
+  if (proof.kind === "code") return void (await api("POST", "/auth/two-factor/verify-totp", { code: proof.code.trim() }));
+  if (proof.kind === "backup") return void (await api("POST", "/auth/two-factor/verify-backup-code", { code: proof.code.trim() }));
+  const optionsJSON = await api<PublicKeyCredentialRequestOptionsJSON>("GET", "/auth/passkey/generate-authenticate-options");
+  const response = await startAuthentication({ optionsJSON }).catch(() => {
+    throw new CloudError("passkey-cancelled", 0);
+  });
+  await api("POST", "/auth/passkey/verify-authentication", { response });
 }
 
 /** Una sesión OAuth prueba identidad; la contraseña abre las claves localmente, sin reenviarla. */
@@ -274,7 +307,7 @@ export async function removeMember(household: CloudHousehold, member: CloudMembe
  * contraseña nueva y se arma un kit nuevo (el usado deja de servir). Se cierran todas las sesiones.
  * Devuelve la sesión ya abierta en este dispositivo y el código del kit nuevo (se muestra una vez).
  */
-export async function recoverAccount(input: { email: string; recoveryCode: string; password: string }): Promise<{ session: CloudSession; recoveryCode: string }> {
+export async function recoverAccount(input: { email: string; recoveryCode: string; password: string }): Promise<SignInResult & { recoveryCode: string }> {
   const email = input.email.trim();
   let recoveryAuth: string;
   try {
@@ -293,9 +326,11 @@ export async function recoverAccount(input: { email: string; recoveryCode: strin
     recoveryPrivateKeys: recovered.kit.recoveryPrivateKeys,
     recoveryVerifier: recovered.kit.recoveryVerifier,
   });
-  await api("POST", "/auth/sign-in/email", { email, password: fresh.authKey });
-  const me = await api<MeResponse>("GET", "/me");
-  return { session: await sessionFrom(me, recovered.identity), recoveryCode: recovered.kit.recoveryCode };
+  // El kit cambia la contraseña, no apaga los dos pasos: si están encendidos, falta el código.
+  const signedIn = await api<{ twoFactorRedirect?: boolean }>("POST", "/auth/sign-in/email", { email, password: fresh.authKey });
+  const finish = async () => sessionFrom(await api<MeResponse>("GET", "/me"), recovered.identity);
+  const recoveryCode = recovered.kit.recoveryCode;
+  return signedIn?.twoFactorRedirect ? { secondStep: { finish }, recoveryCode } : { session: await finish(), recoveryCode };
 }
 
 /** Cambiar la contraseña sabiendo la actual: mismas claves, cifradas con la nueva. Cierra las otras sesiones. */
@@ -323,6 +358,52 @@ export async function regenerateRecoveryKit(session: CloudSession, password: str
   }
   await api("POST", "/account/recovery-kit", { password: keys.authKey, recoveryPrivateKeys: kit.recoveryPrivateKeys, recoveryVerifier: kit.recoveryVerifier });
   return kit.recoveryCode;
+}
+
+// --- Verificación en dos pasos y llaves de acceso ------------------------------------------
+
+/**
+ * Encender: con la contraseña, el servidor arma el secreto de la app autenticadora (para el QR) y
+ * diez códigos de respaldo. Queda apagado hasta confirmar el primer código (`confirmTwoFactor`).
+ */
+export async function startTwoFactor(session: CloudSession, password: string): Promise<{ totpURI: string; backupCodes: string[] }> {
+  const keys = await derivePasswordKeys(session.user.email, password);
+  return api("POST", "/auth/two-factor/enable", { password: keys.authKey, issuer: "Refugiar" });
+}
+
+export async function confirmTwoFactor(code: string) {
+  await api("POST", "/auth/two-factor/verify-totp", { code: code.trim() });
+}
+
+/** Apagar (borra también las llaves de acceso: solo servían como segundo paso). */
+export async function disableTwoFactor(session: CloudSession, password: string) {
+  const keys = await derivePasswordKeys(session.user.email, password);
+  await api("POST", "/auth/two-factor/disable", { password: keys.authKey });
+}
+
+/** Diez códigos de respaldo nuevos; los anteriores dejan de servir. */
+export async function newBackupCodes(session: CloudSession, password: string): Promise<string[]> {
+  const keys = await derivePasswordKeys(session.user.email, password);
+  return (await api<{ backupCodes: string[] }>("POST", "/auth/two-factor/generate-backup-codes", { password: keys.authKey })).backupCodes;
+}
+
+export async function listPasskeys(): Promise<CloudPasskey[]> {
+  const list = await api<{ id: string; name?: string | null; createdAt: string }[]>("GET", "/auth/passkey/list-user-passkeys");
+  return list.map((entry) => ({ id: entry.id, name: entry.name ?? null, createdAt: Date.parse(entry.createdAt) }));
+}
+
+/** Suma una llave de acceso de este dispositivo (o de una llave física). Pide la contraseña. */
+export async function addPasskey(session: CloudSession, input: { name?: string; password: string }) {
+  const keys = await derivePasswordKeys(session.user.email, input.password);
+  const optionsJSON = await api<PublicKeyCredentialCreationOptionsJSON>("GET", "/auth/passkey/generate-register-options");
+  const response = await startRegistration({ optionsJSON }).catch(() => {
+    throw new CloudError("passkey-cancelled", 0);
+  });
+  await api("POST", "/auth/passkey/verify-registration", { response, name: (input.name ?? "").trim() || undefined, password: keys.authKey });
+}
+
+export async function removePasskey(id: string) {
+  await api("POST", "/auth/passkey/delete-passkey", { id });
 }
 
 export function listDevices() {

@@ -7,12 +7,15 @@ import { useT } from "@/i18n";
 import { Callout, TrustNote } from "@/components/ui";
 import { PASSWORD_MIN_LENGTH, passwordStrength } from "../domain";
 import { useCloudActions } from "../hooks";
+import type { SecondStep } from "../service";
 
 interface AuthFormProps {
   mode: "create" | "signin";
   /** Al crear la cuenta, el código del kit de recuperación (para mostrarlo una vez). */
   onCreated?: (recoveryCode: string) => void;
   onSignedIn?: () => void;
+  /** Con la verificación en dos pasos encendida: la contraseña sirvió y falta el código. */
+  onSecondStep?: (step: SecondStep) => void;
   /** Email sugerido (ej. el de la invitación). */
   defaultEmail?: string;
   /** "¿Olvidaste tu contraseña?" (al entrar): lleva a recuperar la cuenta con el kit. */
@@ -24,7 +27,7 @@ interface AuthFormProps {
  * para autenticarse y la que abre tus datos. Por eso tarda un segundo (es a propósito: frena a
  * quien quiera adivinarla) y se avisa que olvidarla exige el kit de recuperación.
  */
-export function AuthForm({ mode, onCreated, onSignedIn, defaultEmail, onForgot }: AuthFormProps) {
+export function AuthForm({ mode, onCreated, onSignedIn, onSecondStep, defaultEmail, onForgot }: AuthFormProps) {
   const t = useT();
   const { token } = theme.useToken();
   const [form] = Form.useForm<{ name: string; email: string; password: string; confirm: string }>();
@@ -43,7 +46,8 @@ export function AuthForm({ mode, onCreated, onSignedIn, defaultEmail, onForgot }
     } else {
       const result = await signIn(values);
       setBusy(false);
-      if (result) onSignedIn?.();
+      if (result && "secondStep" in result) onSecondStep?.(result.secondStep);
+      else if (result) onSignedIn?.();
     }
   }
 

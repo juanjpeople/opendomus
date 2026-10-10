@@ -13,9 +13,11 @@ import { useCloudSession, useCloudStore } from "../hooks";
 import * as service from "../service";
 import { RecoveryKit } from "./RecoveryKit";
 import { SocialAccess } from "./SocialAccess";
+import { TwoFactorSettings } from "./TwoFactorSettings";
 
 /**
- * Ajustes → Cuenta: la contraseña, el kit de recuperación y los dispositivos donde está abierta.
+ * Ajustes → Cuenta: la contraseña, el kit de recuperación, la verificación en dos pasos y los
+ * dispositivos donde está abierta.
  * Solo con la nube habilitada y la cuenta abierta en este dispositivo.
  */
 export function AccountSettings() {
@@ -51,6 +53,7 @@ export function AccountSettings() {
           {t("cloud.account.kitButton")}
         </Button>
       </SettingRow>
+      <TwoFactorSettings />
       <SettingRow label={t("cloud.account.devicesTitle")} description={t("cloud.account.devicesText")} stacked last>
         <Devices />
       </SettingRow>

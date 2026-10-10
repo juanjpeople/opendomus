@@ -128,6 +128,19 @@ app.use("*", async (c, next) => {
 
 app.use("/auth/*", bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.json({ error: "too-large" }, 413) }));
 app.use("/feedback", bodyLimit({ maxSize: 8 * 1024, onError: (c) => c.json({ error: "too-large" }, 413) }));
+/**
+ * Sumar una llave de acceso pide la contraseña: con una sesión robada no se puede agregar una
+ * llave propia y saltear después el segundo paso. El resto lo valida Better Auth.
+ */
+app.post("/auth/passkey/verify-registration", async (c) => {
+  const user = await requireUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  const body = (await c.req.raw.clone().json().catch(() => null)) as { password?: unknown } | null;
+  if (typeof body?.password !== "string") return c.json({ error: "wrong-password" }, 403);
+  if (await tooMany(c.env, `password:${user.id}`, 5, RECOVERY_WINDOW)) return c.json({ error: "rate-limited" }, 429);
+  if (!(await checkPassword(c.env, user.id, body.password))) return c.json({ error: "wrong-password" }, 403);
+  return createAuth(c.env).handler(c.req.raw);
+});
 app.on(["GET", "POST"], "/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
 
 app.get("/health", (c) => c.json({ ok: true }));
@@ -141,7 +154,7 @@ app.get("/social-providers", (c) => {
 async function requireUser(c: Context<AppEnv>): Promise<SessionUser | null> {
   const session = await createAuth(c.env).api.getSession({ headers: c.req.raw.headers });
   if (!session) return null;
-  const user = { id: session.user.id, name: session.user.name, email: session.user.email };
+  const user = { id: session.user.id, name: session.user.name, email: session.user.email, twoFactorEnabled: Boolean((session.user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled) };
   c.set("user", user);
   c.set("sessionId", session.session.id);
   return user;

@@ -22,12 +22,14 @@ import { AccessCodeStep, CryptoSupportGate, InstallAppCard } from "./CloudSteps"
 import { HouseTransfer } from "./HouseTransfer";
 import { InviteModal } from "./InviteModal";
 import { RecoverForm } from "./RecoverForm";
+import { SecondStepForm } from "./SecondStepForm";
+import type { SecondStep } from "../service";
 import { RecoveryKit } from "./RecoveryKit";
 import { useTransfer } from "./useTransfer";
 import { HouseSetup } from "@/features/house-setup/HouseSetup";
 import { canInitializeHouse } from "@/features/house-setup/service";
 
-type Step = "access" | "auth" | "kit" | "house" | "setup" | "upload" | "replace" | "download" | "profile" | "done";
+type Step = "access" | "auth" | "kit" | "second" | "house" | "setup" | "upload" | "replace" | "download" | "profile" | "done";
 
 /**
  * `/cuenta?modo=crear|entrar&siguiente=casa`.
@@ -47,7 +49,8 @@ export function AccountPage() {
     return requested === "entrar" ? "signin" : requested === "recuperar" ? "recover" : "create";
   });
   const wantsHouse = params.get("siguiente") === "casa";
-  const [step, setStep] = useState<Step>(() => (wantsHouse && mode === "create" ? "access" : "auth"));
+  // Google/GitHub con los dos pasos encendidos: el servidor no abre la sesión hasta el segundo paso.
+  const [step, setStep] = useState<Step>(() => (params.get("dos-pasos") === "1" ? "second" : wantsHouse && mode === "create" ? "access" : "auth"));
   // La licencia validada en el primer paso (la consume el servidor al crear la casa).
   const [accessCode, setAccessCode] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
@@ -57,6 +60,11 @@ export function AccountPage() {
   const setDeviceMode = useDeviceStore((s) => s.setMode);
   const transfer = useTransfer();
   const [inviting, setInviting] = useState(false);
+  const { finishSecondStep } = useCloudActions();
+  // La contraseña ya sirvió y falta el código o la llave. Al recuperar con el kit, se pide después
+  // de guardar el kit nuevo (los dos pasos siguen encendidos).
+  const [pendingStep, setPendingStep] = useState<SecondStep | null>(null);
+  const [recoveredEmail, setRecoveredEmail] = useState("");
 
   /** Cuenta sin casa en la nube: la casa sigue en este dispositivo. */
   const finishLocal = () => {
@@ -133,8 +141,10 @@ export function AccountPage() {
               <Flex vertical gap={20}>
                 <PanelHeader icon={KeyRound} color="gold" title={t("cloud.recover.title")} description={t("cloud.recover.subtitle")} />
                 <RecoverForm
-                  onRecovered={(code) => {
+                  onRecovered={(code, secondStep, email) => {
                     setRecoveryCode(code);
+                    setRecoveredEmail(email ?? "");
+                    setPendingStep(secondStep ?? null);
                     setStep("kit");
                   }}
                 />
@@ -171,6 +181,10 @@ export function AccountPage() {
                     setStep("kit");
                   }}
                   onSignedIn={afterSignIn}
+                  onSecondStep={(secondStep) => {
+                    setPendingStep(secondStep);
+                    setStep("second");
+                  }}
                   onForgot={() => setMode("recover")}
                 />
                 {mode === "signin" && <SocialAccess mode="signin" />}
@@ -178,7 +192,16 @@ export function AccountPage() {
               </Flex>
             )}
             {step === "kit" && (
-              <RecoveryKit code={recoveryCode} email={session?.user.email ?? ""} onDone={() => (mode === "recover" ? afterSignIn() : wantsHouse ? void beginHouse() : finishLocal())} />
+              <RecoveryKit code={recoveryCode} email={session?.user.email ?? recoveredEmail} onDone={() => (mode === "recover" ? (pendingStep ? setStep("second") : afterSignIn()) : wantsHouse ? void beginHouse() : finishLocal())} />
+            )}
+            {step === "second" && (
+              <SecondStepForm
+                onVerified={async () => {
+                  // Sin `pendingStep` viene de Google/GitHub: ahora la contraseña abre las claves.
+                  if (!pendingStep) return setStep("auth");
+                  if (await finishSecondStep(pendingStep)) afterSignIn();
+                }}
+              />
             )}
             {step === "house" && <NameHouse accessCode={accessCode} onCreated={upload} />}
             {step === "setup" && <HouseSetup embedded onComplete={() => {
@@ -223,7 +246,7 @@ export function AccountPage() {
             )}
           </CryptoSupportGate>
         </StepFlow>
-        {["access", "auth", "kit", "house"].includes(step) && (
+        {["access", "auth", "kit", "second", "house"].includes(step) && (
           <Flex justify="center" style={{ marginTop: 16 }}>
             <Link href="/empezar">
               <Button type="text">{t("onboarding.back")}</Button>

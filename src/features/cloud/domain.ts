@@ -7,6 +7,18 @@ export interface CloudUser {
   id: string;
   name: string;
   email: string;
+  /** Verificación en dos pasos encendida (además de la contraseña, un código o una llave de acceso). */
+  twoFactorEnabled?: boolean;
+}
+
+/** Cómo se completa el segundo paso al entrar. */
+export type SecondStepProof = { kind: "code"; code: string } | { kind: "backup"; code: string } | { kind: "passkey" };
+
+/** Una llave de acceso de la cuenta (el nombre lo pone la persona; si no, se muestra el proveedor). */
+export interface CloudPasskey {
+  id: string;
+  name: string | null;
+  createdAt: number;
 }
 
 export interface CloudHousehold {
