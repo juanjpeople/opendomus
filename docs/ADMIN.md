@@ -65,6 +65,23 @@ TOTP con clave correcta. Los buckets limitan el tamaño de la tabla y pueden com
 cupo entre IPs distintas. La persistencia en D1 evita reiniciar los límites entre
 instancias; no reemplaza una protección completa contra denegación de servicio.
 
+## Recuperar el acceso (Windows, PowerShell)
+
+Si la clave o el autenticador no funcionan, generá credenciales nuevas. Las anteriores
+dejan de valer en cuanto se cargan las nuevas.
+
+1. En la carpeta del proyecto: `git pull` y `npm run admin:setup -- TU_EMAIL`.
+   Anotá la carpeta que imprime (`docs\privado\operator-NUMERO`).
+2. `npx wrangler secret bulk docs\privado\operator-NUMERO\worker-secrets.json`.
+   Carga los tres secretos en el Worker `opendomus` y los activa en el momento.
+3. `start docs\privado\operator-NUMERO\autenticador.png` y escanear el QR con la app
+   autenticadora. Borrar la entrada vieja de Refugiar para no confundirlas.
+4. Abrir `https://refugi.ar/admin`, pegar el contenido de `clave.txt` y escribir el
+   código actual del autenticador.
+
+Si dice "Demasiados intentos", esperar 15 minutos. Si el código falla con la clave
+correcta, revisar que la hora del teléfono sea automática.
+
 ## CLI opcional
 
 En `.env.admin` guardar `REFUGIAR_API=https://HOST-DE-LA-APP` y

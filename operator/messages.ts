@@ -6,6 +6,7 @@ export const messages = {
     notConfigured: "El acceso de operador todavía no está configurado.",
     tooMany: "Demasiados intentos. Esperá 15 minutos antes de volver a intentar.",
     invalid: "No se pudo ingresar. Revisá la clave y usá un código nuevo del autenticador.",
+    wrongOrigin: "Esta dirección no puede abrir el panel. Entrá desde la dirección principal de Refugiar.",
     key: "Clave de operador", code: "Código del autenticador", codeRequired: "Ingresá los 6 dígitos.", keyRequired: "Ingresá tu clave de operador.",
     login: "Ingresar", logout: "Cerrar sesión privada", logoutFailed: "No se pudo cerrar la sesión. Volvé a intentar.",
     expired: "Sesión privada vencida o acceso no autorizado", expiredHelp: "Volvé a ingresar con tu clave de operador y un código nuevo del autenticador.",
