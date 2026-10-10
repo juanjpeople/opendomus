@@ -56,7 +56,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: throwaway-pass
           ANDROID_KEY_ALIAS: upload
           # Si la clave no tiene contraseña propia, se usa la del almacén (lo que hace keytool por defecto).
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: throwaway-pass
           VERSION_CODE: ${{ inputs.version_code || github.run_number }}
         run: bash gradlew --no-daemon :app:bundleRelease "-PappVersionCode=$VERSION_CODE"
       - name: Comprobar la firma
