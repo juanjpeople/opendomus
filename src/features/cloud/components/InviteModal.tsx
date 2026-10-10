@@ -1,12 +1,13 @@
 "use client";
 
 import { App, Button, Flex, Input, Modal, Segmented, Tag, Tooltip, Typography, theme } from "antd";
-import { Cloud, Copy, Link2, MessageCircle, Share2, ShieldCheck, UserPlus } from "lucide-react";
+import { Cloud, Copy, House, Link2, MessageCircle, Share2, ShieldCheck, UserPlus } from "lucide-react";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { useState } from "react";
 import { useI18n } from "@/i18n";
 import { CLOUD_ENABLED } from "@/lib/cloud/api";
+import { DEMO_BUILD, DEMO_ENABLED } from "@/lib/demo";
 import { getErrorMessage } from "@/lib/errors";
 import { getSyncLink } from "@/lib/sync/middleware";
 import type { Member } from "@/features/members/domain";
@@ -118,14 +119,25 @@ export function MemberAccessButton({ member }: { member: Member }) {
   const { t } = useI18n();
   const household = useAdminHousehold();
   const [open, setOpen] = useState(false);
+  // La casa demo de la app con nube no comparte nada, pero muestra dónde está el botón y lleva a la casa real.
+  const demo = DEMO_ENABLED && !DEMO_BUILD && process.env.NEXT_PUBLIC_CLOUD === "1";
   // Sin cuenta de admin en una casa que ya está en la nube, no hay nada para ofrecer acá.
-  if (!CLOUD_ENABLED || member.userId || (!household && getSyncLink())) return null;
+  if ((!CLOUD_ENABLED && !demo) || member.userId || (!household && getSyncLink())) return null;
   return (
     <>
       <Button icon={<Share2 />} onClick={() => setOpen(true)}>
         {t("cloud.memberAccess.share")}
       </Button>
-      {household ? (
+      {demo ? (
+        <Modal open={open} onCancel={() => setOpen(false)} footer={null} title={t("cloud.memberAccess.demoTitle")}>
+          <Flex vertical gap={16}>
+            <Typography.Text type="secondary">{t("cloud.memberAccess.demoText")}</Typography.Text>
+            <Button type="primary" size="large" block icon={<House />} href="/familia?house=home">
+              {t("cloud.memberAccess.demoExit")}
+            </Button>
+          </Flex>
+        </Modal>
+      ) : household ? (
         <InviteModal open={open} household={household} member={member} onClose={() => setOpen(false)} />
       ) : (
         <Modal open={open} onCancel={() => setOpen(false)} footer={null} title={t("cloud.memberAccess.needsCloud")}>
