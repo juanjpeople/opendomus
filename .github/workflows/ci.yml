@@ -1,5 +1,5 @@
 # Cada PR: tipos, lint, tests, API y las pruebas de punta a punta esenciales, en escritorio.
-# Al mergear a main corre todo: celular, temas, capturas y el paquete local para NAS.
+# Al mergear a main corre todo: celular (lo que cambia de diseño), temas, capturas y el paquete local para NAS.
 # Android con emulador corre aparte (android.yml): en main, semanal y a pedido, no en los PR.
 name: CI
 

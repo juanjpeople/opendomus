@@ -15,6 +15,8 @@ const PORT = 4173;
  * estadísticas, opiniones, portada) corre al mergear a main (E2E_FULL=1) y en local.
  */
 const FULL = !process.env.CI || process.env.E2E_FULL === "1";
+// En CI, el celular repite solo lo que cambia de diseño en pantalla chica; en local, todo.
+const CELULAR_CI = ["navigation.spec.ts", "storage-overview.spec.ts", "inventory-controls.spec.ts", "skins.spec.ts", "privacy-theme.spec.ts", "entry-layout.spec.ts"];
 const MAIN_ONLY = ["school-calendar.spec.ts", "project-stats.spec.ts", "feedback.spec.ts", "skins.spec.ts", "storage-theme.spec.ts", "privacy-theme.spec.ts", "platform.spec.ts", "entry-layout.spec.ts", "landing.spec.ts"];
 
 export default defineConfig({
@@ -38,7 +40,7 @@ export default defineConfig({
   },
   projects: [
     { name: "escritorio", use: { ...devices["Desktop Chrome"], channel: process.env.CI ? undefined : "chrome" } },
-    ...(FULL ? [{ name: "celular", use: { ...devices["Pixel 7"], channel: process.env.CI ? undefined : "chrome" } }] : []),
+    ...(FULL ? [{ name: "celular", ...(process.env.CI ? { testMatch: CELULAR_CI } : {}), use: { ...devices["Pixel 7"], channel: process.env.CI ? undefined : "chrome" } }] : []),
   ],
   webServer: {
     command: `npm start`,
