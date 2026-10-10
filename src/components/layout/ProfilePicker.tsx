@@ -1,5 +1,7 @@
 "use client";
 
+import { haloBackground } from "@/skins/surface";
+import { useSkin } from "@/skins/useSkin";
 import { Card, Col, Flex, Row, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { ArrowRight, Lock } from "lucide-react";
@@ -19,6 +21,7 @@ import { LanguageSwitch, ThemeModeSwitch } from "./HeaderActions";
 /** Pantalla de "¿Quién sos?". Sin sesión no se ve nada de la app (fail-closed). */
 export function ProfilePicker() {
   const { token } = theme.useToken();
+  const skin = useSkin();
   const t = useT();
   const signIn = useSessionStore((s) => s.signIn);
   // Con la casa en la nube, solo el perfil propio y los que no tienen cuenta (ver `pickableProfiles`).
@@ -33,7 +36,7 @@ export function ProfilePicker() {
       style={{
         minHeight: "100vh",
         padding: "64px 16px 32px",
-        background: `radial-gradient(ellipse 60% 45% at 50% 20%, ${token.colorPrimaryBg}, transparent 70%), ${token.colorBgLayout}`,
+        background: haloBackground(skin, `radial-gradient(ellipse 60% 45% at 50% 20%, ${token.colorPrimaryBg}, transparent 70%)`, token.colorBgLayout),
       }}
     >
       <Flex wrap gap={12} align="center" justify="space-between" style={{ position: "absolute", top: 16, left: 20, right: 16 }}>

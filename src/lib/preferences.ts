@@ -1,4 +1,5 @@
 import { isLocale, type Locale } from "@/i18n/config";
+import { SKIN_IDS, type SkinId } from "@/skins/types";
 
 export type ThemeMode = "light" | "dark" | "system";
 export type FontSize = "sm" | "md" | "lg" | "xl";
@@ -28,6 +29,8 @@ export interface Preferences {
   /** Vista por defecto del inicio de Inventario y de cada recinto (se recuerda por perfil). */
   inventoryView: InventoryView;
   spaceView: SpaceView;
+  /** Estilo completo de la app (colores de fondo, sombras, tipografía, ilustraciones). Ver `src/skins`. */
+  skin: SkinId;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -42,6 +45,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   autoLockMinutes: 15,
   inventoryView: "plan",
   spaceView: "plan",
+  skin: "casa",
 };
 
 /** Opciones válidas por clave: lo que se lee de localStorage se valida contra esto (puede estar editado a mano). */
@@ -57,6 +61,7 @@ const VALID: { [K in keyof Preferences]: (value: unknown) => boolean } = {
   autoLockMinutes: (v) => (AUTO_LOCK_OPTIONS as readonly unknown[]).includes(v),
   inventoryView: (v) => (INVENTORY_VIEWS as readonly unknown[]).includes(v),
   spaceView: (v) => (SPACE_VIEWS as readonly unknown[]).includes(v),
+  skin: (v) => (SKIN_IDS as readonly unknown[]).includes(v),
 };
 
 export function isValidPreference<K extends keyof Preferences>(key: K, value: unknown): value is Preferences[K] {

@@ -4,7 +4,10 @@ import { theme } from "antd";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { SIDEBAR_WIDTH } from "@/components/layout/constants";
+import { useIsDark } from "@/hooks/useIsDark";
 import { SPRING } from "@/lib/motion";
+import { createTheme } from "@/lib/theme";
+import type { Skin } from "@/skins/types";
 import type { SidebarMode, ThemeMode } from "@/store/usePreferencesStore";
 
 type Token = ReturnType<typeof theme.getDesignToken>;
@@ -72,4 +75,38 @@ export function ThemePreview({ mode }: { mode: ThemeMode }) {
 export function SidebarPreview({ mode }: { mode: SidebarMode }) {
   const { token } = theme.useToken();
   return <MiniWindow token={token as Token} sidebarRatio={SIDEBAR_WIDTH[mode] / (SIDEBAR_WIDTH.expanded * 3.6)} />;
+}
+
+/** Mini pantalla de un skin: fondo, tarjeta con su sombra y radio, título con su tipografía y botón de marca. */
+export function SkinPreview({ skin }: { skin: Skin }) {
+  const isDark = useIsDark();
+  const token = useMemo(
+    () => theme.getDesignToken(createTheme({ brandColor: skin.brandColor, borderRadius: skin.borderRadius, fontSize: "md", density: "comfortable", motion: "system" }, isDark, skin)),
+    [skin, isDark],
+  );
+  const line = (width: string) => <div style={{ height: 5, width, borderRadius: token.borderRadiusSM, background: token.colorFillSecondary, marginTop: 5 }} />;
+  return (
+    <div style={{ height: 72, padding: 10, background: token.colorBgLayout }}>
+      <div
+        style={{
+          height: "100%",
+          padding: 8,
+          borderRadius: token.borderRadiusLG,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          background: token.colorBgContainer,
+          boxShadow: token.boxShadowTertiary,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: skin.headingFont ?? "inherit", fontWeight: 600, fontSize: token.fontSizeLG, lineHeight: 1, color: token.colorText }}>Aa</div>
+          {line("80%")}
+          {line("55%")}
+        </div>
+        <div style={{ width: 22, height: 22, borderRadius: token.borderRadius, background: token.colorPrimary }} />
+      </div>
+    </div>
+  );
 }

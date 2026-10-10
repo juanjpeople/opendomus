@@ -1,5 +1,6 @@
 "use client";
 
+import { useSkin } from "@/skins/useSkin";
 import { theme } from "antd";
 import { motion, useReducedMotion, type Transition } from "framer-motion";
 import { useT } from "@/i18n";
@@ -42,6 +43,7 @@ interface HouseProps {
 
 export function House({ active = null, intro = false, particles = false }: HouseProps) {
   const { token } = theme.useToken();
+  const { illustration } = useSkin();
   const t = useT();
   const reduceMotion = useReducedMotion();
   const animateIntro = intro && !reduceMotion;
@@ -78,8 +80,8 @@ export function House({ active = null, intro = false, particles = false }: House
       style={{ width: "100%", height: "auto", overflow: "visible" }}
       fill="none"
       strokeWidth={3}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      strokeLinecap={illustration.rounded ? "round" : "square"}
+      strokeLinejoin={illustration.rounded ? "round" : "miter"}
     >
       {/* Halo: la casa como límite de tus datos. */}
       <motion.path

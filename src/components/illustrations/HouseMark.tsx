@@ -1,5 +1,6 @@
 "use client";
 
+import { useSkin } from "@/skins/useSkin";
 import { theme } from "antd";
 import { motion } from "framer-motion";
 
@@ -13,6 +14,7 @@ interface HouseMarkProps {
 /** Isotipo de OpenDomus: la casa del hero, mínima. Se dibuja al montarse. */
 export function HouseMark({ size = "1em", loading = false }: HouseMarkProps) {
   const { token } = theme.useToken();
+  const { illustration } = useSkin();
 
   const draw = (delay: number) =>
     loading
@@ -34,9 +36,9 @@ export function HouseMark({ size = "1em", loading = false }: HouseMarkProps) {
       height={size}
       fill="none"
       stroke={token.colorPrimary}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      strokeWidth={illustration.stroke}
+      strokeLinecap={illustration.rounded ? "round" : "square"}
+      strokeLinejoin={illustration.rounded ? "round" : "miter"}
       aria-hidden
       style={{ flexShrink: 0, overflow: "visible" }}
     >

@@ -1,5 +1,7 @@
 "use client";
 
+import { haloBackground } from "@/skins/surface";
+import { useSkin } from "@/skins/useSkin";
 import { Alert, Button, Flex, Typography, theme } from "antd";
 import { ArrowLeft, FingerprintPattern as Fingerprint } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -21,6 +23,7 @@ interface LockScreenProps {
 export function LockScreen({ member, onUnlock, onSwitchProfile }: LockScreenProps) {
   const t = useT();
   const { token } = theme.useToken();
+  const skin = useSkin();
   const pad = useRef<PinPadHandle>(null);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
@@ -78,7 +81,7 @@ export function LockScreen({ member, onUnlock, onSwitchProfile }: LockScreenProp
       style={{
         minHeight: "100vh",
         padding: 24,
-        background: `radial-gradient(ellipse 60% 45% at 50% 25%, ${token.colorPrimaryBg}, transparent 70%), ${token.colorBgLayout}`,
+        background: haloBackground(skin, `radial-gradient(ellipse 60% 45% at 50% 25%, ${token.colorPrimaryBg}, transparent 70%)`, token.colorBgLayout),
       }}
     >
       <Reveal>

@@ -1,4 +1,6 @@
 "use client";
+import { SKIN_IDS, type SkinId } from "@/skins/types";
+import { SKINS } from "@/skins/skins";
 import { DemoLauncher } from "@/features/demo/DemoLauncher";
 
 import { Anchor, Button, Card, Col, ColorPicker, Flex, Grid, Row, Segmented, Slider, Typography, theme } from "antd";
@@ -27,7 +29,7 @@ import {
 } from "@/store/usePreferencesStore";
 import { APP_VERSION } from "../service";
 import { DataSettings } from "./DataSettings";
-import { SidebarPreview, ThemePreview } from "./Previews";
+import { SidebarPreview, SkinPreview, ThemePreview } from "./Previews";
 import { SettingRow } from "@/components/ui";
 import { usePwaStore } from "@/store/usePwaStore";
 
@@ -118,6 +120,25 @@ function AppearanceSettings() {
 
   return (
     <>
+      <SettingRow label={t("settings.appearance.skin")} description={t("settings.appearance.skinHint")} stacked>
+        <ChoiceCards<SkinId>
+          aria-label={t("settings.appearance.skin")}
+          value={preferences.skin}
+          onChange={(value) => {
+            // Elegir un estilo aplica su color y su redondeo; después se pueden ajustar a mano.
+            setPreference("skin", value);
+            setPreference("brandColor", SKINS[value].brandColor);
+            setPreference("borderRadius", SKINS[value].borderRadius);
+          }}
+          options={SKIN_IDS.map((value) => ({
+            value,
+            title: t(`settings.appearance.skins.${value}.title`),
+            description: t(`settings.appearance.skins.${value}.text`),
+            preview: <SkinPreview skin={SKINS[value]} />,
+          }))}
+        />
+      </SettingRow>
+
       <SettingRow label={t("settings.appearance.theme")} stacked>
         <ChoiceCards<ThemeMode>
           aria-label={t("settings.appearance.theme")}

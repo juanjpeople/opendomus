@@ -14,6 +14,7 @@ import { RecipesFlow } from "./RecipesFlow";
 import { ReviewSection } from "./ReviewSection";
 import { SecuritySection } from "./SecuritySection";
 import { SignatureSection } from "./SignatureSection";
+import { SkinsSection } from "./SkinsSection";
 import { StorageFlow } from "./StorageFlow";
 import { VoiceSection } from "./VoiceSection";
 import { EntryFlow, EntrySection } from "./EntrySection";
@@ -23,7 +24,7 @@ import { CatalogSection } from "./CatalogSection";
 const TOC = [
   {
     group: "Fundamentos",
-    items: [["principios", "Principios"], ["tokens", "Tokens"], ["tipografia", "Tipografía e íconos"], ["firma", "Firma visual"], ["movimiento", "Movimiento"], ["voz", "Voz y textos"]],
+    items: [["principios", "Principios"], ["tokens", "Tokens"], ["tipografia", "Tipografía e íconos"], ["firma", "Firma visual"], ["skins", "Skins"], ["movimiento", "Movimiento"], ["voz", "Voz y textos"]],
   },
   { group: "Componentes antd", items: [["botones", "Botones"], ["feedback", "Feedback"], ["formularios", "Formularios"], ["tablas", "Tablas"]] },
   {
@@ -59,6 +60,7 @@ export function DesignSystem() {
           <Section title="Fundamentos">
             <FoundationsSection />
             <SignatureSection />
+            <SkinsSection />
             <MotionSection />
             <VoiceSection />
           </Section>
