@@ -1,5 +1,7 @@
 "use client";
 
+import { haloBackground } from "@/skins/surface";
+import { useSkin } from "@/skins/useSkin";
 import { DEMO_ENABLED } from "@/lib/demo";
 import { Alert, Button, ConfigProvider, Drawer, Flex, Grid, Layout, Tooltip, Typography, theme } from "antd";
 import { motion } from "framer-motion";
@@ -136,6 +138,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
  */
 function DefaultLayout({ children }: { children: ReactNode }) {
   const { token } = theme.useToken();
+  const skin = useSkin();
   const t = useT();
   const screens = Grid.useBreakpoint();
   const { sidebar } = usePreferences();
@@ -252,7 +255,7 @@ function DefaultLayout({ children }: { children: ReactNode }) {
         <Content
           style={{
             padding: isMobile ? "24px 16px" : "32px 24px",
-            background: `radial-gradient(ellipse 70% 40% at 60% -5%, ${token.colorPrimaryBg}, transparent 70%)`,
+            background: haloBackground(skin, `radial-gradient(ellipse 70% 40% at 60% -5%, ${token.colorPrimaryBg}, transparent 70%)`),
           }}
         >
           <div style={{ maxWidth: 1100, margin: "0 auto" }}>{children}</div>

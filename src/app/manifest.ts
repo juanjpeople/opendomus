@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { BRAND } from "@/config/brand";
 import { ICON_BRAND } from "@/lib/pwa/icon";
 
 export const dynamic = "force-static";
@@ -6,8 +7,8 @@ export const dynamic = "force-static";
 /** Manifest de la PWA: se instala como app y abre sin barra del navegador. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "OpenDomus",
-    short_name: "OpenDomus",
+    name: BRAND.name,
+    short_name: BRAND.name,
     description: "El sistema operativo de tu casa. Que vive en tu casa.",
     lang: "es",
     start_url: "/",

@@ -1,5 +1,7 @@
 "use client";
 
+import { surfaceBackground } from "@/skins/surface";
+import { useSkin } from "@/skins/useSkin";
 import { Button, Card, Dropdown, Flex, Grid, Select, Tooltip, Typography, theme } from "antd";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, EllipsisVertical, LayoutGrid, LayoutList, MapPinned, Pencil, Plus, Printer, SquareDashed, Trash2, type LucideIcon } from "lucide-react";
@@ -127,6 +129,7 @@ function SpacePlan({ space, actions, bare = false }: { space: SpaceOverview; act
   const t = useT();
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
+  const skin = useSkin();
   const totalsText = useTotalsText();
   const { color, Icon } = spaceAppearance(space);
   const palette = tint(token, color);
@@ -163,7 +166,7 @@ function SpacePlan({ space, actions, bare = false }: { space: SpaceOverview; act
         padding: token.padding,
         borderRadius: token.borderRadiusLG * 2,
         border: `1px solid ${palette.border}`,
-        background: `linear-gradient(160deg, ${palette.bg} 0%, ${token.colorBgContainer} 55%)`,
+        background: surfaceBackground(skin, palette.bg, token.colorBgContainer, 55),
         boxShadow: token.boxShadowTertiary,
       }}
     >

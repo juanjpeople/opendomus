@@ -1,5 +1,7 @@
 "use client";
 
+import { haloBackground } from "@/skins/surface";
+import { useSkin } from "@/skins/useSkin";
 import { Card, Col, Flex, Grid, Row, Typography, theme } from "antd";
 import { Boxes, ShoppingCart } from "lucide-react";
 import Link from "next/link";
@@ -100,6 +102,7 @@ interface HeroStatus {
 
 function HomeHero({ eyebrow, title, status }: { eyebrow: string; title: string; status: HeroStatus | null }) {
   const { token } = theme.useToken();
+  const skin = useSkin();
   const screens = Grid.useBreakpoint();
 
   return (
@@ -113,7 +116,7 @@ function HomeHero({ eyebrow, title, status }: { eyebrow: string; title: string; 
           padding: screens.md ? "32px 40px" : 24,
           borderRadius: token.borderRadiusLG * 2,
           border: `1px solid ${token.colorBorderSecondary}`,
-          background: `radial-gradient(ellipse at 85% 50%, ${token.colorPrimaryBg}, transparent 65%), ${token.colorBgContainer}`,
+          background: haloBackground(skin, `radial-gradient(ellipse at 85% 50%, ${token.colorPrimaryBg}, transparent 65%)`, token.colorBgContainer),
           overflow: "hidden",
         }}
       >

@@ -100,7 +100,7 @@ export const en: Messages = {
   },
   common: {
     moreActions: "More actions",
-    appName: "OpenDomus",
+    appName: "{app}",
     cancel: "Cancel",
     close: "Close",
     delete: "Delete",
@@ -188,8 +188,8 @@ export const en: Messages = {
       pinInvalid: "The PIN must have 4 to 8 digits.",
     },
     import: {
-      invalid: "That file isn't a valid OpenDomus export.",
-      newer: "That file comes from a newer OpenDomus version. Update the app before importing it.",
+      invalid: "That file isn't a valid {app} export.",
+      newer: "That file comes from a newer {app} version. Update the app before importing it.",
       cloud: "With your home in the cloud, importing would replace the whole family's home. To import, leave the cloud on this device first.",
     },
     shopping: {
@@ -212,7 +212,7 @@ export const en: Messages = {
       recoveryFailed: "The email or the kit don't match. Check the code (letters and numbers, no I, O, 0 or 1).",
       wrongPassword: "That's not the right password.",
       membersChanged: "The home changed in the meantime (someone joined or changed role). Try again.",
-      badKit: "That code doesn't look like an OpenDomus kit. It starts with ODK1 and has 13 groups of 4.",
+      badKit: "That code doesn't look like an {app} kit. It starts with ODK1 and has 13 groups of 4.",
       licenseInvalid: "That access code doesn't work: it may be mistyped, already used or expired.",
       planPaused: "This home's cloud is paused: your copy keeps working and nothing is lost.",
       rateLimited: "Too many attempts in a row. Wait a minute.",
@@ -252,7 +252,7 @@ export const en: Messages = {
       onlyYou: "Only you",
       adultsOnly: "Only adults can see this.",
       cloudTitle: "Each level has its own key",
-      cloudNote: "In the cloud, Family items are encrypted with a key everyone has, Adults items with another one kids don't have, and Private items with one that's only on your devices. Not even OpenDomus can read them.",
+      cloudNote: "In the cloud, Family items are encrypted with a key everyone has, Adults items with another one kids don't have, and Private items with one that's only on your devices. Not even {app} can read them.",
       localTitle: "Each profile sees its own",
       localNote: "On this device, kids don't see Adults items and nobody sees someone else's Private items. With your home in the cloud, each level is also encrypted with its own key.",
       howTo: "You choose it when creating or editing each list, project, recipe or event.",
@@ -301,7 +301,7 @@ export const en: Messages = {
     },
   },
   shell: {
-    kidsTitle: "OpenDomus Play",
+    kidsTitle: "{app} Play",
     kidsSubtitle: "Explorer mode!",
     switchProfile: "Switch profile",
     signOut: "Sign out",
@@ -341,7 +341,7 @@ export const en: Messages = {
   picker: {
     title: "Who's home?",
     subtitle: "Pick your profile to come in.",
-    about: "What is OpenDomus? Read our values",
+    about: "What is {app}? Read our values",
   },
   home: {
     greeting: {
@@ -407,7 +407,7 @@ export const en: Messages = {
       emptyTitle: "No inventory items yet",
       emptyShort: "No items in here yet",
       emptyHint: "Add what comes in a quantity and we'll tell you when it runs low.",
-      emptyText: "Add the first item above and OpenDomus will let you know when it runs low.",
+      emptyText: "Add the first item above and {app} will let you know when it runs low.",
       min: "Minimum: {min} {unit}",
       deleteConfirm: "Delete “{name}”?",
       deleteOk: "Delete",
@@ -649,7 +649,7 @@ export const en: Messages = {
     onlyOwner: "Only {name} can set up their security. As an administrator, you can remove it if the PIN was forgotten.",
     pin: {
       title: "PIN",
-      text: "4 to 8 digits. Stored hashed: not even OpenDomus can read it.",
+      text: "4 to 8 digits. Stored hashed: not even {app} can read it.",
       set: "Create PIN",
       change: "Change PIN",
       remove: "Remove PIN",
@@ -664,7 +664,7 @@ export const en: Messages = {
       text: "This device's fingerprint, face or Windows Hello.",
       add: "Register this device",
       remove: "Remove",
-      insecure: "Biometrics require OpenDomus to be opened over HTTPS (or on localhost).",
+      insecure: "Biometrics require {app} to be opened over HTTPS (or on localhost).",
       unsupported: "This device has no biometric reader available.",
       failed: "Couldn't register biometrics.",
       registered: "Registered on {date}",
@@ -735,7 +735,7 @@ export const en: Messages = {
     },
     shelfHint: "About a 46 mm QR: at 1× it reads from roughly 1.5 m. Two per A4 sheet.",
     baseUrl: "Address the QR opens",
-    baseUrlHelp: "The address your household's phones use to open OpenDomus (for example, your server's IP).",
+    baseUrlHelp: "The address your household's phones use to open {app} (for example, your server's IP).",
     localhostWarning: "With “localhost” the QR only works on this same computer.",
     print: "Print",
     preview: "Preview",
@@ -771,9 +771,9 @@ export const en: Messages = {
     description: "Point at a container's label to see what's inside.",
     start: "Turn on camera",
     stop: "Stop",
-    unsupported: "This browser can't read QR codes in the app. Use your phone's camera: the label opens OpenDomus directly.",
+    unsupported: "This browser can't read QR codes in the app. Use your phone's camera: the label opens {app} directly.",
     denied: "Camera permission was denied.",
-    invalid: "That QR isn't an OpenDomus label.",
+    invalid: "That QR isn't an {app} label.",
     manual: "No camera? Type the label's code",
     manualPlaceholder: "e.g. K7QM",
     go: "Open",
@@ -802,13 +802,13 @@ export const en: Messages = {
     date: "Date",
     currency: "Currency",
     empty: "No prices yet",
-    emptyText: "Record what you paid or saw and OpenDomus will show you the cheapest.",
+    emptyText: "Record what you paid or saw and {app} will show you the cheapest.",
     latest: "Latest",
     cheapest: "Cheapest",
     atStore: "at {store}",
     vsPrevious: "{value} vs. previous",
     searchOnline: "Compare prices online",
-    searchHint: "Opens in a new tab. OpenDomus doesn't send anything on its own.",
+    searchHint: "Opens in a new tab. {app} doesn't send anything on its own.",
     deleteConfirm: "Delete this price?",
     toast: {
       added: "Price recorded",
@@ -946,11 +946,11 @@ export const en: Messages = {
       hint: "Everything keeps working: your data lives on this device.",
     },
     update: {
-      text: "A new version of OpenDomus is available.",
+      text: "A new version of {app} is available.",
       apply: "Update",
     },
     install: {
-      title: "Install OpenDomus",
+      title: "Install {app}",
       text: "Open it like an app, from your desktop or home screen. Works without internet.",
       button: "Install",
     },
@@ -965,7 +965,7 @@ export const en: Messages = {
     back: "See all recipes",
     search: "Search by name or ingredient",
     emptyTitle: "No recipes yet",
-    emptyText: "Add the first one: with linked ingredients, OpenDomus tells you whether you can cook it with what you have.",
+    emptyText: "Add the first one: with linked ingredients, {app} tells you whether you can cook it with what you have.",
     noMatchTitle: "No recipe matches",
     noMatchText: "Try another word or clear a filter.",
     filter: {
@@ -1132,7 +1132,7 @@ export const en: Messages = {
     values: "Our values",
     security: {
       title: "Your home, your data",
-      text: "On your device it's free, no account needed. If you share it in the cloud, it's stored end-to-end encrypted: only your family can read it, not even OpenDomus. You choose what's shared with everyone, what only with the adults, and what's just yours.",
+      text: "On your device it's free, no account needed. If you share it in the cloud, it's stored end-to-end encrypted: only your family can read it, not even {app}. You choose what's shared with everyone, what only with the adults, and what's just yours.",
     },
     choices: {
       create: {
@@ -1186,7 +1186,7 @@ export const en: Messages = {
     unavailable: "We could not open the providers; you can sign in with your password.",
     signinFailed: "Provider sign-in failed; sign in with your password and check the link in Settings → Account.",
     unlockTitle: "Open your encrypted data",
-    unlockHint: "Your OpenDomus password opens the data on this device.",
+    unlockHint: "Your {app} password opens the data on this device.",
     unlock: "Unlock data",
     passwordScope: "Your password is not sent to the provider or server.",
     passwordNeeded: "On another device, you still need your password to open the data.",
@@ -1196,7 +1196,7 @@ export const en: Messages = {
   },
   cloud: {
     entry: {
-      title: "Your OpenDomus account",
+      title: "Your {app} account",
       description: "Your account is separate from your home. Signing up does not require an invitation code.",
     },
     steps: {
@@ -1230,7 +1230,7 @@ export const en: Messages = {
         "4": "Excellent",
       },
       forgetTitle: "Your password protects your data",
-      forgetText: "It never leaves this device: not even OpenDomus knows it. If you forget it, you'll need the recovery kit we give you in the next step.",
+      forgetText: "It never leaves this device: not even {app} knows it. If you forget it, you'll need the recovery kit we give you in the next step.",
       working: "Encrypting…",
       create: "Create account",
       signIn: "Sign in",
@@ -1244,10 +1244,10 @@ export const en: Messages = {
       copied: "Code copied",
       download: "Download",
       print: "Print",
-      where: "Keep it off this device: printed in a drawer, in your password manager. Don't send it to anyone: OpenDomus will never ask you for it.",
+      where: "Keep it off this device: printed in a drawer, in your password manager. Don't send it to anyone: {app} will never ask you for it.",
       confirm: "I saved my kit somewhere safe",
       continue: "Continue",
-      fileTitle: "OpenDomus · Recovery kit",
+      fileTitle: "{app} · Recovery kit",
       fileAccount: "Account: {email}",
       fileCode: "Code:",
       fileHelp: "If you forget your password, this code opens your private data. Keep it safe and don't share it.",
@@ -1306,8 +1306,8 @@ export const en: Messages = {
       qrLabel: "Invitation QR code",
       copied: "Link copied",
       share: "Share",
-      shareTitle: "Join {name} on OpenDomus",
-      shareText: "I'm inviting you to our home on OpenDomus.",
+      shareTitle: "Join {name} on {app}",
+      shareText: "I'm inviting you to our home on {app}.",
       safety: "Works once and expires on {date}. Only send it to who you want to invite: anyone with the link can join.",
       oneUse: "Once used, it stops working",
       forRole: "Invitation for {role}",
@@ -1381,7 +1381,7 @@ export const en: Messages = {
       warningTitle: "All your sessions will be closed",
       warningText: "You'll need to sign in again on your other devices. You'll get a new kit: the one you're using stops working.",
       submit: "Recover my account",
-      noKit: "Without the kit it's not possible: your data is encrypted with your password and nobody else has the key, not even OpenDomus. If another member invites you again, you get back what's shared.",
+      noKit: "Without the kit it's not possible: your data is encrypted with your password and nobody else has the key, not even {app}. If another member invites you again, you get back what's shared.",
       back: "Back to sign in",
     },
     account: {
@@ -1414,7 +1414,7 @@ export const en: Messages = {
       codeRequired: "Enter the code",
       continue: "Continue",
       noCodeTitle: "No code?",
-      noCodeText: "If someone in your home invited you, you don't need one: open their link. And OpenDomus is free on this device, no account needed.",
+      noCodeText: "If someone in your home invited you, you don't need one: open their link. And {app} is free on this device, no account needed.",
       haveInvite: "I have an invite",
       useLocal: "Use it on this device",
     },
@@ -1422,10 +1422,10 @@ export const en: Messages = {
       title: "This browser can't open the encrypted cloud",
       text: "It's missing part of the encryption we use. Update Chrome (or use a recent Chrome, Firefox, Safari or Edge) and try again.",
       insecure: "The encrypted cloud only works over a secure connection (https).",
-      local: "Use OpenDomus on this device",
+      local: "Use {app} on this device",
     },
     install: {
-      title: "Install OpenDomus",
+      title: "Install {app}",
       text: "It opens like an app and your phone takes better care of your data.",
     },
     done: {
@@ -1524,6 +1524,13 @@ export const en: Messages = {
       about: "About",
     },
     appearance: {
+      skin: "Style",
+      skinHint: "Changes how the whole app looks. You can still adjust the color and corner radius afterwards.",
+      skins: {
+        casa: { title: "Home", text: "The usual look: bright and colorful." },
+        calido: { title: "Warm", text: "Cream tones, serif headings and soft corners." },
+        sobrio: { title: "Plain", text: "Flat, thin lines and no decoration." },
+      },
       theme: "Theme",
       brandColor: "Brand color",
       radius: "Corner radius",
@@ -1609,7 +1616,7 @@ export const en: Messages = {
       },
     },
     about: {
-      text: "OpenDomus is open source, offline-first and runs on your own hardware.",
+      text: "{app} is open source, offline-first and runs on your own hardware.",
       version: "Version {version}",
       values: "Our values",
     },
@@ -1628,7 +1635,7 @@ export const en: Messages = {
     messageRequired: "Write your message.",
     messageLength: "Write between 10 and 2000 characters.",
     link: "Send feedback",
-    title: "Help us improve OpenDomus",
+    title: "Help us improve {app}",
     subtitle: "Tell us about an idea, a problem, or a question. We read every message.",
     category: "Message type",
     categories: {
@@ -1650,10 +1657,10 @@ export const en: Messages = {
   landing: {
     introduction: {
       eyebrow: "The project",
-      title: "What OpenDomus is and what it does",
+      title: "What {app} is and what it does",
       what: "An open-source app for organizing your home and workshop: inventory tools and supplies, find things by QR code, and save photos or notes for a container without turning every object into a product. It also brings together shopping, calendars and household finances.",
       whoTitle: "An open project, still growing",
-      who: "We build OpenDomus to meet everyday needs while keeping you in control of your data. You can use it locally without an account; sharing through the cloud is optional.",
+      who: "We build {app} to meet everyday needs while keeping you in control of your data. You can use it locally without an account; sharing through the cloud is optional.",
       invitation: "We are not perfect and cannot promise absolute security. Real problems, suggestions and code reviews help us improve. The repository shows who contributes, what changes and what remains to be solved.",
       repository: "View code and contribute",
     },
@@ -1705,7 +1712,7 @@ export const en: Messages = {
     transparency: {
       eyebrow: "Transparency",
       title: "Your data takes this path. No other.",
-      description: "OpenDomus runs on your device first. The cloud only comes into play if you choose it for sharing, and receives content after it has been encrypted.",
+      description: "{app} runs on your device first. The cloud only comes into play if you choose it for sharing, and receives content after it has been encrypted.",
       stages: {
         device: {
           title: "Created on your device",
@@ -1807,8 +1814,8 @@ export const en: Messages = {
     closing: {
       titleA: "A home isn't a product.",
       titleB: "It's the people who live in it.",
-      text: "OpenDomus is the tool that helps those people get organized, without asking anyone's permission.",
-      footerLeft: "OpenDomus · Made at home, for homes.",
+      text: "{app} is the tool that helps those people get organized, without asking anyone's permission.",
+      footerLeft: "{app} · Made at home, for homes.",
       footerRight: "Open source · Offline-first · Self-hosted",
     },
   },

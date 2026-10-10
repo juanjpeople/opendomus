@@ -1,3 +1,4 @@
+import { BRAND } from "@/config/brand";
 import { APP_ROUTES } from "@/lib/navigation/routes";
 
 /**
@@ -19,7 +20,7 @@ const VERSION = `${process.env.NEXT_PUBLIC_APP_VERSION ?? "dev"}-${Date.now().to
 const PAGES = ["/", "/c", "/third-party-notices.txt", ...APP_ROUTES.filter((route) => route.href !== "/").map((route) => route.href)];
 
 /** Lo que se muestra al abrir sin conexión una página que nunca se guardó. */
-const OFFLINE_HTML = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sin conexión · OpenDomus</title>
+const OFFLINE_HTML = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sin conexión · ${BRAND.name}</title>
 <style>:root{color-scheme:light dark}body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f5f5f5;color:#1f1f1f}
 @media (prefers-color-scheme:dark){body{background:#000;color:#e8e8e8}.card{background:#141414!important;border-color:#303030!important}}
 .card{max-width:360px;margin:16px;padding:32px;border-radius:16px;background:#fff;border:1px solid #f0f0f0;text-align:center}

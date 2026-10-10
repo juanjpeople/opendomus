@@ -100,3 +100,8 @@ body {
   outline: 2px solid var(--od-ring, currentColor);
   outline-offset: 2px;
 }
+
+/* Skin con tipografía propia para los títulos (ver src/skins): la fuente llega en --od-font-heading. */
+html[data-skin] :is(h1, h2, h3, h4, h5) {
+  font-family: var(--od-font-heading, inherit);
+}

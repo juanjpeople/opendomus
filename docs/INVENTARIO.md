@@ -101,11 +101,26 @@ de varias etiquetas requiere que el navegador ofrezca `BarcodeDetector` con sopo
 | Hoja A4 | 63,5 × 38,1 mm, 3 por fila | 34 mm | Imprimir muchas juntas. |
 | Estante | 100 × 50 mm, 2 por fila | 46 mm | Leer una estantería desde lejos. |
 
-**Distancias de lectura:** son estimaciones y faltan medir. Como referencia, con la lente
-principal en 1080p un QR se lee hasta unas 15 a 25 veces su lado. Una etiqueta de 25 mm
-se leería a unos 40 a 60 cm, y cerca de 1 m con 2×. La de estante, a 1,5 m o más. Las
-medidas reales en el Galaxy A55 se anotan acá cuando se prueben (ver "Probar en un
-celular").
+**Distancias de lectura:** salen de la óptica, no de una prueba a mano. El Galaxy A55 tiene
+una lente principal de 50 MP, f/1.8, con ángulo de visión de 84° (diagonal, según la ficha de
+[PhoneArena](https://www.phonearena.com/phones/compare/Samsung-Galaxy-A55-5G,Xiaomi-Redmi-Note-14-Pro/phones/12259,12441)).
+En un cuadro 16:9 eso da unos 72° de ancho: a una distancia `d` la imagen abarca `1,44 × d`.
+Con 1920 px de ancho, un lector necesita entre 2 y 3 px por módulo del QR (jsQR, 3 o más).
+Para un QR de unos 29 módulos, la distancia máxima es:
+
+| Etiqueta | QR | Máximo (3 px/módulo) | Cómodo (4 px/módulo) |
+| --- | --- | --- | --- |
+| Chica | 21 mm | ~32 cm | ~24 cm |
+| Brother | 25 mm | ~38 cm | ~29 cm |
+| Hoja A4 | 34 mm | ~52 cm | ~39 cm |
+| Estante | 46 mm | ~70 cm | ~53 cm |
+
+Con zoom 2× las distancias se duplican, a costa de una imagen más inestable. La regla
+general de la industria, que el código se lee hasta unas 10 veces su lado
+([QRStuff](https://www.qrstuff.com/blog/?p=69)), da números parecidos en el rango cómodo.
+Para leer una estantería desde más lejos, elegí la etiqueta de estante o usá 2×.
+La distancia mínima depende del enfoque de cada unidad y no figura en la ficha técnica.
+Si una prueba real difiere de esta tabla, corregí la tabla.
 
 ## Probar en un celular
 

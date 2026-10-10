@@ -6,6 +6,7 @@
  * los datos ante quien tenga acceso técnico al equipo (DevTools): para eso hace falta cifrar
  * los datos con una clave derivada del PIN/biometría (próximo paso, ver OPENDOMUS_PLAN.md).
  */
+import { BRAND } from "@/config/brand";
 import { deviceLabel } from "@/lib/device";
 import type { BiometricCredential, PinHash } from "./domain";
 
@@ -104,7 +105,7 @@ export async function registerBiometric(member: { id: string; name: string }): P
   const credential = (await navigator.credentials.create({
     publicKey: {
       challenge: crypto.getRandomValues(new Uint8Array(32)),
-      rp: { name: "OpenDomus" },
+      rp: { name: BRAND.name },
       user: { id: encoder.encode(member.id), name: member.name, displayName: member.name },
       pubKeyCredParams: [
         { type: "public-key", alg: -7 },

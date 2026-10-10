@@ -1,5 +1,6 @@
 "use client";
 
+import { useSkin } from "@/skins/useSkin";
 import { theme } from "antd";
 import type { ReactNode } from "react";
 import { tint, type AppearanceColor } from "@/lib/appearance";
@@ -35,6 +36,7 @@ function background(pattern: FloorPattern, line: string) {
  */
 export function RoomFloor({ pattern = "dots", color, minTileWidth = 128, children }: RoomFloorProps) {
   const { token } = theme.useToken();
+  const skin = useSkin();
   const edge = color ? tint(token, color).border : token.colorBorderSecondary;
   // La textura va más suave que el borde: es un piso, no una grilla.
   const line = `color-mix(in srgb, ${edge} 55%, transparent)`;
@@ -50,7 +52,7 @@ export function RoomFloor({ pattern = "dots", color, minTileWidth = 128, childre
         borderRadius: token.borderRadiusLG * 1.5,
         border: `1px solid ${edge}`,
         backgroundColor: token.colorBgLayout,
-        ...background(pattern, line),
+        ...(skin.textured ? background(pattern, line) : {}),
       }}
     >
       {children}

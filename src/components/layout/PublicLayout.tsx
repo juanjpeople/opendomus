@@ -1,5 +1,7 @@
 "use client";
 
+import { haloBackground } from "@/skins/surface";
+import { useSkin } from "@/skins/useSkin";
 import { Flex, Typography, theme } from "antd";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -11,12 +13,13 @@ import { LanguageSwitch, ThemeModeSwitch } from "./HeaderActions";
 export function PublicLayout({ children, width = 1120 }: { children: ReactNode; width?: number }) {
   const t = useT();
   const { token } = theme.useToken();
+  const skin = useSkin();
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: `radial-gradient(ellipse 70% 40% at 50% 0%, ${token.colorPrimaryBg}, transparent 70%), ${token.colorBgLayout}`,
+        background: haloBackground(skin, `radial-gradient(ellipse 70% 40% at 50% 0%, ${token.colorPrimaryBg}, transparent 70%)`, token.colorBgLayout),
       }}
     >
       <Flex wrap gap={12} align="center" justify="space-between" style={{ maxWidth: 1120, margin: "0 auto", padding: "16px 20px" }}>

@@ -1,5 +1,7 @@
 "use client";
 
+import { surfaceBackground } from "@/skins/surface";
+import { useSkin } from "@/skins/useSkin";
 import { formatQuantity, formatUnit } from "@/features/inventory/format";
 
 import { App, Button, Col, Collapse, Divider, Drawer, Flex, Form, Grid, Input, InputNumber, Row, Select, Space, Switch, Typography, theme } from "antd";
@@ -92,6 +94,7 @@ function QuantityPanel({ item }: { item: InventoryItem }) {
   const { add } = useShoppingActions();
   const { message } = App.useApp();
   const canAdjust = usePermission("inventory.adjust");
+  const skin = useSkin();
   const palette = tint(token, itemAppearance(item)?.color ?? "blue");
 
   return (
@@ -102,7 +105,7 @@ function QuantityPanel({ item }: { item: InventoryItem }) {
         padding: token.padding,
         borderRadius: token.borderRadiusLG * 2,
         border: `${token.lineWidth}px solid ${palette.border}`,
-        background: `linear-gradient(160deg, ${palette.bg} 0%, ${token.colorBgContainer} 70%)`,
+        background: surfaceBackground(skin, palette.bg, token.colorBgContainer, 70),
       }}
     >
       <Flex align="center" justify="space-between" gap={token.marginSM} wrap>

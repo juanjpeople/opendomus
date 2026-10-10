@@ -1,5 +1,7 @@
 "use client";
 
+import { surfaceBackground } from "@/skins/surface";
+import { useSkin } from "@/skins/useSkin";
 import { Flex, Tooltip, Typography, theme } from "antd";
 import { motion } from "framer-motion";
 import { ChevronRight, type LucideIcon } from "lucide-react";
@@ -48,6 +50,7 @@ interface PlaceCardProps {
  */
 export function PlaceCard({ href, title, icon, color, meta, status, floor = "dots", shortcuts = [], more, empty }: PlaceCardProps) {
   const { token } = theme.useToken();
+  const skin = useSkin();
   const palette = tint(token, color);
   const glyph = token.controlHeightLG + token.paddingXXS;
 
@@ -69,7 +72,7 @@ export function PlaceCard({ href, title, icon, color, meta, status, floor = "dot
         borderWidth: token.lineWidth,
         borderStyle: "solid",
         borderColor: palette.border,
-        background: `linear-gradient(160deg, ${palette.bg} 0%, ${token.colorBgContainer} 60%)`,
+        background: surfaceBackground(skin, palette.bg, token.colorBgContainer, 60),
         boxShadow: token.boxShadowTertiary,
       }}
     >

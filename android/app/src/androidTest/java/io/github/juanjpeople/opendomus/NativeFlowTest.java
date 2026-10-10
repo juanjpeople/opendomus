@@ -83,7 +83,13 @@ public class NativeFlowTest {
     /** A real touch supplies the user activation required by the WebView file picker. */
     private void tap(ActivityScenario<MainActivity> scenario, String element) throws Exception {
         evaluate(scenario, "window.__tapTarget = " + element + "; window.__tapTarget.scrollIntoView({block:'center',behavior:'instant'})");
-        await(scenario, "(() => { let e=window.__tapTarget; if (!e?.isConnected || e.disabled) return false; for (; e; e=e.parentElement) if (Number(getComputedStyle(e).opacity) < 0.99 || e.getAnimations().some(a => a.playState === 'running')) return false; return true; })()");
+        try {
+            await(scenario, "(() => { let e=window.__tapTarget; if (!e?.isConnected || e.disabled) return false; for (; e; e=e.parentElement) if (Number(getComputedStyle(e).opacity) < 0.99 || e.getAnimations().some(a => a.playState === 'running')) return false; return true; })()");
+        } catch (AssertionError error) {
+            // Dice por qué el elemento no se estabiliza: la página se recargó, se reemplazó el nodo o algo sigue animándose.
+            String why = evaluate(scenario, "(() => { let e=window.__tapTarget; if (!e) return 'sin __tapTarget: la pagina se recargo'; if (!e.isConnected) return 'el nodo ya no esta en el documento'; if (e.disabled) return 'deshabilitado'; for (; e; e=e.parentElement) { const op=Number(getComputedStyle(e).opacity); const run=e.getAnimations().filter(a => a.playState === 'running'); if (op < 0.99 || run.length) return e.tagName + '.' + String(e.className).slice(0, 60) + ' opacity=' + op + ' animaciones=' + run.map(a => a.constructor.name + ':' + (a.animationName || a.transitionProperty || '')).join(','); } return 'estable'; })()");
+            throw new AssertionError(error.getMessage() + "; por que: " + why, error);
+        }
         evaluate(scenario, "window.__tap = null; (() => { let previous=null, stable=0; const sample=()=>{const e=window.__tapTarget;if(!e?.isConnected)return;const r=e.getBoundingClientRect(),p={x:r.x+r.width/2,y:r.y+r.height/2};const hit=document.elementFromPoint(p.x,p.y);const valid=hit && (hit===e || e.contains(hit));stable=valid && previous && Math.abs(p.x-previous.x)<0.5 && Math.abs(p.y-previous.y)<0.5?stable+1:0;previous=p;if(stable>=8){window.__tap=p;return;}requestAnimationFrame(sample)};requestAnimationFrame(sample)})()");
         await(scenario, "window.__tap !== null");
         JSONObject point = new JSONObject(evaluate(scenario, "window.__tap"));
@@ -177,8 +183,11 @@ public class NativeFlowTest {
             intending(allOf(hasAction(Intent.ACTION_GET_CONTENT), hasType("application/json"))).respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(backupUri)));
             tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Importar|Import)$/.test(b.textContent.trim()))");
             await(scenario, "document.querySelector('[role=dialog]') && /Reemplazar e importar|Replace and import/.test(document.querySelector('[role=dialog]').textContent)");
+            // El aviso "Datos importados" dura 600 ms antes de la recarga y un sondeo lento puede no verlo:
+            // la recarga solo ocurre si la importación terminó bien, así que se espera a que el marcador desaparezca.
+            evaluate(scenario, "window.__beforeImportReload = true");
             tap(scenario, "[...document.querySelectorAll('[role=dialog] button')].find(b => /Reemplazar e importar|Replace and import/.test(b.textContent))");
-            await(scenario, "/Datos importados|Data imported/.test(document.body.innerText)");
+            await(scenario, "window.__beforeImportReload !== true && document.body.innerText.length > 20");
             scenario.recreate();
             ready(scenario);
             scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario/ver?id=" + containerId));

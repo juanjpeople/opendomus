@@ -1,3 +1,4 @@
+import { BRAND } from "@/config/brand";
 import { DEFAULT_LOCALE, LOCALE_META, type Locale } from "./config";
 import { MESSAGES, type Messages } from "./messages";
 
@@ -21,9 +22,12 @@ function lookup(messages: Messages, key: string): unknown {
   return node;
 }
 
+/** `{app}` está en todos los textos: el nombre de la marca sale de un solo lugar (`src/config/brand.ts`). */
+const BASE_PARAMS: MessageParams = { app: BRAND.name };
+
 function interpolate(text: string, params?: MessageParams) {
-  if (!params) return text;
-  return text.replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match));
+  const all = params ? { ...BASE_PARAMS, ...params } : BASE_PARAMS;
+  return text.replace(/\{(\w+)\}/g, (match, name: string) => (name in all ? String(all[name]) : match));
 }
 
 const translators = new Map<Locale, Translator>();
