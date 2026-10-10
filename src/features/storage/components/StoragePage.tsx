@@ -18,6 +18,7 @@ import { useStorageActions, useStorageOverview } from "../hooks";
 import { flattenOverview } from "../views";
 import type { LabelData } from "./ContainerLabel";
 import { LabelModal } from "./LabelModal";
+import { InventoryDisplayMenu } from "./InventoryDisplayMenu";
 import { StorageHighlights } from "./StorageHighlights";
 import { ContainerModal, SpaceModal } from "./StorageForms";
 import { StorageSearch } from "./StorageSearch";
@@ -71,8 +72,9 @@ export function StorageDialogs({ dialog, onClose, onSpaceCreated }: { dialog: St
 }
 
 /**
- * Inicio de Inventario: buscar, lo que hay que reponer, lo último visitado y la casa en la vista
- * que cada perfil eligió (lugares, plano, lista o tarjetas).
+ * Inicio de Inventario: buscar, el resumen, lo que hay que reponer, lo último visitado y la casa en
+ * la vista que cada perfil eligió (lugares, plano, lista o tarjetas). Los bloques y la densidad se
+ * eligen en "Vista", al lado del buscador.
  */
 export function StoragePage() {
   const t = useT();
@@ -132,8 +134,8 @@ export function StoragePage() {
 
       {!!spaces?.length && (
         <>
-          <Reveal delay={0.05}><StorageSearch /></Reveal>
-          <StorageHighlights spaces={spaces} />
+          <Reveal delay={0.05}><StorageSearch extra={<InventoryDisplayMenu summary />} /></Reveal>
+          <StorageHighlights spaces={spaces} summary />
           <Reveal delay={0.1}>
             <SectionHeader
               title={t("storage.yourPlaces")}

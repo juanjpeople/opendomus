@@ -5,6 +5,8 @@ import { ArrowRight, History, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { PlaceChip, SectionHeader } from "@/components/ui";
+import { InventoryInsights } from "@/features/inventory/components/InventoryInsights";
+import { usePreferences } from "@/hooks/usePreferences";
 import { useT } from "@/i18n";
 import { useCurrentUser } from "@/lib/auth/session";
 import { containerHref, findRoute, spaceHref } from "@/lib/navigation/routes";
@@ -13,26 +15,40 @@ import { containerAppearance, spaceAppearance } from "../domain";
 import { useAttentionItems, type SpaceOverview } from "../hooks";
 import { flattenOverview } from "../views";
 
-const SHOWN = 8;
+const SHOWN = 6;
 
 /**
- * Arriba del plano: lo que hay que reponer (con un toque se abre su ficha) y los últimos lugares
- * visitados. Si no hay nada que mostrar, no ocupa lugar.
+ * Arriba del plano, los bloques que el perfil no ocultó (menú "Vista"): el resumen del inventario
+ * (`summary`, solo en el inicio), los insumos para reponer (con un toque se abre su ficha) y los
+ * últimos lugares visitados. Si no hay nada que mostrar, no ocupa lugar.
  */
-export function StorageHighlights({ spaces, spaceId }: { spaces: SpaceOverview[]; spaceId?: string }) {
+export function StorageHighlights({ spaces, spaceId, summary = false }: { spaces: SpaceOverview[]; spaceId?: string; summary?: boolean }) {
   const t = useT();
   const { token } = theme.useToken();
+  const { hiddenWidgets, showEmptyItems } = usePreferences();
   const attention = useAttentionItems(spaceId);
   const recents = useRecentPlaces(spaces, spaceId);
-  const showAttention = !!attention?.length;
-  const showRecents = recents.length > 0;
-  if (!showAttention && !showRecents) return null;
+  const showSummary = summary && !hiddenWidgets.includes("inventory.summary");
+  const showAttention = !!attention?.length && !hiddenWidgets.includes("inventory.restock");
+  const showRecents = recents.length > 0 && !hiddenWidgets.includes("inventory.recent");
+  if (!showSummary && !showAttention && !showRecents) return null;
+  // Dos bloques comparten fila; los recientes (una sola línea de accesos) van solos si son el tercero.
+  const half = { xs: 24, lg: 12 };
+  const full = { xs: 24 };
+  const top = Number(showSummary) + Number(showAttention);
 
   return (
     <Stagger delay={0.05} style={{ marginBottom: token.marginLG }}>
       <Row gutter={[token.marginLG, token.marginLG]}>
+        {showSummary && (
+          <Col {...(top === 2 || showRecents ? half : full)}>
+            <StaggerItem style={{ height: "100%" }}>
+              <InventoryInsights emptyHidden={!showEmptyItems} wide={top === 1 && !showRecents} />
+            </StaggerItem>
+          </Col>
+        )}
         {showAttention && (
-          <Col xs={24} lg={showRecents ? 14 : 24}>
+          <Col {...(top === 2 || (!showSummary && showRecents) ? half : full)}>
             <StaggerItem style={{ height: "100%" }}>
               <Card style={{ height: "100%" }}>
                 <SectionHeader
@@ -65,7 +81,7 @@ export function StorageHighlights({ spaces, spaceId }: { spaces: SpaceOverview[]
           </Col>
         )}
         {showRecents && (
-          <Col xs={24} lg={showAttention ? 10 : 24}>
+          <Col {...(top === 1 ? half : full)}>
             <StaggerItem style={{ height: "100%" }}>
               <Card style={{ height: "100%" }}>
                 <SectionHeader icon={History} title={t("storage.highlights.recent")} description={t("storage.highlights.recentHint")} />

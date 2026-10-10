@@ -16,6 +16,7 @@ import { usePageCrumbs } from "@/store/useBreadcrumbStore";
 import { spaceAppearance } from "../domain";
 import { useStorageOverview } from "../hooks";
 import { entryPath, flattenOverview, spaceTotals } from "../views";
+import { InventoryDisplayMenu } from "./InventoryDisplayMenu";
 import { StorageHighlights } from "./StorageHighlights";
 import { StorageDialogs, useStorageViewActions, type StorageDialog } from "./StoragePage";
 import { CardsView, labelOf, ListView, PlanView, useViewOptions, ViewStage } from "./StorageViews";
@@ -101,7 +102,10 @@ export function SpacePage() {
         <SectionHeader
           title={t("storage.inThisSpace")}
           description={t("storage.containerCount", { count: totals.containers })}
-          extra={<ViewSwitcher label={t("storage.views.label")} value={spaceView} options={options.space} onChange={(view) => setPreference("spaceView", view)} />}
+          extra={<>
+            <ViewSwitcher label={t("storage.views.label")} value={spaceView} options={options.space} onChange={(view) => setPreference("spaceView", view)} />
+            <InventoryDisplayMenu />
+          </>}
         />
       </Reveal>
       <div style={{ marginTop: token.marginSM }}>

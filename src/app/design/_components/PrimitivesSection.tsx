@@ -9,6 +9,7 @@ import {
   CameraViewport,
   ChoiceCards,
   ColorSwatches,
+  DisplayMenu,
   EmptyState,
   IconGrid,
   IconTile,
@@ -50,6 +51,7 @@ function StructureBlock() {
 import { PageHeader, SectionHeader } from "@/components/ui";
 
 <PageHeader eyebrow="Inventario" title="Alacena" description="..." extra={<Button type="primary" icon={<Plus />}>Agregar</Button>} />
+// Sigue la preferencia headerDensity del perfil; dense / dense={false} la fuerza.
 <SectionHeader icon={Boxes} title="Productos" description="12 productos · 2 para reponer" extra={<Button>Ordenar</Button>} />
 
 // Página anidada: la ruta tocable reemplaza al eyebrow.
@@ -61,7 +63,9 @@ import { PageHeader, SectionHeader } from "@/components/ui";
 `}
     >
       <DemoLabel>PageHeader</DemoLabel>
-      <PageHeader eyebrow="Inventario" title="Título de página" description="Descripción breve de la sección." extra={<Button type="primary" icon={<Plus />}>Acción</Button>} />
+      <PageHeader dense={false} eyebrow="Inventario" title="Título de página" description="Descripción breve de la sección." extra={<Button type="primary" icon={<Plus />}>Acción</Button>} />
+      <DemoLabel>PageHeader compacto (preferencia &quot;Encabezado&quot; en Ajustes o en la Vista de Inventario): solo el título y las acciones</DemoLabel>
+      <PageHeader dense eyebrow="Inventario" title="Título de página" description="Esta bajada no se ve en modo compacto." extra={<Button type="primary" icon={<Plus />}>Acción</Button>} />
       <DemoLabel>PageHeader con leading (página de detalle)</DemoLabel>
       <PageHeader leading={<IconTile icon={Refrigerator} color="volcano" size={56} solid />} eyebrow="Cocina" title="Heladera" description="Heladera · Código H3LD" />
 
@@ -92,7 +96,7 @@ function StatesBlock() {
       code={`
 <Card><EmptyState icon={PackageOpen} title="Todavía no hay productos" description="..." action={<Button type="primary">Agregar</Button>} /></Card>
 <PulseDot tone="success" />   {/* success · warning · error · primary */}
-<StockTag status={getStockStatus(item)} />
+<StockTag status={getStockStatus(item)} tool={item.reusable} />   {/* herramienta: "Herramienta" en vez de "En stock" */}
 `}
     >
       <Row gutter={[24, 24]}>
@@ -102,6 +106,7 @@ function StatesBlock() {
             <StockTag status="ok" />
             <StockTag status="low" />
             <StockTag status="empty" />
+            <StockTag status="ok" tool />
           </Flex>
         </Col>
         <Col xs={24} md={12}>
@@ -142,12 +147,14 @@ function SelectionBlock() {
   const [rooms, setRooms] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(3);
   const [layout, setLayout] = useState<"places" | "plan" | "list" | "cards">("places");
+  const [display, setDisplay] = useState({ restock: true, recent: true, empty: false, denseHeader: false });
+  const toggle = (key: keyof typeof display) => (checked: boolean) => setDisplay((current) => ({ ...current, [key]: checked }));
 
   return (
     <DemoBlock
       id="componentes-seleccion"
-      title="Selección: ChoiceCards, ViewSwitcher, ColorSwatches, IconGrid y privacidad"
-      description="Para elegir una opción con explicación o vista previa, ChoiceCards (con teclado y un borde que se desliza). No armar grillas de radios a mano. Para cambiar cómo se ve una misma lista, ViewSwitcher: íconos con nombre (en celular, solo íconos; el nombre queda para lectores de pantalla), y la elección se guarda como preferencia del perfil. Color e ícono de una entidad: ColorSwatches + IconGrid. Quién ve algo: PrivacySelect y PrivacyBadge."
+      title="Selección: ChoiceCards, ViewSwitcher, DisplayMenu, ColorSwatches, IconGrid y privacidad"
+      description="Para elegir una opción con explicación o vista previa, ChoiceCards (con teclado y un borde que se desliza). No armar grillas de radios a mano. Para cambiar cómo se ve una misma lista, ViewSwitcher: íconos con nombre (en celular, solo íconos; el nombre queda para lectores de pantalla), y la elección se guarda como preferencia del perfil. Qué bloques se ven y qué tan denso, DisplayMenu (el botón Vista): interruptores agrupados que se guardan al instante, sin botón Guardar. Color e ícono de una entidad: ColorSwatches + IconGrid. Quién ve algo: PrivacySelect y PrivacyBadge."
       code={`
 <ChoiceCards aria-label="Vista" value={view} onChange={setView} options={[
   { value: "grid", title: "Grilla", description: "...", preview: <LayoutGrid /> },
@@ -158,6 +165,9 @@ function SelectionBlock() {
 <PrivacySelect value={privacy} onChange={setPrivacy} />
 <PrivacyBadge privacy="adults" />
 <ViewSwitcher label="Cómo ver tus lugares" value={inventoryView} options={options} onChange={(view) => setPreference("inventoryView", view)} />
+<DisplayMenu label="Vista" groups={[{ key: "blocks", title: "Bloques", toggles: [
+  { key: "restock", label: "Para reponer", description: "Insumos bajos o agotados.", checked: !hidden, onChange: setShown },
+] }]} />
 PRIVACY_META.adults   // { icon, color }: para mostrar un nivel en otro formato (leyendas, filtros)
 `}
     >
@@ -188,6 +198,17 @@ PRIVACY_META.adults   // { icon, color }: para mostrar un nivel en otro formato 
               { value: "plan", label: "Plano", icon: SquareDashed },
               { value: "list", label: "Lista", icon: LayoutList },
               { value: "cards", label: "Tarjetas", icon: LayoutGrid },
+            ]} />
+          </div>
+          <DemoLabel>DisplayMenu · la Vista de Inventario: bloques, agotados y densidad. En celular queda solo el ícono.</DemoLabel>
+          <div style={{ marginBottom: 16 }}>
+            <DisplayMenu label="Vista" groups={[
+              { key: "blocks", title: "Bloques", toggles: [
+                { key: "restock", label: "Para reponer", description: "Insumos bajos o agotados.", checked: display.restock, onChange: toggle("restock") },
+                { key: "recent", label: "Recientes", description: "Los últimos lugares que abriste.", checked: display.recent, onChange: toggle("recent") },
+              ] },
+              { key: "items", title: "Productos", toggles: [{ key: "empty", label: "Mostrar agotados", description: "Lo que tiene cantidad 0.", checked: display.empty, onChange: toggle("empty") }] },
+              { key: "density", title: "Densidad", toggles: [{ key: "header", label: "Encabezado compacto", description: "Solo el título, sin bajada.", checked: display.denseHeader, onChange: toggle("denseHeader") }] },
             ]} />
           </div>
           <DemoLabel>QuantityStepper · edición directa, límites y botones. El campo conserva su nombre accesible.</DemoLabel>

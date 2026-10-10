@@ -54,7 +54,8 @@
         "containerId": "81585f09-0753-4833-ae6d-ed2b008dcc96",
         "createdAt": 1791164618562,
         "updatedAt": 1791164618563,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Garbanzos 400 g",
@@ -86,7 +87,8 @@
         "containerId": "ec836c64-6e4f-46fb-a167-efa71850e241",
         "createdAt": 1791163188842,
         "updatedAt": 1791163188843,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Aceite de girasol 900 ml",
@@ -102,11 +104,13 @@
         "name": "Funda de almohada",
         "quantity": 1,
         "unit": "unidades",
-        "minThreshold": 3,
+        "minThreshold": 0,
         "id": "28b26406-bf88-4f0b-9701-c3431b172006",
         "containerId": "7e55edcd-2e1f-4831-b9ec-a9285640ac33",
         "createdAt": 1791164618599,
-        "updatedAt": 1791164618599
+        "updatedAt": 1791164618599,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Agujas de coser",
@@ -147,17 +151,21 @@
         "id": "2f3713d3-6282-4047-974f-9be0fa044798",
         "containerId": "cc8072ed-1d03-4a7a-912a-c052011971fa",
         "createdAt": 1791163188873,
-        "updatedAt": 1791163188873
+        "updatedAt": 1791163188873,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Manta de invierno",
-        "quantity": 0,
+        "quantity": 2,
         "unit": "unidades",
-        "minThreshold": 3,
+        "minThreshold": 0,
         "id": "3154e25a-53d0-45b0-8d81-eb3082e60b13",
         "containerId": "7e55edcd-2e1f-4831-b9ec-a9285640ac33",
         "createdAt": 1791164618602,
-        "updatedAt": 1791164618602
+        "updatedAt": 1791164618602,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Bolsas de residuos 60 L (10 u)",
@@ -191,13 +199,15 @@
       },
       {
         "name": "Correa de paseo",
-        "quantity": 0,
+        "quantity": 1,
         "unit": "unidades",
-        "minThreshold": 3,
+        "minThreshold": 0,
         "id": "3e703aae-013b-4c15-9eda-5194a4ac4de7",
         "containerId": "43f3e703-8a5f-4e70-995f-108a7591e2a8",
         "createdAt": 1791164618626,
-        "updatedAt": 1791164618626
+        "updatedAt": 1791164618626,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Detergente 750 ml",
@@ -233,11 +243,13 @@
         "name": "Plato de acero",
         "quantity": 6,
         "unit": "unidades",
-        "minThreshold": 3,
+        "minThreshold": 0,
         "id": "4acd3ee2-6dd1-49b5-b24a-23ce83e48b64",
         "containerId": "43f3e703-8a5f-4e70-995f-108a7591e2a8",
         "createdAt": 1791164618628,
-        "updatedAt": 1791164618628
+        "updatedAt": 1791164618628,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Tijera de podar",
@@ -248,7 +260,8 @@
         "containerId": "81585f09-0753-4833-ae6d-ed2b008dcc96",
         "createdAt": 1791164618565,
         "updatedAt": 1791164618565,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Piedras sanitarias 4 kg",
@@ -274,11 +287,13 @@
         "name": "Cepillo para mascotas",
         "quantity": 7,
         "unit": "unidades",
-        "minThreshold": 3,
+        "minThreshold": 0,
         "id": "66aba4ce-da0c-45e1-9eaf-a34d2012a534",
         "containerId": "43f3e703-8a5f-4e70-995f-108a7591e2a8",
         "createdAt": 1791164618629,
-        "updatedAt": 1791164618629
+        "updatedAt": 1791164618629,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Manta lavable",
@@ -289,7 +304,8 @@
         "containerId": "43f3e703-8a5f-4e70-995f-108a7591e2a8",
         "createdAt": 1791164618633,
         "updatedAt": 1791164618634,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Carpeta con anillos",
@@ -300,7 +316,8 @@
         "containerId": "c841c103-2854-4608-a601-575a46ad5cd1",
         "createdAt": 1791164618587,
         "updatedAt": 1791164618588,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Regadera 5 L",
@@ -311,7 +328,8 @@
         "containerId": "81585f09-0753-4833-ae6d-ed2b008dcc96",
         "createdAt": 1791164618559,
         "updatedAt": 1791164618560,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Multímetro digital",
@@ -322,7 +340,8 @@
         "containerId": "ec836c64-6e4f-46fb-a167-efa71850e241",
         "createdAt": 1791163188848,
         "updatedAt": 1791163188849,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Café molido 250 g",
@@ -338,11 +357,13 @@
         "name": "Toalla de baño",
         "quantity": 4,
         "unit": "unidades",
-        "minThreshold": 3,
+        "minThreshold": 0,
         "id": "72f90843-6821-49eb-b3a9-8cdd7a2ee744",
         "containerId": "7e55edcd-2e1f-4831-b9ec-a9285640ac33",
         "createdAt": 1791164618601,
-        "updatedAt": 1791164618601
+        "updatedAt": 1791164618601,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Lapicera azul",
@@ -403,7 +424,8 @@
         "containerId": "ec836c64-6e4f-46fb-a167-efa71850e241",
         "createdAt": 1791163188846,
         "updatedAt": 1791163188847,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Manteca 200 g",
@@ -465,7 +487,8 @@
         "containerId": "ec836c64-6e4f-46fb-a167-efa71850e241",
         "createdAt": 1791163188835,
         "updatedAt": 1791163188836,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Semillas de tomate",
@@ -506,7 +529,8 @@
         "containerId": "ec836c64-6e4f-46fb-a167-efa71850e241",
         "createdAt": 1791163188850,
         "updatedAt": 1791163188851,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Tornillo M4 x 20 mm",
@@ -567,7 +591,8 @@
         "containerId": "43f3e703-8a5f-4e70-995f-108a7591e2a8",
         "createdAt": 1791164618635,
         "updatedAt": 1791164618636,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Yerba mate 1 kg",
@@ -610,7 +635,8 @@
         "containerId": "81585f09-0753-4833-ae6d-ed2b008dcc96",
         "createdAt": 1791164618567,
         "updatedAt": 1791164618568,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Botones surtidos",
@@ -627,11 +653,13 @@
         "name": "Guantes de jardinería",
         "quantity": 7,
         "unit": "unidades",
-        "minThreshold": 3,
+        "minThreshold": 0,
         "id": "c19ce831-99b3-4b97-ad7e-3f7610b5d460",
         "containerId": "81585f09-0753-4833-ae6d-ed2b008dcc96",
         "createdAt": 1791164618557,
-        "updatedAt": 1791164618557
+        "updatedAt": 1791164618557,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Tomate triturado 520 g",
@@ -647,11 +675,13 @@
         "name": "Juego de sábanas",
         "quantity": 2,
         "unit": "unidades",
-        "minThreshold": 3,
+        "minThreshold": 0,
         "id": "c69aa317-d0a0-4afc-b612-1df5dfdf6ed4",
         "containerId": "7e55edcd-2e1f-4831-b9ec-a9285640ac33",
         "createdAt": 1791164618597,
-        "updatedAt": 1791164618597
+        "updatedAt": 1791164618597,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Cinta de algodón",
@@ -694,7 +724,8 @@
         "containerId": "ec836c64-6e4f-46fb-a167-efa71850e241",
         "createdAt": 1791163188837,
         "updatedAt": 1791163188838,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Arroz largo fino 1 kg",
@@ -740,11 +771,13 @@
         "name": "Paño de microfibra",
         "quantity": 4,
         "unit": "unidades",
-        "minThreshold": 2,
+        "minThreshold": 0,
         "id": "dcedb965-c7d8-4529-8195-4202f3ae581b",
         "containerId": "cc8072ed-1d03-4a7a-912a-c052011971fa",
         "createdAt": 1791163188875,
-        "updatedAt": 1791163188875
+        "updatedAt": 1791163188875,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Levadura seca 10 g",
@@ -778,13 +811,15 @@
       },
       {
         "name": "Guantes de trabajo (par)",
-        "quantity": 0,
+        "quantity": 1,
         "unit": "unidades",
-        "minThreshold": 2,
+        "minThreshold": 0,
         "id": "e1a792b1-9783-4680-9ebf-8abdb9b52cc2",
         "containerId": "201a1021-dcc8-4231-80fd-56b4d6bb7891",
         "createdAt": 1791163188860,
-        "updatedAt": 1791163188860
+        "updatedAt": 1791163188860,
+        "reusable": true,
+        "autoSuggest": false
       },
       {
         "name": "Juego de llaves Allen métricas",
@@ -795,7 +830,8 @@
         "containerId": "ec836c64-6e4f-46fb-a167-efa71850e241",
         "createdAt": 1791163188844,
         "updatedAt": 1791163188845,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Martillo de carpintero 500 g",
@@ -806,7 +842,8 @@
         "containerId": "ec836c64-6e4f-46fb-a167-efa71850e241",
         "createdAt": 1791163188840,
         "updatedAt": 1791163188841,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Tuerca M4",
@@ -837,7 +874,8 @@
         "containerId": "43f3e703-8a5f-4e70-995f-108a7591e2a8",
         "createdAt": 1791164618631,
         "updatedAt": 1791164618632,
-        "autoSuggest": false
+        "autoSuggest": false,
+        "reusable": true
       },
       {
         "name": "Atún al natural 170 g",
@@ -6984,6 +7022,441 @@
         "at": 1791161019054,
         "actorId": "profile-admin",
         "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "7c354ea8-c523-4c37-bcb1-1b9fd9046a92",
+        "entityName": "Leche entera 1 L",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 9,
+        "to": 8,
+        "unit": "unidades",
+        "id": "1738f7d9-3d9c-4724-91e2-0b8f6b0d549b",
+        "at": 1789519126829,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "7c354ea8-c523-4c37-bcb1-1b9fd9046a92",
+        "entityName": "Leche entera 1 L",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 8,
+        "to": 7,
+        "unit": "unidades",
+        "id": "1fb17c23-90c1-42cf-93ac-94af0f21ddb6",
+        "at": 1789681410919,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "7c354ea8-c523-4c37-bcb1-1b9fd9046a92",
+        "entityName": "Leche entera 1 L",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 7,
+        "to": 6,
+        "unit": "unidades",
+        "id": "f29d0da9-953f-48f1-a09f-76b5a170b338",
+        "at": 1790038178623,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "7c354ea8-c523-4c37-bcb1-1b9fd9046a92",
+        "entityName": "Leche entera 1 L",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 6,
+        "to": 5,
+        "unit": "unidades",
+        "id": "0cb1e29c-658c-4a14-95e6-0af593bd04cf",
+        "at": 1790204095754,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "7c354ea8-c523-4c37-bcb1-1b9fd9046a92",
+        "entityName": "Leche entera 1 L",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 5,
+        "to": 4,
+        "unit": "unidades",
+        "id": "2217bead-dbc4-46cb-8e81-973e0becd7b0",
+        "at": 1790794478103,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "7c354ea8-c523-4c37-bcb1-1b9fd9046a92",
+        "entityName": "Leche entera 1 L",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 4,
+        "to": 3,
+        "unit": "unidades",
+        "id": "1e27a1c0-8a6a-43ec-a4ed-e6a46b4cb242",
+        "at": 1790869456638,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "7c354ea8-c523-4c37-bcb1-1b9fd9046a92",
+        "entityName": "Leche entera 1 L",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 3,
+        "to": 2,
+        "unit": "unidades",
+        "id": "2e44158b-ae97-4a94-90ed-a82f8f6d0558",
+        "at": 1790986051249,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "9f6d6950-2b69-40a0-998a-23bdf0a52fd7",
+        "entityName": "Huevos",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 12,
+        "to": 11,
+        "unit": "unidades",
+        "id": "6d76b07e-881e-4162-ae2e-b1547f150524",
+        "at": 1789173205374,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "9f6d6950-2b69-40a0-998a-23bdf0a52fd7",
+        "entityName": "Huevos",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 11,
+        "to": 10,
+        "unit": "unidades",
+        "id": "7403e430-ec66-4787-95e7-61d17731af10",
+        "at": 1789480142313,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "9f6d6950-2b69-40a0-998a-23bdf0a52fd7",
+        "entityName": "Huevos",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 10,
+        "to": 9,
+        "unit": "unidades",
+        "id": "2e05319a-cb5c-4427-bf98-e2774cbd87ad",
+        "at": 1789519019304,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "9f6d6950-2b69-40a0-998a-23bdf0a52fd7",
+        "entityName": "Huevos",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 9,
+        "to": 8,
+        "unit": "unidades",
+        "id": "86734721-4cdd-4055-930d-6eaf14f4733f",
+        "at": 1790534827894,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "9f6d6950-2b69-40a0-998a-23bdf0a52fd7",
+        "entityName": "Huevos",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 8,
+        "to": 7,
+        "unit": "unidades",
+        "id": "72e6cc3a-babc-4d20-97ee-05cde00902c7",
+        "at": 1790779988544,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "9f6d6950-2b69-40a0-998a-23bdf0a52fd7",
+        "entityName": "Huevos",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 7,
+        "to": 6,
+        "unit": "unidades",
+        "id": "1e398f10-12bd-4ace-baec-bd389be4bcfc",
+        "at": 1790782260562,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "baaea9cb-fecf-4f23-8dbf-d11c1fe06257",
+        "entityName": "Yerba mate 1 kg",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 6,
+        "to": 5,
+        "unit": "paquetes",
+        "id": "ca02135e-92b1-43f2-8ede-0d7ac3baea9e",
+        "at": 1789667759323,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "baaea9cb-fecf-4f23-8dbf-d11c1fe06257",
+        "entityName": "Yerba mate 1 kg",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 5,
+        "to": 4,
+        "unit": "paquetes",
+        "id": "98289fcd-59a5-4a7b-b1fe-e08f57124242",
+        "at": 1789952387916,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "baaea9cb-fecf-4f23-8dbf-d11c1fe06257",
+        "entityName": "Yerba mate 1 kg",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 4,
+        "to": 3,
+        "unit": "paquetes",
+        "id": "119a72d1-74c9-4f6a-8c01-1cdd9474031b",
+        "at": 1790623264094,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "baaea9cb-fecf-4f23-8dbf-d11c1fe06257",
+        "entityName": "Yerba mate 1 kg",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 3,
+        "to": 2,
+        "unit": "paquetes",
+        "id": "b2715945-795e-4229-851a-bd81f1d69ed6",
+        "at": 1790699805312,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "72607db8-e369-4e9e-9a05-bf17924b7242",
+        "entityName": "Café molido 250 g",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 4,
+        "to": 3,
+        "unit": "paquetes",
+        "id": "e3151288-62c3-4a4f-b774-eb5248db40af",
+        "at": 1789259456996,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "72607db8-e369-4e9e-9a05-bf17924b7242",
+        "entityName": "Café molido 250 g",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 3,
+        "to": 2,
+        "unit": "paquetes",
+        "id": "5affb229-7631-4992-b0ce-583505c6af07",
+        "at": 1789311433756,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "72607db8-e369-4e9e-9a05-bf17924b7242",
+        "entityName": "Café molido 250 g",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 2,
+        "to": 1,
+        "unit": "paquetes",
+        "id": "0f17a300-7e62-4a0a-9df9-fd789c653938",
+        "at": 1790971041671,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "d97ae632-a85c-4ae5-8a6d-dbb8ae274782",
+        "entityName": "Yogur natural 190 g",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 6,
+        "to": 5,
+        "unit": "unidades",
+        "id": "66d22876-72fd-4202-aa96-fb1a14a0f9e7",
+        "at": 1790015182880,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "d97ae632-a85c-4ae5-8a6d-dbb8ae274782",
+        "entityName": "Yogur natural 190 g",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 5,
+        "to": 4,
+        "unit": "unidades",
+        "id": "6e36aab0-d1bc-42d9-a30d-977ee2257159",
+        "at": 1790540529840,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "d97ae632-a85c-4ae5-8a6d-dbb8ae274782",
+        "entityName": "Yogur natural 190 g",
+        "containerId": "58c1f82b-8f6e-4d99-a9de-ea2a9cacd2bd",
+        "place": "Heladera",
+        "from": 4,
+        "to": 3,
+        "unit": "unidades",
+        "id": "5bd86d40-fc89-4b4a-aa50-df4db4d66a3a",
+        "at": 1790716001920,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "42568d77-819c-4894-876c-ea028fa715d7",
+        "entityName": "Detergente 750 ml",
+        "containerId": "2c8df777-54c4-4dc3-876e-c727d0d0cec2",
+        "place": "Productos de limpieza",
+        "from": 4,
+        "to": 3,
+        "unit": "unidades",
+        "id": "a8948c89-3b61-4676-a6bb-7dbd2d1c9af0",
+        "at": 1789238288087,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "42568d77-819c-4894-876c-ea028fa715d7",
+        "entityName": "Detergente 750 ml",
+        "containerId": "2c8df777-54c4-4dc3-876e-c727d0d0cec2",
+        "place": "Productos de limpieza",
+        "from": 3,
+        "to": 2,
+        "unit": "unidades",
+        "id": "96d0cc5f-d4c2-4c2e-bc26-847f0316909e",
+        "at": 1790463290940,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "8a82fcaf-bfb2-4730-9763-2dfdad7c9c91",
+        "entityName": "Azúcar 1 kg",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 6,
+        "to": 5,
+        "unit": "paquetes",
+        "id": "9c1caaf7-5e87-46ed-88da-f4016b4013ef",
+        "at": 1790300344353,
+        "actorId": "profile-admin",
+        "actorName": "Administrador"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "8a82fcaf-bfb2-4730-9763-2dfdad7c9c91",
+        "entityName": "Azúcar 1 kg",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 5,
+        "to": 4,
+        "unit": "paquetes",
+        "id": "dbf4a8b2-b0c4-412d-a020-3626f3fe39c0",
+        "at": 1790628586443,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "f8107c25-f9a1-41cd-a003-4fcd86b50950",
+        "entityName": "Fideos secos 500 g",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 3,
+        "to": 2,
+        "unit": "paquetes",
+        "id": "f3aed0b6-c7ac-4491-9ef8-8334e647cb8f",
+        "at": 1789346595669,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
+      },
+      {
+        "module": "inventory",
+        "action": "consume",
+        "entityId": "f8107c25-f9a1-41cd-a003-4fcd86b50950",
+        "entityName": "Fideos secos 500 g",
+        "containerId": "71d7a7c8-fee2-47de-8c64-6bbc25faecd7",
+        "place": "Alacena",
+        "from": 2,
+        "to": 1,
+        "unit": "paquetes",
+        "id": "1a81682c-64e5-4cad-a623-7a0465e7e423",
+        "at": 1789654373123,
+        "actorId": "profile-adult",
+        "actorName": "Marina (demo)"
       }
     ],
     "spaces": [
@@ -9509,32 +9982,11 @@
         "createdAt": 1791163188821
       },
       {
-        "id": "2064c622-46b1-485d-ab6f-b15c5d1544a8",
-        "itemId": "e1a792b1-9783-4680-9ebf-8abdb9b52cc2",
-        "reason": "empty",
-        "status": "pending",
-        "createdAt": 1791163188860
-      },
-      {
         "id": "3ade60fa-c219-4b3f-aa46-47b56b433b77",
         "itemId": "0dab638d-92cc-482f-a8ea-4ed6862736f0",
         "reason": "low",
         "status": "pending",
         "createdAt": 1791164618648
-      },
-      {
-        "id": "3e665aef-5824-4f92-8b2b-f2053ad80454",
-        "itemId": "3e703aae-013b-4c15-9eda-5194a4ac4de7",
-        "reason": "empty",
-        "status": "pending",
-        "createdAt": 1791164618627
-      },
-      {
-        "id": "63f42b6c-448f-4dbb-a76a-e4a160f57a2b",
-        "itemId": "3154e25a-53d0-45b0-8d81-eb3082e60b13",
-        "reason": "empty",
-        "status": "pending",
-        "createdAt": 1791164618603
       },
       {
         "id": "89065fd8-1f8b-48cc-be30-80be41b5a53e",
@@ -9556,13 +10008,6 @@
         "reason": "low",
         "status": "pending",
         "createdAt": 1791164618622
-      },
-      {
-        "id": "b0af0c1d-e5ff-4dc4-a26f-e967d3251487",
-        "itemId": "c69aa317-d0a0-4afc-b612-1df5dfdf6ed4",
-        "reason": "low",
-        "status": "pending",
-        "createdAt": 1791164618598
       },
       {
         "id": "b0b64c05-1564-4089-ba52-677837cf9a0e",
@@ -9591,13 +10036,6 @@
         "reason": "low",
         "status": "pending",
         "createdAt": 1791163188872
-      },
-      {
-        "id": "dce5816b-3688-43d9-a621-1b7a5f440b0a",
-        "itemId": "28b26406-bf88-4f0b-9701-c3431b172006",
-        "reason": "low",
-        "status": "pending",
-        "createdAt": 1791164618599
       }
     ],
     "recipes": [

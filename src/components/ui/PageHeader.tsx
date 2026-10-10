@@ -3,6 +3,7 @@
 import { Flex, Typography, theme } from "antd";
 import type { ReactNode } from "react";
 import { Reveal } from "@/components/motion/Reveal";
+import { usePreferences } from "@/hooks/usePreferences";
 
 interface PageHeaderProps {
   title: ReactNode;
@@ -15,17 +16,28 @@ interface PageHeaderProps {
   extra?: ReactNode;
   /** Identidad de la entidad a la izquierda del título (IconTile solid), en páginas de detalle. */
   leading?: ReactNode;
+  /** Fuerza el modo. Por defecto sigue la preferencia "Encabezado" del perfil (`headerDensity`). */
+  dense?: boolean;
 }
 
-/** Encabezado estándar de toda página. Una sola por página. */
-export function PageHeader({ title, description, eyebrow, crumbs, extra, leading }: PageHeaderProps) {
+/**
+ * Encabezado estándar de toda página. Una sola por página. En modo compacto queda solo el título,
+ * más chico, y las acciones: la bajada y el eyebrow ceden su lugar a los datos.
+ */
+export function PageHeader({ title, description, eyebrow, crumbs, extra, leading, dense }: PageHeaderProps) {
   const { token } = theme.useToken();
+  const { headerDensity } = usePreferences();
+  const compact = dense ?? headerDensity === "compact";
+  if (compact) {
+    description = undefined;
+    eyebrow = undefined;
+  }
 
   return (
     <Reveal>
       {crumbs && <div style={{ marginBottom: token.marginXS }}>{crumbs}</div>}
-      <Flex justify="space-between" align="flex-end" gap={16} wrap style={{ marginBottom: 32 }}>
-        <Flex align="center" gap={16} style={{ minWidth: 0 }}>
+      <Flex justify="space-between" align={compact ? "center" : "flex-end"} gap={compact ? token.marginSM : 16} wrap style={{ marginBottom: compact ? token.margin : 32 }}>
+        <Flex align="center" gap={compact ? token.marginSM : 16} style={{ minWidth: 0 }}>
           {leading}
           <div style={{ minWidth: 0 }}>
             {eyebrow && !crumbs && (
@@ -36,7 +48,7 @@ export function PageHeader({ title, description, eyebrow, crumbs, extra, leading
                 {eyebrow}
               </Typography.Text>
             )}
-            <Typography.Title level={2} style={{ margin: eyebrow && !crumbs ? "4px 0 0" : 0, letterSpacing: "-0.025em", overflowWrap: "anywhere" }}>
+            <Typography.Title level={compact ? 4 : 2} style={{ margin: eyebrow && !crumbs ? "4px 0 0" : 0, letterSpacing: "-0.025em", overflowWrap: "anywhere" }}>
               {title}
             </Typography.Title>
             {description && (

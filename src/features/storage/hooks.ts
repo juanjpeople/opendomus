@@ -2,7 +2,7 @@
 
 import { App } from "antd";
 import { useLiveQuery } from "dexie-react-hooks";
-import { getStockStatus, type InventoryItem } from "@/features/inventory/domain";
+import { getStockStatus, needsRestock, type InventoryItem } from "@/features/inventory/domain";
 import { useT } from "@/i18n";
 import { useCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -47,7 +47,8 @@ async function loadStorage() {
   const previews = new Map<string, string[]>();
   const contentCounts = new Map<string, number>();
   for (const entry of contents) contentCounts.set(entry.containerId, (contentCounts.get(entry.containerId) ?? 0) + 1);
-  for (const entry of [...items.map((item) => ({ containerId: item.containerId, text: item.name })), ...contents]) {
+  // La muestra no nombra lo que está en 0: no está ahí.
+  for (const entry of [...items.filter((item) => item.quantity > 0).map((item) => ({ containerId: item.containerId, text: item.name })), ...contents]) {
     const preview = previews.get(entry.containerId) ?? [];
     if (preview.length < 3) previews.set(entry.containerId, [...preview, entry.text]);
   }
@@ -59,7 +60,8 @@ async function loadStorage() {
   }));
   for (const item of items) {
     const entry = { ...(own.get(item.containerId) ?? NO_STATS) };
-    const status = getStockStatus(item);
+    // Las herramientas cuentan como productos pero nunca como "para reponer".
+    const status = needsRestock(item) ? getStockStatus(item) : "ok";
     entry.itemCount++;
     if (status !== "ok") entry.needsAttention++;
     if (status === "low") entry.low++;
@@ -154,7 +156,10 @@ export interface AttentionItem {
   path: string;
 }
 
-/** Lo que está por acabarse o agotado, con dónde está. Primero lo agotado. `spaceId` limita a un recinto. */
+/**
+ * Insumos por acabarse o agotados, con dónde están. Primero lo agotado. `spaceId` limita a un recinto.
+ * Las herramientas y equipos no aparecen: no se reponen por usarlos.
+ */
 export function useAttentionItems(spaceId?: string) {
   return useLiveQuery(async () => {
     const [spaces, containers, items] = await Promise.all([db.spaces.toArray(), db.containers.toArray(), db.inventory.toArray()]);
@@ -164,7 +169,7 @@ export function useAttentionItems(spaceId?: string) {
       .flatMap((item): AttentionItem[] => {
         const status = getStockStatus(item);
         const container = byId.get(item.containerId);
-        if (status === "ok" || !container || (spaceId && container.spaceId !== spaceId)) return [];
+        if (!needsRestock(item) || status === "ok" || !container || (spaceId && container.spaceId !== spaceId)) return [];
         return [{ item, status, container, path: [spaceNames.get(container.spaceId), pathLabel(container.id, byId)].filter(Boolean).join(" › ") }];
       })
       .sort((a, b) => (a.status === b.status ? a.item.name.localeCompare(b.item.name) : a.status === "empty" ? -1 : 1));

@@ -21,6 +21,7 @@ import { containerAppearance, spaceAppearance, STORAGE_LIMITS } from "@/features
 import { useContainer, useContainerContents, useSpaces, useStorageActions } from "@/features/storage/hooks";
 import { useT } from "@/i18n";
 import { tint } from "@/lib/appearance";
+import { usePreferences } from "@/hooks/usePreferences";
 import { usePermission } from "@/lib/auth/hooks";
 import { useTrackVisit } from "@/components/layout/useShell";
 import { cameraHref, containerHref, spaceHref } from "@/lib/navigation/routes";
@@ -229,7 +230,7 @@ export function ContainerPage() {
               description={counts.items ? t("storage.itemCount", { count: counts.items }) : t("inventory.list.emptyHint")}
               extra={canCreate && <Button type="primary" icon={<Plus />} onClick={() => setDialog("product")}>{t("inventory.form.title")}</Button>}
             />
-            {counts.items > 0 && <StockTiles statuses={(items ?? []).map(getStockStatus)} />}
+            {(items ?? []).some((item) => !item.reusable) && <StockTiles statuses={(items ?? []).filter((item) => !item.reusable).map(getStockStatus)} />}
             <InventoryList containerId={container.id} onOpen={setOpenItem} highlightId={arrivedItem} />
           </section>
         </Reveal>
@@ -265,10 +266,11 @@ function Summary({ counts }: { counts: Record<keyof typeof SECTIONS, number> }) 
     { key: "notes" as const, text: t("storage.noteCount", { count: counts.notes }) },
     { key: "photos" as const, text: t("storage.photoCount", { count: counts.photos }) },
   ].filter((part) => counts[part.key] > 0);
+  const { headerDensity } = usePreferences();
   const link: CSSProperties = { display: "inline-flex", alignItems: "center", minHeight: token.controlHeightLG + token.paddingXXS, color: token.colorTextSecondary, textDecoration: "underline", textDecorationColor: token.colorBorder, textUnderlineOffset: 4 };
   return (
     <Reveal delay={0.05}>
-      <nav aria-label={t("storage.summary")} style={{ marginTop: -token.marginLG, marginBottom: token.marginLG }}>
+      <nav aria-label={t("storage.summary")} style={{ marginTop: headerDensity === "compact" ? -token.marginXS : -token.marginLG, marginBottom: token.marginLG }}>
         <Flex wrap align="center" gap={token.marginXS}>
           {parts.map((part, index) => (
             <Flex key={part.key} align="center" gap={token.marginXS}>
@@ -282,7 +284,7 @@ function Summary({ counts }: { counts: Record<keyof typeof SECTIONS, number> }) 
   );
 }
 
-/** Bien · Poco · Agotado: solo cuando hay productos con cantidad. */
+/** Bien · Poco · Agotado de los insumos: las herramientas no se gastan, así que no suman acá. */
 function StockTiles({ statuses }: { statuses: StockStatus[] }) {
   const t = useT();
   const { token } = theme.useToken();

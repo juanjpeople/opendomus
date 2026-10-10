@@ -22,6 +22,11 @@ describe("sugerencias automáticas", () => {
     assert.deepEqual(decideSuggestion({ previous: "low", item: item(0), pendingReason: null, onList: false }), { type: "none" });
   });
 
+  test("una herramienta nunca se sugiere y retira la sugerencia que tenía", () => {
+    assert.deepEqual(decideSuggestion({ previous: "ok", item: { quantity: 0, minThreshold: 1, reusable: true }, pendingReason: null, onList: false }), { type: "none" });
+    assert.deepEqual(decideSuggestion({ previous: "low", item: { quantity: 0, minThreshold: 1, reusable: true }, pendingReason: "empty", onList: false }), { type: "withdraw" });
+  });
+
   test("no sugiere si ya está en la lista o si se pidió no sugerirlo", () => {
     assert.deepEqual(decideSuggestion({ previous: "ok", item: item(1), pendingReason: null, onList: true }), { type: "none" });
     assert.deepEqual(decideSuggestion({ previous: "ok", item: item(1, 2, false), pendingReason: null, onList: false }), { type: "none" });
