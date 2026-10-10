@@ -90,7 +90,8 @@ Preview the cloud build with `npm start`. Use `npm run build:local` and `npm run
 The current release process is manual. When publishing a reviewed version:
 
 - Build command: `npm run build`
-- Deploy command: `npx wrangler deploy`
+- Deploy command: `npm run deploy` (applies pending D1 migrations, then `wrangler deploy`;
+  the build's API token needs D1 Edit)
 - Environment variable: `NODE_VERSION=24`
 
 CI checks PRs and main; it does not deploy. `public/_redirects` sends printed QR links (`/c/<code>`) to
