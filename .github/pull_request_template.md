@@ -7,6 +7,7 @@
 - [ ] `npm run check`
 - [ ] `npm run build && npm run e2e`
 - [ ] Revisado en escritorio, celular y modo oscuro (si toca la interfaz)
+- [ ] Si termina algo de `ROADMAP.md`, lo moví a ✅ y actualicé su página en `docs/features/`
 
 ## Valores
 
