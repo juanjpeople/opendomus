@@ -12,3 +12,13 @@ test("la vista de inventario se recuerda solo si es una conocida", () => {
   assert.deepEqual(sanitizePreferences({ inventoryView: "list", spaceView: "places", themeMode: "dark", extra: 1 }), { inventoryView: "list", themeMode: "dark" });
   assert.deepEqual(sanitizePreferences(null), {});
 });
+
+test("densidades, productos agotados y bloques ocultos se validan", () => {
+  assert.equal(DEFAULT_PREFERENCES.headerDensity, "comfortable");
+  assert.equal(DEFAULT_PREFERENCES.showEmptyItems, false);
+  assert.deepEqual(DEFAULT_PREFERENCES.hiddenWidgets, []);
+  assert.equal(isValidPreference("headerDensity", "compact"), true);
+  assert.equal(isValidPreference("showEmptyItems", "sí"), false);
+  assert.equal(isValidPreference("hiddenWidgets", ["inventory.restock"]), true);
+  assert.equal(isValidPreference("hiddenWidgets", ["inventory.restock", "otro"]), false);
+});

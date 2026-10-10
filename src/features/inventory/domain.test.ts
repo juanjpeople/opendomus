@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { ValidationError } from "@/lib/errors";
-import { getStockStatus, parseInventoryPatch, parseNewInventoryItem, planConsumption } from "./domain";
+import { forecastUsage, getStockStatus, needsRestock, parseInventoryPatch, parseNewInventoryItem, planConsumption, summarizeInventory } from "./domain";
 
 describe("estado de stock", () => {
   test("agotado, bajo y en stock", () => {
@@ -11,6 +11,45 @@ describe("estado de stock", () => {
     // Sin mínimo, solo "agotado" importa.
     assert.equal(getStockStatus({ quantity: 0, minThreshold: 0 }), "empty");
     assert.equal(getStockStatus({ quantity: 1, minThreshold: 0 }), "ok");
+  });
+});
+
+describe("herramientas e insumos", () => {
+  test("una herramienta nunca está baja y no va a Para reponer", () => {
+    assert.equal(getStockStatus({ quantity: 1, minThreshold: 3, reusable: true }), "ok");
+    assert.equal(getStockStatus({ quantity: 0, minThreshold: 3, reusable: true }), "empty");
+    assert.equal(needsRestock({ quantity: 0, minThreshold: 3, reusable: true }), false);
+    assert.equal(needsRestock({ quantity: 1, minThreshold: 3 }), true);
+    assert.equal(needsRestock({ quantity: 3, minThreshold: 3 }), false);
+  });
+
+  test("el resumen separa insumos de herramientas y no cuenta herramientas faltantes", () => {
+    assert.deepEqual(summarizeInventory([
+      { quantity: 4, minThreshold: 2 },
+      { quantity: 1, minThreshold: 2 },
+      { quantity: 0, minThreshold: 2 },
+      { quantity: 1, minThreshold: 0, reusable: true },
+      { quantity: 0, minThreshold: 0, reusable: true },
+    ]), { supplies: 2, tools: 1, low: 1, empty: 1 });
+  });
+});
+
+describe("ritmo de uso", () => {
+  const DAY = 86_400_000;
+  const now = 100 * DAY;
+
+  test("sin usos no inventa un número", () => {
+    assert.deepEqual(forecastUsage(5, [], now), { used: 0, times: 0, daysLeft: null });
+  });
+
+  test("calcula cuántos días alcanza al ritmo del último mes", () => {
+    const uses = [{ at: now - 30 * DAY, amount: 3 }, { at: now - 15 * DAY, amount: 3 }];
+    assert.deepEqual(forecastUsage(4, uses, now), { used: 6, times: 2, daysLeft: 20 });
+  });
+
+  test("ignora usos fuera de la ventana y mide al menos una semana", () => {
+    const uses = [{ at: now - 60 * DAY, amount: 10 }, { at: now - DAY, amount: 7 }];
+    assert.deepEqual(forecastUsage(3, uses, now), { used: 7, times: 1, daysLeft: 3 });
   });
 });
 

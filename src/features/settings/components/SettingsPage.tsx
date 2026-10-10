@@ -227,6 +227,16 @@ function AppearanceSettings() {
         />
       </SettingRow>
 
+      <SettingRow label={t("settings.appearance.headerDensity")}>
+        <Segmented<Density>
+          vertical={!screens.sm}
+          block={!screens.sm}
+          value={preferences.headerDensity}
+          onChange={(value) => setPreference("headerDensity", value)}
+          options={(["comfortable", "compact"] as const).map((value) => ({ value, label: t(`settings.appearance.headerDensities.${value}`) }))}
+        />
+      </SettingRow>
+
       <SettingRow label={t("settings.appearance.motion")} last>
         <Segmented<MotionPreference>
           vertical={!screens.sm}

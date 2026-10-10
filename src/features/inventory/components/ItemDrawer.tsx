@@ -46,7 +46,7 @@ export function ItemDrawer({ itemId, onClose }: { itemId: string | null; onClose
           <Flex align="center" gap={token.marginXS}>
             <IconTile icon={appearance?.Icon ?? PackageOpen} color={appearance?.color} size={token.controlHeight} solid />
             <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</span>
-            <StockTag status={getStockStatus(item)} />
+            <StockTag status={getStockStatus(item)} tool={item.reusable} />
           </Flex>
         ) : null
       }

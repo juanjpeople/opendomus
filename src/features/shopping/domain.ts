@@ -165,7 +165,7 @@ export type SuggestionChange =
 interface SuggestionContext {
   /** Estado antes del cambio. `null` si el producto es nuevo. */
   previous: StockStatus | null;
-  item: Pick<InventoryItem, "quantity" | "minThreshold" | "autoSuggest">;
+  item: Pick<InventoryItem, "quantity" | "minThreshold" | "autoSuggest"> & Partial<Pick<InventoryItem, "reusable">>;
   /** Motivo de la sugerencia pendiente que ya tiene, si tiene. */
   pendingReason: SuggestionReason | null;
   /** Si ya está anotado (sin comprar) en la lista. */
@@ -180,7 +180,8 @@ interface SuggestionContext {
  * - Si estaba "bajo" y se agotó, la sugerencia se actualiza (cambia la urgencia).
  */
 export function decideSuggestion({ previous, item, pendingReason, onList }: SuggestionContext): SuggestionChange {
-  const status = getStockStatus(item);
+  // Una herramienta no se repone por usarla: si queda una sugerencia vieja, se retira.
+  const status = item.reusable ? "ok" : getStockStatus(item);
   if (status === "ok") return pendingReason ? { type: "withdraw" } : { type: "none" };
   if (pendingReason) return pendingReason === status ? { type: "none" } : { type: "update", reason: status };
   if (previous !== "ok" && previous !== null) return { type: "none" };

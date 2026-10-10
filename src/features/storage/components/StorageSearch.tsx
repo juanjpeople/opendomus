@@ -1,10 +1,10 @@
 "use client";
 
-import { Button, Card, Input, Typography, theme } from "antd";
+import { Button, Card, Flex, Input, Typography, theme } from "antd";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Search, SearchX } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useState, type ReactNode } from "react";
 import { useT } from "@/i18n";
 import { db } from "@/lib/db";
 import { containerHref } from "@/lib/navigation/routes";
@@ -17,7 +17,11 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return highlightSearch(text, query).map((part, index) => part.matched ? <Typography.Text mark key={index}>{part.text}</Typography.Text> : part.text);
 }
 
-export function StorageSearch() {
+/**
+ * Buscador de Inventario en una sola línea: la ayuda va en el título del campo y los resultados
+ * aparecen debajo solo cuando hay algo escrito. `extra` queda a la derecha (ej. el menú "Vista").
+ */
+export function StorageSearch({ extra }: { extra?: ReactNode }) {
   const t = useT();
   const { token } = theme.useToken();
   const [query, setQuery] = useState("");
@@ -29,14 +33,18 @@ export function StorageSearch() {
   });
   const results = index ? searchStorage(index, deferred) : undefined;
   const terms = normalizeSearch(deferred).split(" ").filter(Boolean);
-  return <Card style={{ marginBottom: token.marginLG }}>
-    <Input size="large" prefix={<Search />} placeholder={t("storage.search.placeholder")} aria-label={t("storage.search.placeholder")} value={query} allowClear onChange={(event) => { setQuery(event.target.value); setLimit(12); }} />
-    {!query.trim() && <Typography.Paragraph type="secondary" style={{ margin: "8px 0 0" }}>{t("storage.search.hint")}</Typography.Paragraph>}
-    {query.trim() && <div aria-live="polite" aria-busy={query !== deferred}>
+  return <div style={{ marginBottom: token.marginLG }}>
+    <Flex gap={token.marginXS} align="center">
+      <Input prefix={<Search />} placeholder={t("storage.search.placeholder")} aria-label={t("storage.search.placeholder")} title={t("storage.search.hint")} value={query} allowClear
+        onChange={(event) => { setQuery(event.target.value); setLimit(12); }} style={{ flex: 1, minWidth: 0, minHeight: token.controlHeightLG }} />
+      {extra}
+    </Flex>
+    <div aria-live="polite" aria-busy={query !== deferred}>
+    {query.trim() && <Card style={{ marginTop: token.marginXS }}>
       {!results && <LoadingSkeleton />}
       {results?.length === 0 && <EmptyState icon={SearchX} title={t("storage.search.empty")} />}
       {!!results?.length && <>
-        <Typography.Paragraph type="secondary" style={{ margin: "12px 0" }}>{t("storage.search.count", { count: results.length })}</Typography.Paragraph>
+        <Typography.Paragraph type="secondary" style={{ margin: `0 0 ${token.marginSM}px` }}>{t("storage.search.count", { count: results.length })}</Typography.Paragraph>
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
           <AnimatePresence initial={false}>{results.slice(0, limit).map((entry, index) => {
             const matched = entry.contents.filter((text) => terms.some((term) => normalizeSearch(text).includes(term)));
@@ -52,6 +60,7 @@ export function StorageSearch() {
         </ul>
         {results.length > limit && <Button onClick={() => setLimit((current) => current + 12)} style={{ marginTop: 16 }}>{t("storage.search.more")}</Button>}
       </>}
-    </div>}
-  </Card>;
+    </Card>}
+    </div>
+  </div>;
 }

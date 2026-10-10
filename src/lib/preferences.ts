@@ -14,13 +14,22 @@ export const INVENTORY_VIEWS = ["places", "plan", "list", "cards"] as const;
 export type InventoryView = (typeof INVENTORY_VIEWS)[number];
 export const SPACE_VIEWS = ["plan", "list", "cards"] as const;
 export type SpaceView = (typeof SPACE_VIEWS)[number];
+/**
+ * Bloques que cada perfil puede ocultar. El id lleva la sección adelante ("inventory.restock") para
+ * que una función nueva sume los suyos sin chocar. Cuando exista el registro de funciones, se mueve ahí.
+ */
+export const WIDGET_IDS = ["inventory.summary", "inventory.restock", "inventory.recent"] as const;
+export type WidgetId = (typeof WIDGET_IDS)[number];
 
 export interface Preferences {
   themeMode: ThemeMode;
   brandColor: string;
   borderRadius: number;
   fontSize: FontSize;
+  /** Datos: "compact" achica filas, tarjetas y controles en toda la app. */
   density: Density;
+  /** Encabezado de página: "compact" deja solo el título (sin bajada) y más chico. */
+  headerDensity: Density;
   motion: MotionPreference;
   locale: LocalePreference;
   sidebar: SidebarMode;
@@ -29,6 +38,10 @@ export interface Preferences {
   /** Vista por defecto del inicio de Inventario y de cada recinto (se recuerda por perfil). */
   inventoryView: InventoryView;
   spaceView: SpaceView;
+  /** Inventario: mostrar los productos con cantidad 0. Por defecto no: lo que no tenés mete ruido. */
+  showEmptyItems: boolean;
+  /** Bloques ocultos por el perfil (ver `WIDGET_IDS`). */
+  hiddenWidgets: WidgetId[];
   /** Estilo completo de la app (colores de fondo, sombras, tipografía, ilustraciones). Ver `src/skins`. */
   skin: SkinId;
 }
@@ -39,12 +52,15 @@ export const DEFAULT_PREFERENCES: Preferences = {
   borderRadius: 8,
   fontSize: "md",
   density: "comfortable",
+  headerDensity: "comfortable",
   motion: "system",
   locale: "system",
   sidebar: "expanded",
   autoLockMinutes: 15,
   inventoryView: "plan",
   spaceView: "plan",
+  showEmptyItems: false,
+  hiddenWidgets: [],
   skin: "casa",
 };
 
@@ -55,12 +71,15 @@ const VALID: { [K in keyof Preferences]: (value: unknown) => boolean } = {
   borderRadius: (v) => typeof v === "number" && v >= 0 && v <= 20,
   fontSize: (v) => v === "sm" || v === "md" || v === "lg" || v === "xl",
   density: (v) => v === "comfortable" || v === "compact",
+  headerDensity: (v) => v === "comfortable" || v === "compact",
   motion: (v) => v === "system" || v === "reduced" || v === "full",
   locale: (v) => v === "system" || isLocale(v),
   sidebar: (v) => v === "expanded" || v === "collapsed" || v === "hidden",
   autoLockMinutes: (v) => (AUTO_LOCK_OPTIONS as readonly unknown[]).includes(v),
   inventoryView: (v) => (INVENTORY_VIEWS as readonly unknown[]).includes(v),
   spaceView: (v) => (SPACE_VIEWS as readonly unknown[]).includes(v),
+  showEmptyItems: (v) => typeof v === "boolean",
+  hiddenWidgets: (v) => Array.isArray(v) && v.every((id) => (WIDGET_IDS as readonly unknown[]).includes(id)),
   skin: (v) => (SKIN_IDS as readonly unknown[]).includes(v),
 };
 

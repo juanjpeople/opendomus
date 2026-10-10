@@ -7,7 +7,7 @@ import { useT } from "@/i18n";
 import { useCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
-import { getStockStatus, type InventoryItemPatch, type NewInventoryItem } from "./domain";
+import { forecastUsage, needsRestock, USAGE_WINDOW_DAYS, type InventoryItem, type InventoryItemPatch, type NewInventoryItem, type UsageForecast } from "./domain";
 import { adjustInventoryQuantity, consumeInventoryItem, createInventoryItem, deleteInventoryItem, undoQuantityChange, updateInventoryItem } from "./service";
 
 /** Productos de un contenedor, reactivos a cambios en la base. `undefined` mientras carga. */
@@ -28,7 +28,7 @@ export function useInventoryItem(id: string | null) {
 export function useInventoryTotals() {
   return useLiveQuery(async () => {
     const items = await db.inventory.toArray();
-    return { total: items.length, needsAttention: items.filter((item) => getStockStatus(item) !== "ok").length };
+    return { total: items.length, needsAttention: items.filter(needsRestock).length };
   });
 }
 
@@ -50,6 +50,40 @@ export function useConsumption(itemId: string | null) {
       lastAt: entries.at(-1)?.at ?? null,
     };
   }, [itemId]);
+}
+
+export interface ItemUsage extends UsageForecast {
+  item: InventoryItem;
+}
+
+/**
+ * Lo que más se usó en los últimos 30 días (sale del historial de consumos) y cuánto alcanza lo
+ * que queda a ese ritmo. Solo insumos que todavía existen; los más usados primero.
+ */
+export function useTopUsage(limit = 5) {
+  return useLiveQuery(async () => {
+    const now = Date.now();
+    const since = now - USAGE_WINDOW_DAYS * DAY;
+    const [entries, items] = await Promise.all([
+      db.activity.where("at").above(since).filter((entry) => entry.module === "inventory" && entry.action === "consume" && entry.undoneAt === undefined).toArray(),
+      db.inventory.toArray(),
+    ]);
+    const byId = new Map(items.map((item) => [item.id, item]));
+    const uses = new Map<string, { at: number; amount: number }[]>();
+    for (const entry of entries) {
+      if (!byId.has(entry.entityId)) continue;
+      uses.set(entry.entityId, [...(uses.get(entry.entityId) ?? []), { at: entry.at, amount: (entry.from ?? 0) - (entry.to ?? 0) }]);
+    }
+    return [...uses]
+      .flatMap(([id, list]): ItemUsage[] => {
+        const item = byId.get(id)!;
+        if (item.reusable) return [];
+        const forecast = forecastUsage(item.quantity, list, now);
+        return forecast.used ? [{ item, ...forecast }] : [];
+      })
+      .sort((a, b) => b.times - a.times || b.used - a.used || a.item.name.localeCompare(b.item.name))
+      .slice(0, limit);
+  }, [limit]);
 }
 
 /**

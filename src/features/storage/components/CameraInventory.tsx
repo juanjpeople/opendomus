@@ -215,7 +215,7 @@ function CameraInventoryView({ initialMode }: { initialMode: CameraMode }) {
                 </>}
               </Flex>
               {!selected ? <EmptyState icon={ScanLine} title={t("camera.choose")} /> : !matches ? <EmptyState icon={Search} title={t(query ? "camera.noMatch" : "camera.empty")} /> : <AnimatePresence initial={false}>
-                {current?.items.map((item, index) => <ListRow key={item.id} index={index} title={item.name} wrapTitle meta={<StockTag status={getStockStatus(item)} />} trailing={<Typography.Text strong>{quantity(item)}</Typography.Text>} />)}
+                {current?.items.map((item, index) => <ListRow key={item.id} index={index} title={item.name} wrapTitle meta={<StockTag status={getStockStatus(item)} tool={item.reusable} />} trailing={<Typography.Text strong>{quantity(item)}</Typography.Text>} />)}
                 {current?.notes.map((note, index) => <ListRow key={note.id} index={index} title={note.text} wrapTitle meta={t("camera.note")} />)}
               </AnimatePresence>}
             </Card>

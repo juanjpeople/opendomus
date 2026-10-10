@@ -1,6 +1,7 @@
 export { ColorSwatches, IconGrid } from "./AppearancePicker";
 export { CameraViewport, type CameraDetection } from "./CameraViewport";
 export { ChoiceCards, type ChoiceOption } from "./ChoiceCards";
+export { DisplayMenu, type DisplayGroup, type DisplayToggle } from "./DisplayMenu";
 export { EmptyState } from "./EmptyState";
 export { IconTile } from "./IconTile";
 export { ListRow } from "./ListRow";

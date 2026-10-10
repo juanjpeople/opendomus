@@ -4,10 +4,11 @@ import { App, Button, Card, Col, Dropdown, Flex, Row, Typography, theme } from "
 import { ArrowLeft, Boxes, Camera, EllipsisVertical, Layers, NotebookPen, PackageOpen, PackageX, Pencil, Plus, Printer, QrCode, RotateCcwClock, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type CSSProperties } from "react";
+import { useContext, useState, type CSSProperties } from "react";
 import { Can } from "@/components/auth/Can";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
+import { HeaderDensityContext } from "@/components/ui/PageHeader";
 import { EmptyState, PageHeader, PathCrumbs, RoomFloor, SectionHeader, StatTile, type StatTone, LoadingSkeleton } from "@/components/ui";
 import { ActivityDrawer } from "@/features/activity/components/ActivityButton";
 import { usePhotos } from "@/features/media/hooks";
@@ -229,7 +230,7 @@ export function ContainerPage() {
               description={counts.items ? t("storage.itemCount", { count: counts.items }) : t("inventory.list.emptyHint")}
               extra={canCreate && <Button type="primary" icon={<Plus />} onClick={() => setDialog("product")}>{t("inventory.form.title")}</Button>}
             />
-            {counts.items > 0 && <StockTiles statuses={(items ?? []).map(getStockStatus)} />}
+            {(items ?? []).some((item) => !item.reusable) && <StockTiles statuses={(items ?? []).filter((item) => !item.reusable).map(getStockStatus)} />}
             <InventoryList containerId={container.id} onOpen={setOpenItem} highlightId={arrivedItem} />
           </section>
         </Reveal>
@@ -265,10 +266,11 @@ function Summary({ counts }: { counts: Record<keyof typeof SECTIONS, number> }) 
     { key: "notes" as const, text: t("storage.noteCount", { count: counts.notes }) },
     { key: "photos" as const, text: t("storage.photoCount", { count: counts.photos }) },
   ].filter((part) => counts[part.key] > 0);
+  const headerDensity = useContext(HeaderDensityContext);
   const link: CSSProperties = { display: "inline-flex", alignItems: "center", minHeight: token.controlHeightLG + token.paddingXXS, color: token.colorTextSecondary, textDecoration: "underline", textDecorationColor: token.colorBorder, textUnderlineOffset: 4 };
   return (
     <Reveal delay={0.05}>
-      <nav aria-label={t("storage.summary")} style={{ marginTop: -token.marginLG, marginBottom: token.marginLG }}>
+      <nav aria-label={t("storage.summary")} style={{ marginTop: headerDensity === "compact" ? -token.marginXS : -token.marginLG, marginBottom: token.marginLG }}>
         <Flex wrap align="center" gap={token.marginXS}>
           {parts.map((part, index) => (
             <Flex key={part.key} align="center" gap={token.marginXS}>
@@ -282,7 +284,7 @@ function Summary({ counts }: { counts: Record<keyof typeof SECTIONS, number> }) 
   );
 }
 
-/** Bien · Poco · Agotado: solo cuando hay productos con cantidad. */
+/** Bien · Poco · Agotado de los insumos: las herramientas no se gastan, así que no suman acá. */
 function StockTiles({ statuses }: { statuses: StockStatus[] }) {
   const t = useT();
   const { token } = theme.useToken();
