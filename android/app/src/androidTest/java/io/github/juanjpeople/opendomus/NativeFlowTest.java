@@ -183,8 +183,11 @@ public class NativeFlowTest {
             intending(allOf(hasAction(Intent.ACTION_GET_CONTENT), hasType("application/json"))).respondWith(new ActivityResult(Activity.RESULT_OK, new Intent().setData(backupUri)));
             tap(scenario, "[...document.querySelectorAll('button')].find(b => /^(Importar|Import)$/.test(b.textContent.trim()))");
             await(scenario, "document.querySelector('[role=dialog]') && /Reemplazar e importar|Replace and import/.test(document.querySelector('[role=dialog]').textContent)");
+            // El aviso "Datos importados" dura 600 ms antes de la recarga y un sondeo lento puede no verlo:
+            // la recarga solo ocurre si la importación terminó bien, así que se espera a que el marcador desaparezca.
+            evaluate(scenario, "window.__beforeImportReload = true");
             tap(scenario, "[...document.querySelectorAll('[role=dialog] button')].find(b => /Reemplazar e importar|Replace and import/.test(b.textContent))");
-            await(scenario, "/Datos importados|Data imported/.test(document.body.innerText)");
+            await(scenario, "window.__beforeImportReload !== true && document.body.innerText.length > 20");
             scenario.recreate();
             ready(scenario);
             scenario.onActivity(activity -> activity.getBridge().getWebView().loadUrl("https://localhost/inventario/ver?id=" + containerId));
