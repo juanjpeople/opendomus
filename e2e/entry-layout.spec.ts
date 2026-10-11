@@ -16,7 +16,7 @@ test("la entrada cabe en 320 px en ambos idiomas", async ({ page }, testInfo) =>
       await page.screenshot({ path: testInfo.outputPath(`${language}-${route.split("?")[0].slice(1)}.png`), fullPage: true, animations: "disabled" });
     }
     await page.getByRole("button", { name: language === "ES" ? "Empezar acá" : "Start here", exact: true }).click();
-    await expect(page.getByRole("button", { name: language === "ES" ? "Guardar esta selección" : "Save this selection", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: language === "ES" ? "Siguiente" : "Next", exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
     await page.screenshot({ path: testInfo.outputPath(`${language}-configuracion.png`), fullPage: true, animations: "disabled" });
   }

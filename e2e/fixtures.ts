@@ -10,8 +10,17 @@ async function signIn(page: Page) {
 }
 
 export async function selectTestSpaces(page: Page) {
-  for (const name of ["Cocina", "Taller de herramientas", "Heladera", "Alacena", "Estantería de herramientas"]) await page.getByRole("checkbox", { name, exact: true }).check();
+  for (const name of ["Cocina", "Taller de herramientas"]) await page.getByRole("checkbox", { name, exact: true }).check();
+  await nextSetupStep(page);
+  for (const name of ["Heladera", "Alacena", "Estantería de herramientas"]) await page.getByRole("checkbox", { name, exact: true }).check();
+  await nextSetupStep(page);
+  await nextSetupStep(page);
   await page.getByRole("button", { name: "Guardar esta selección" }).click();
+}
+
+/** Pasa al paso siguiente del armado de la casa. */
+export async function nextSetupStep(page: Page) {
+  await page.getByRole("button", { name: "Siguiente", exact: true }).click();
 }
 
 /** Carga un producto en un contenedor (por nombre, desde el inventario). */

@@ -38,8 +38,12 @@ export function CalendarOptions({ value, onChange, disabled }: { value: Calendar
       <Select aria-label={t("school.region")} style={{ width: "100%" }} showSearch optionFilterProp="label" allowClear disabled={disabled} value={value.region || undefined} options={options(regions)} onChange={(region) => onChange({ ...value, region: region ?? "" })} />
     </label>}
     {value.country && Object.keys(states).length === 0 && <Typography.Text type="secondary">{t("school.nationalCoverage", { country: countries[value.country] ?? value.country })}</Typography.Text>}
-    <Typography.Paragraph type="secondary" style={{ margin: 0 }}>{t("school.coverage")}</Typography.Paragraph>
-    <Typography.Link href="/third-party-notices.txt" target="_blank">date-holidays {HOLIDAY_DATA_VERSION} · {t("school.source")}</Typography.Link>
+    <Typography.Text type="secondary">{t("school.coverageShort")}</Typography.Text>
+    <details>
+      <summary style={{ cursor: "pointer", minHeight: 44, alignContent: "center", color: token.colorLink }}>{t("school.moreInfo")}</summary>
+      <Typography.Paragraph type="secondary" style={{ margin: 0 }}>{t("school.coverage")}</Typography.Paragraph>
+      <Typography.Link href="/third-party-notices.txt" target="_blank">date-holidays {HOLIDAY_DATA_VERSION} · {t("school.source")}</Typography.Link>
+    </details>
   </Flex>;
 }
 

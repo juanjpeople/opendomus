@@ -1,5 +1,6 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import type { StoredOp, WireOp } from "../src/lib/sync/protocol";
+import { nextSetupStep } from "./fixtures";
 
 /** Mock only the transport: account keys, encryption, IndexedDB and sync run in the real app. */
 test("la precarga se elige antes del alta cloud y llega cifrada a un segundo dispositivo", async ({ page, browser }) => {
@@ -56,8 +57,11 @@ test("la precarga se elige antes del alta cloud y llega cifrada a un segundo dis
   expect(await panel.evaluate((element) => element.getBoundingClientRect().width)).toBeCloseTo(initialWidth, 0);
   expect(household).toBeNull();
   await page.getByRole("checkbox", { name: "Cocina", exact: true }).check();
+  await nextSetupStep(page);
   await page.getByRole("checkbox", { name: "Heladera", exact: true }).check();
+  await nextSetupStep(page);
   await page.getByRole("radio", { name: "Queda poco · fin de mes" }).check();
+  await nextSetupStep(page);
   await page.getByRole("checkbox", { name: "Usar la agenda escolar" }).check();
   await page.getByRole("button", { name: "Guardar esta selección" }).click();
   await page.getByLabel("Nombre de la casa", { exact: true }).fill("Casa de prueba");
