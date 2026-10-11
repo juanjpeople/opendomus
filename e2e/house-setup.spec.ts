@@ -25,6 +25,15 @@ test("revisa un patrón, edita cantidades y excluye productos antes de guardarlo
   await page.getByRole("checkbox", { name: "Cocina", exact: true }).press("Space");
   await expect(page.getByRole("checkbox", { name: "Cocina", exact: true })).toBeChecked();
   await page.getByRole("checkbox", { name: "Heladera", exact: true }).check();
+  // Ambientes y contenedores propios: entran seleccionados y vacíos.
+  await page.getByRole("textbox", { name: "Nombre de otro ambiente" }).fill("Altillo");
+  await page.getByRole("textbox", { name: "Nombre de otro ambiente" }).press("Enter");
+  await expect(page.getByRole("checkbox", { name: "Altillo", exact: true })).toBeChecked();
+  await page.getByRole("textbox", { name: "Nombre de otro contenedor" }).fill("Baúl");
+  await page.getByRole("button", { name: "Agregar" }).nth(1).click();
+  await page.getByRole("combobox", { name: "Ubicación de Baúl" }).click();
+  await page.getByTitle("Altillo").click();
+  await expect(page.getByRole("radio", { name: "Básicos a mano · mediados de mes" })).toHaveAccessibleDescription(/^Lo justo para el día a día\. Carga 9 artículos/);
   await page.getByRole("radio", { name: "Solo espacios, sin artículos", exact: true }).press("ArrowDown");
   await page.getByRole("radio", { name: "Compra completa · principio de mes", exact: true }).press("ArrowDown");
   await expect(page.getByRole("radio", { name: "Básicos a mano · mediados de mes" })).toBeChecked();
@@ -45,6 +54,7 @@ test("revisa un patrón, edita cantidades y excluye productos antes de guardarlo
   await page.getByText("Administrador", { exact: true }).first().click();
   await page.goto("/inventario");
   await expect(page.getByText("Taller de herramientas", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Baúl", { exact: true }).first()).toBeVisible();
   await page.getByText("Heladera", { exact: true }).first().click();
   await expect(page.getByRole("button", { name: "Ver detalle de Leche", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Ver detalle de Huevos", exact: true }).click();

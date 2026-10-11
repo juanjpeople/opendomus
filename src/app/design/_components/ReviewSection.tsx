@@ -31,6 +31,7 @@ const CHECKS = [
       "Todo por t(). Nada de locale === \"es\" ? … : … en un componente.",
       "Voseo, una idea por oración, plurales con { one, other }.",
       "Sin jerga técnica en la pantalla principal.",
+      "Cada opción explica qué implica (qué crea, qué carga, un ejemplo) y si se puede cambiar después.",
     ],
   },
   {

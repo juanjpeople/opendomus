@@ -58,7 +58,7 @@ test("la precarga se elige antes del alta cloud y llega cifrada a un segundo dis
   await page.getByRole("checkbox", { name: "Cocina", exact: true }).check();
   await page.getByRole("checkbox", { name: "Heladera", exact: true }).check();
   await page.getByRole("radio", { name: "Queda poco · fin de mes" }).check();
-  await page.getByRole("checkbox", { name: "Activar escuela: materias, mochila y tareas" }).check();
+  await page.getByRole("checkbox", { name: "Usar la agenda escolar" }).check();
   await page.getByRole("button", { name: "Guardar esta selección" }).click();
   await page.getByLabel("Nombre de la casa", { exact: true }).fill("Casa de prueba");
   await page.getByRole("button", { name: "Crear mi casa", exact: true }).click();

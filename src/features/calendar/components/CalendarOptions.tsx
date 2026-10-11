@@ -1,7 +1,7 @@
 "use client";
 
 import { App, Button, Card, Checkbox, Flex, Select, Typography, theme } from "antd";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Callout } from "@/components/ui";
 import { Reveal } from "@/components/motion";
@@ -20,10 +20,15 @@ export function CalendarOptions({ value, onChange, disabled }: { value: Calendar
   const countries = holidayCatalog.getCountries(locale);
   const states = value.country ? holidayCatalog.getStates(value.country, locale) ?? {} : {};
   const regions = value.country && value.state ? holidayCatalog.getRegions(value.country, value.state, locale) ?? {} : {};
+  const id = useId();
   const options = (entries: Record<string, string>) => Object.entries(entries).map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label, locale));
   return <Flex vertical gap={token.marginSM}>
-    <Checkbox checked={value.schoolEnabled} disabled={disabled} onChange={(event) => onChange({ ...value, schoolEnabled: event.target.checked })}>{t("school.enable")}</Checkbox>
+    <div>
+      <Checkbox checked={value.schoolEnabled} disabled={disabled} aria-describedby={`${id}-school`} onChange={(event) => onChange({ ...value, schoolEnabled: event.target.checked })}>{t("school.enable")}</Checkbox>
+      <Typography.Paragraph id={`${id}-school`} type="secondary" style={{ margin: `${token.marginXXS}px 0 0`, paddingInlineStart: token.paddingLG }}>{t("school.enableHelp")}</Typography.Paragraph>
+    </div>
     <label>{t("school.country")}
+      <Typography.Paragraph type="secondary" style={{ margin: 0 }}>{t("school.countryHelp")}</Typography.Paragraph>
       <Select aria-label={t("school.country")} style={{ width: "100%" }} showSearch optionFilterProp="label" allowClear disabled={disabled} placeholder={t("school.noHolidays")} value={value.country || undefined} options={options(countries)} onChange={(country) => onChange({ ...value, country: country ?? "", state: "", region: "" })} />
     </label>
     {Object.keys(states).length > 0 && <label>{t("school.state")}
