@@ -82,10 +82,16 @@ export const ROOM_TEMPLATES = [
   { id: "ceramics", name: { es: "Taller de cerámica", en: "Pottery workshop" }, kind: "workshop" },
 ] satisfies { id: string; name: Label; kind: SpaceKind }[];
 
+/** A room or container the person names during setup. It starts empty, with kind "other". */
+export interface CustomPlace { id: string; name: string }
+export const CUSTOM_NAME_MAX = 60;
+
 export interface HouseSetupSelection {
   groups: string[]; rows: SetupRow[];
   /** Explicit rooms and destinations; omitted only by older callers. */
   rooms?: string[]; destinations?: Record<string, string>;
+  /** Rooms and empty containers typed by the person. Selected rooms still go in `rooms`. */
+  customRooms?: CustomPlace[]; customContainers?: CustomPlace[];
   calendar?: CalendarPreferences;
 }
 export const rowKey = (row: Pick<SetupRow, "groupId" | "catalogId">) => `${row.groupId}/${row.catalogId}`;
@@ -96,6 +102,18 @@ export function templateRows(groups: readonly string[], level: StockLevel): Setu
   if (index < 0) throw new Error("Invalid stock level");
   return HOUSE_TEMPLATES.filter((group) => groups.includes(group.id)).flatMap((group) =>
     group.items.filter((entry) => entry.stock[index] > 0).map((entry) => ({ groupId: group.id, catalogId: entry.catalogId, quantity: entry.stock[index] })));
+}
+
+/** Names of a group's examples, in template order, for explaining what a choice loads. */
+export function groupExamples(groupId: string, locale: Locale) {
+  const group = HOUSE_TEMPLATES.find((entry) => entry.id === groupId);
+  return (group?.items ?? []).map((entry) => BASIC_CATALOG.find((product) => product.id === entry.catalogId)?.name[locale]).filter((name): name is string => !!name);
+}
+
+function customName(place: CustomPlace) {
+  const name = place.name.trim();
+  if (!place.id || !name || name.length > CUSTOM_NAME_MAX) throw new Error("Invalid custom place");
+  return name;
 }
 
 export function setupItem(row: SetupRow, locale: Locale) {
@@ -118,13 +136,19 @@ export function buildHouseSetup(selection: HouseSetupSelection, locale: Locale, 
   const containerIds = new Map<string, string>();
   const codes = new Set<string>();
   const rooms = selection.rooms ?? [...new Set(HOUSE_TEMPLATES.filter((group) => selection.groups.includes(group.id)).map((group) => group.space.id))];
+  const customRooms = selection.customRooms ?? [];
+  const customContainers = selection.customContainers ?? [];
+  const known = [...ROOM_TEMPLATES.map((room) => room.id), ...HOUSE_TEMPLATES.map((group) => group.id)];
+  const customIds = [...customRooms, ...customContainers].map((place) => place.id);
   if (new Set(rooms).size !== rooms.length) throw new Error("Duplicate rooms");
+  if (new Set(customIds).size !== customIds.length || customIds.some((id) => known.includes(id))) throw new Error("Invalid custom place");
   for (const roomId of rooms) {
-    const room = ROOM_TEMPLATES.find((entry) => entry.id === roomId);
-    if (!room) throw new Error("Invalid room");
+    const preset = ROOM_TEMPLATES.find((entry) => entry.id === roomId);
+    const custom = customRooms.find((entry) => entry.id === roomId);
+    if (!preset && !custom) throw new Error("Invalid room");
     const id = createId();
-    spaceIds.set(room.id, id);
-    spaces.push({ id, name: room.name[locale], kind: room.kind, createdAt: now, updatedAt: now });
+    spaceIds.set(roomId, id);
+    spaces.push({ id, name: preset ? preset.name[locale] : customName(custom!), kind: preset?.kind ?? "other", createdAt: now, updatedAt: now });
   }
   for (const group of HOUSE_TEMPLATES.filter((entry) => selection.groups.includes(entry.id))) {
     const roomId = selection.destinations?.[group.id] ?? group.space.id;
@@ -135,6 +159,14 @@ export function buildHouseSetup(selection: HouseSetupSelection, locale: Locale, 
     codes.add(code);
     containerIds.set(group.id, id);
     containers.push({ id, spaceId: spaceIds.get(roomId)!, name: group.name[locale], kind: group.kind, code, createdAt: now, updatedAt: now });
+  }
+  for (const place of customContainers) {
+    const roomId = selection.destinations?.[place.id];
+    if (!roomId || !spaceIds.has(roomId)) throw new Error("Choose a selected room for each container");
+    let code = generateContainerCode();
+    while (codes.has(code)) code = generateContainerCode();
+    codes.add(code);
+    containers.push({ id: createId(), spaceId: spaceIds.get(roomId)!, name: customName(place), kind: "other", code, createdAt: now, updatedAt: now });
   }
   for (const row of selection.rows) {
     const containerId = containerIds.get(row.groupId);

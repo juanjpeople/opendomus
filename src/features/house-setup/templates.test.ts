@@ -107,3 +107,17 @@ test("reference prices are traceable, in cents and visibly expire; unknown price
   }
   assert.equal(referenceNeedsReview(REFERENCE_PRICES[0], Date.parse("2026-10-07T12:00:00Z")), false);
 });
+
+test("custom rooms and containers start empty, need a selected room and reject bad names", () => {
+  const seed = buildHouseSetup({ rooms: ["kitchen", "attic"], groups: ["fridge"], rows: templateRows(["fridge"], "low"),
+    customRooms: [{ id: "attic", name: " Altillo " }], customContainers: [{ id: "chest", name: "Baúl" }],
+    destinations: { fridge: "kitchen", chest: "attic" } }, "es");
+  assert.deepEqual(seed.spaces.map((room) => [room.name, room.kind]), [["Cocina", "kitchen"], ["Altillo", "other"]]);
+  const chest = seed.containers.find((entry) => entry.name === "Baúl");
+  assert.equal(chest?.kind, "other");
+  assert.equal(chest?.spaceId, seed.spaces[1].id);
+  assert.ok(seed.inventory.every((entry) => entry.containerId !== chest?.id));
+  assert.throws(() => buildHouseSetup({ rooms: ["kitchen"], groups: [], rows: [], customContainers: [{ id: "chest", name: "Baúl" }], destinations: { chest: "attic" } }, "es"));
+  assert.throws(() => buildHouseSetup({ rooms: ["attic"], groups: [], rows: [], customRooms: [{ id: "attic", name: "  " }] }, "es"));
+  assert.throws(() => buildHouseSetup({ rooms: ["kitchen"], groups: [], rows: [], customRooms: [{ id: "kitchen", name: "Otra cocina" }] }, "es"));
+});
