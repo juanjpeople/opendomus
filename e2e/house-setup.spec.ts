@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { nextSetupStep } from "./fixtures";
 
 test("una casa vacía no incorpora lugares ni artículos y no vuelve a preguntar", async ({ page }) => {
   await page.goto("/empezar");
   await page.getByRole("button", { name: "Empezar acá" }).click();
+  await nextSetupStep(page);
   await expect(page.getByRole("checkbox", { name: "Heladera", exact: true })).toBeDisabled();
   await expect(page.getByRole("checkbox", { checked: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Empezar sin precarga" }).click();
@@ -24,20 +26,23 @@ test("revisa un patrón, edita cantidades y excluye productos antes de guardarlo
   await page.getByRole("button", { name: "Empezar acá" }).click();
   await page.getByRole("checkbox", { name: "Cocina", exact: true }).press("Space");
   await expect(page.getByRole("checkbox", { name: "Cocina", exact: true })).toBeChecked();
-  await page.getByRole("checkbox", { name: "Heladera", exact: true }).check();
   // Ambientes y contenedores propios: entran seleccionados y vacíos.
   await page.getByRole("textbox", { name: "Nombre de otro ambiente" }).fill("Altillo");
   await page.getByRole("textbox", { name: "Nombre de otro ambiente" }).press("Enter");
   await expect(page.getByRole("checkbox", { name: "Altillo", exact: true })).toBeChecked();
+  await nextSetupStep(page);
+  await page.getByRole("checkbox", { name: "Heladera", exact: true }).check();
   await page.getByRole("textbox", { name: "Nombre de otro contenedor" }).fill("Baúl");
-  await page.getByRole("button", { name: "Agregar" }).nth(1).click();
+  await page.getByRole("button", { name: "Agregar" }).click();
   await page.getByRole("combobox", { name: "Ubicación de Baúl" }).click();
   await page.getByTitle("Altillo").click();
+  await nextSetupStep(page);
   await expect(page.getByRole("radio", { name: "Básicos a mano · mediados de mes" })).toHaveAccessibleDescription(/^Lo justo para el día a día\. Carga 9 artículos/);
   await page.getByRole("radio", { name: "Solo espacios, sin artículos", exact: true }).press("ArrowDown");
   await page.getByRole("radio", { name: "Compra completa · principio de mes", exact: true }).press("ArrowDown");
   await expect(page.getByRole("radio", { name: "Básicos a mano · mediados de mes" })).toBeChecked();
-  await page.getByRole("button", { name: "Heladera", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^Heladera/ })).toContainText("9 artículos: Leche, Huevos, Queso");
+  await page.getByRole("button", { name: /^Heladera/ }).click();
   const eggs = page.getByRole("group", { name: "Cantidad de Huevos", exact: true });
   await eggs.getByRole("spinbutton").fill("0");
   await expect(eggs.getByRole("button", { name: "Restar uno" })).toBeDisabled();
@@ -50,6 +55,7 @@ test("revisa un patrón, edita cantidades y excluye productos antes de guardarlo
   await expect(page.getByText("Huevos blancos grandes · 6 ud.", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "DIA online · Argentina" }).first()).toHaveAttribute("href", /diaonline/);
   await page.screenshot({ path: testInfo.outputPath("precarga.png"), fullPage: true });
+  await nextSetupStep(page);
   await page.getByRole("button", { name: "Guardar esta selección" }).click();
   await page.getByText("Administrador", { exact: true }).first().click();
   await page.goto("/inventario");

@@ -33,6 +33,7 @@ export function HouseSetup({ onComplete, onCancel, embedded = false }: { onCompl
   const [level, setLevel] = useState<StockLevel>("spaces");
   const [rows, setRows] = useState<SetupRow[]>([]);
   const [omitted, setOmitted] = useState<string[]>([]);
+  const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const selectedRows = rows.filter((row) => !omitted.includes(rowKey(row)));
@@ -96,26 +97,37 @@ export function HouseSetup({ onComplete, onCancel, embedded = false }: { onCompl
     finally { setBusy(false); }
   }
 
-  return <StepFlow screenKey="house-setup" framed={!embedded}
+  const steps = [t("houseSetup.steps.rooms"), t("houseSetup.steps.groups"), t("houseSetup.steps.stock"), t("houseSetup.steps.calendar")];
+  const last = step === steps.length - 1;
+  const missingRoom = groups.some((id) => !rooms.includes(destinations[id]));
+  function go(next: number) {
+    setStep(next);
+    if (!embedded) window.scrollTo({ top: 0 });
+  }
+
+  return <StepFlow steps={steps} current={step} screenKey={`house-setup-${step}`} framed={!embedded}
     header={<PanelHeader icon={House} title={t("houseSetup.title")} description={t("houseSetup.description")} />}
     busy={busy}
-    primary={{ label: t("houseSetup.save"), onClick: () => void finish(false), disabled: groups.some((id) => !rooms.includes(destinations[id])) }}
-    back={onCancel ? { label: t("houseSetup.back"), onClick: onCancel } : undefined}
+    primary={last ? { label: t("houseSetup.save"), onClick: () => void finish(false), disabled: missingRoom }
+      : { label: t("houseSetup.next"), onClick: () => go(step + 1), disabled: step === 1 && missingRoom }}
+    back={step > 0 ? { label: t("houseSetup.back"), onClick: () => go(step - 1) } : onCancel ? { label: t("houseSetup.back"), onClick: onCancel } : undefined}
     secondary={{ label: t("houseSetup.empty"), onClick: () => void finish(true) }}>
-    <Reveal>
-      <Callout tone="primary" icon={Pencil} title={t("houseSetup.flexibleTitle")}>{t("houseSetup.flexibleText")}</Callout>
-    </Reveal>
-    <Reveal delay={0.05}>
-      <fieldset disabled={busy} style={fieldset}>
-        <legend>{t("houseSetup.rooms")}</legend>
-        <Typography.Paragraph type="secondary">{t("houseSetup.roomsHint")}</Typography.Paragraph>
-        <ChoiceCards multiple compact aria-label={t("houseSetup.rooms")} value={rooms} disabled={busy} onChange={chooseRooms}
-          options={roomOptions.map((room) => ({ value: room.id, title: room.name, description: customRooms.some((entry) => entry.id === room.id) ? t("houseSetup.yours") : undefined,
-            leading: <IconTile icon={SPACE_ICONS[room.kind]} color={SPACE_DEFAULTS[room.kind].color} size={token.controlHeight} /> }))} />
-        <AddPlace label={t("houseSetup.addRoom")} placeholder={t("houseSetup.addRoomPlaceholder")} taken={roomOptions.map((room) => room.name)} disabled={busy} onAdd={addRoom} />
-      </fieldset>
-    </Reveal>
-    <Reveal delay={0.1}>
+    {step === 0 && <>
+      <Reveal>
+        <Callout tone="primary" icon={Pencil} title={t("houseSetup.flexibleTitle")}>{t("houseSetup.flexibleText")}</Callout>
+      </Reveal>
+      <Reveal delay={0.05}>
+        <fieldset disabled={busy} style={fieldset}>
+          <legend>{t("houseSetup.rooms")}</legend>
+          <Typography.Paragraph type="secondary">{t("houseSetup.roomsHint")}</Typography.Paragraph>
+          <ChoiceCards multiple compact aria-label={t("houseSetup.rooms")} value={rooms} disabled={busy} onChange={chooseRooms}
+            options={roomOptions.map((room) => ({ value: room.id, title: room.name, description: customRooms.some((entry) => entry.id === room.id) ? t("houseSetup.yours") : undefined,
+              leading: <IconTile icon={SPACE_ICONS[room.kind]} color={SPACE_DEFAULTS[room.kind].color} size={token.controlHeight} /> }))} />
+          <AddPlace label={t("houseSetup.addRoom")} placeholder={t("houseSetup.addRoomPlaceholder")} taken={roomOptions.map((room) => room.name)} disabled={busy} onAdd={addRoom} />
+        </fieldset>
+      </Reveal>
+    </>}
+    {step === 1 && <Reveal delay={0.05}>
       <fieldset disabled={busy} style={fieldset}>
         <legend>{t("houseSetup.groups")}</legend>
         <Typography.Paragraph type="secondary">{t(rooms.length === 0 ? "houseSetup.chooseRoom" : "houseSetup.groupsHint")}</Typography.Paragraph>
@@ -133,43 +145,56 @@ export function HouseSetup({ onComplete, onCancel, embedded = false }: { onCompl
           <Select aria-label={t("houseSetup.locationLabel", { name: group.name })} style={{ width: "100%" }} value={destinations[group.id] || undefined} disabled={busy} options={roomOptions.filter((room) => rooms.includes(room.id)).map((room) => ({ value: room.id, label: room.name }))} onChange={(room) => setDestinations({ ...destinations, [group.id]: room })} />
         </label>)}
       </fieldset>
-    </Reveal>
-    <Reveal delay={0.15}>
-      <fieldset disabled={busy} style={fieldset}>
-        <legend>{t("houseSetup.stock")}</legend>
-        <Typography.Paragraph type="secondary">{t("houseSetup.stockHint")}</Typography.Paragraph>
-        <ChoiceCards compact layout="list" aria-label={t("houseSetup.stock")} value={level} onChange={chooseLevel} disabled={busy}
-          options={LEVELS.map(({ value, icon }) => ({ value, title: t(`houseSetup.levels.${value}`), description: levelDescription(value), leading: <IconTile icon={icon} size={token.controlHeight} /> }))} />
-      </fieldset>
-    </Reveal>
-    {level !== "spaces" && <Callout title={t("houseSetup.examplesScope")}>{t("houseSetup.examples")}</Callout>}
-    {selectedGroups.length > 0 && <Reveal delay={0.2}>
-      <SectionHeader title={t("houseSetup.review")} description={t("houseSetup.containers", { count: selectedGroups.length }) + " · " + t("houseSetup.items", { count: selectedRows.length })} />
-      <Typography.Paragraph type="secondary">{t("houseSetup.reviewHint")}</Typography.Paragraph>
-      <Collapse items={selectedGroups.map((group) => ({
-        key: group.id, label: group.name,
-        children: <Flex vertical gap={token.margin}>
-          {rows.filter((row) => row.groupId === group.id).length === 0 && <Typography.Text>{t("houseSetup.emptyContainer")}</Typography.Text>}
-          {rows.filter((row) => row.groupId === group.id).map((row) => {
-            const product = setupItem(row, locale);
-            const key = rowKey(row);
-            return <div key={key}>
-              <Flex align="center" gap={token.marginXS} wrap>
-                <Checkbox checked={!omitted.includes(key)} disabled={busy} onChange={(event) => setOmitted(event.target.checked ? omitted.filter((entry) => entry !== key) : [...omitted, key])}>{product.name}</Checkbox>
-                <QuantityStepper aria-label={t("houseSetup.quantity", { name: product.name })} min={0} max={100000} precision={0} value={row.quantity} disabled={busy || omitted.includes(key)} onChange={(value) => setRows(rows.map((entry) => rowKey(entry) === key ? { ...entry, quantity: value } : entry))} />
-                <Typography.Text>{t(`inventory.units.${product.unit as Unit}`, { count: row.quantity })}</Typography.Text>
-              </Flex>
-              <div style={{ marginTop: token.marginXS }}><ReferencePrice catalogId={row.catalogId} /></div>
-            </div>;
-          })}
-        </Flex>,
-      }))} />
     </Reveal>}
-    <Reveal delay={0.25}>
-      <SectionHeader title={t("houseSetup.calendar")} />
-      <CalendarOptions value={calendar} onChange={setCalendar} disabled={busy} />
-    </Reveal>
-    <Typography.Text type="secondary">{t("houseSetup.atomic")}</Typography.Text>
+    {step === 2 && <>
+      <Reveal delay={0.05}>
+        <fieldset disabled={busy} style={fieldset}>
+          <legend>{t("houseSetup.stock")}</legend>
+          <Typography.Paragraph type="secondary">{t("houseSetup.stockHint")}</Typography.Paragraph>
+          <ChoiceCards compact layout="list" aria-label={t("houseSetup.stock")} value={level} onChange={chooseLevel} disabled={busy}
+            options={LEVELS.map(({ value, icon }) => ({ value, title: t(`houseSetup.levels.${value}`), description: levelDescription(value), leading: <IconTile icon={icon} size={token.controlHeight} /> }))} />
+        </fieldset>
+      </Reveal>
+      {level !== "spaces" && <Callout title={t("houseSetup.examplesScope")}>{t("houseSetup.examples")}</Callout>}
+      {selectedGroups.length > 0 && <Reveal delay={0.1}>
+        <SectionHeader title={t("houseSetup.review")} description={t("houseSetup.containers", { count: selectedGroups.length }) + " · " + t("houseSetup.items", { count: selectedRows.length })} />
+        <Typography.Paragraph type="secondary">{t("houseSetup.reviewHint")}</Typography.Paragraph>
+        <Collapse items={selectedGroups.map((group) => {
+          const groupRows = rows.filter((row) => row.groupId === group.id);
+          const kept = groupRows.filter((row) => !omitted.includes(rowKey(row)));
+          const names = kept.slice(0, 3).map((row) => setupItem(row, locale).name).join(", ");
+          return {
+            key: group.id,
+            label: <Flex vertical>
+              <Typography.Text strong>{group.name}</Typography.Text>
+              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>{kept.length ? t("houseSetup.groupPreview", { count: kept.length, examples: names }) : t("houseSetup.emptyContainer")}</Typography.Text>
+            </Flex>,
+            children: <Flex vertical gap={token.margin}>
+              {groupRows.length === 0 && <Typography.Text>{t("houseSetup.emptyContainer")}</Typography.Text>}
+              {groupRows.map((row) => {
+                const product = setupItem(row, locale);
+                const key = rowKey(row);
+                return <div key={key}>
+                  <Flex align="center" gap={token.marginXS} wrap>
+                    <Checkbox checked={!omitted.includes(key)} disabled={busy} onChange={(event) => setOmitted(event.target.checked ? omitted.filter((entry) => entry !== key) : [...omitted, key])}>{product.name}</Checkbox>
+                    <QuantityStepper aria-label={t("houseSetup.quantity", { name: product.name })} min={0} max={100000} precision={0} value={row.quantity} disabled={busy || omitted.includes(key)} onChange={(value) => setRows(rows.map((entry) => rowKey(entry) === key ? { ...entry, quantity: value } : entry))} />
+                    <Typography.Text>{t(`inventory.units.${product.unit as Unit}`, { count: row.quantity })}</Typography.Text>
+                  </Flex>
+                  <div style={{ marginTop: token.marginXS }}><ReferencePrice catalogId={row.catalogId} /></div>
+                </div>;
+              })}
+            </Flex>,
+          };
+        })} />
+      </Reveal>}
+    </>}
+    {last && <>
+      <Reveal delay={0.05}>
+        <SectionHeader title={t("houseSetup.calendar")} />
+        <CalendarOptions value={calendar} onChange={setCalendar} disabled={busy} />
+      </Reveal>
+      <Typography.Text type="secondary">{t("houseSetup.atomic")}</Typography.Text>
+    </>}
     {error && <Callout tone="danger" role="alert" title={t("houseSetup.errorTitle")}>{t("houseSetup.errorText")}</Callout>}
   </StepFlow>;
 }

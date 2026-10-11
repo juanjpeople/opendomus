@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, Flex, Steps, theme } from "antd";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "framer-motion";
 import { useRef, type ReactNode } from "react";
 import { usePreferences } from "@/hooks/usePreferences";
 import { DURATION, EASE_OUT } from "@/lib/motion";
@@ -32,7 +32,7 @@ export function StepFlow({ steps = [], current = 0, screenKey, header, children,
           onAnimationComplete={() => {
             if (lastScreen.current !== screenKey) { content.current?.focus({ preventScroll: true }); lastScreen.current = screenKey; }
           }}>
-          <Flex vertical gap={token.marginLG}>
+          <Screen>
             {header}
             {children}
             {(back || primary || secondary || footer) && <Flex wrap align="center" justify="space-between" gap={token.marginSM}>
@@ -44,9 +44,16 @@ export function StepFlow({ steps = [], current = 0, screenKey, header, children,
                 {primary && <Button type="primary" size="large" loading={busy || primary.loading} disabled={busy || primary.disabled} onClick={primary.onClick} style={{ flexGrow: 1 }}>{primary.label}</Button>}
               </Flex>}
             </Flex>}
-          </Flex>
+          </Screen>
         </motion.div>
       </AnimatePresence>
     </Card>
   </div>;
+}
+
+/** The screen that is leaving stays visible during its exit, but can no longer be clicked or focused. */
+function Screen({ children }: { children: ReactNode }) {
+  const { token } = theme.useToken();
+  const present = useIsPresent();
+  return <Flex vertical gap={token.marginLG} inert={!present}>{children}</Flex>;
 }
